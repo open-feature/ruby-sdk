@@ -4,7 +4,7 @@ require_relative "lib/openfeature/sdk/version"
 
 Gem::Specification.new do |spec|
   spec.name = "openfeature-sdk"
-  spec.version = Openfeature::Sdk::VERSION
+  spec.version = OpenFeature::SDK::VERSION
   spec.authors = ["OpenFeature Authors"]
   spec.email = ["cncf-openfeature-contributors@lists.cncf.io"]
 

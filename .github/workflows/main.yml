@@ -24,5 +24,9 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
+      - name: Install dependencies
+        run: bundle install
       - name: Run the default task
         run: bundle exec rake
+      - name: Rubocop
+        run: bundle exec rubocop

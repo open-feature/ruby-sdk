@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     openfeature-sdk (0.0.1)
+      sorbet-runtime
 
 GEM
   remote: https://rubygems.org/
@@ -42,6 +43,12 @@ GEM
     rubocop-ast (1.23.0)
       parser (>= 3.1.1.0)
     ruby-progressbar (1.11.0)
+    sorbet (0.5.10539)
+      sorbet-static (= 0.5.10539)
+    sorbet-runtime (0.5.10539)
+    sorbet-static (0.5.10539-universal-darwin-21)
+    sorbet-static (0.5.10539-universal-darwin-22)
+    sorbet-static (0.5.10539-x86_64-linux)
     unicode-display_width (2.3.0)
 
 PLATFORMS
@@ -59,6 +66,7 @@ DEPENDENCIES
   rake (~> 13.0)
   rspec (~> 3.12.0)
   rubocop (~> 1.37.1)
+  sorbet
 
 BUNDLED WITH
    2.3.25

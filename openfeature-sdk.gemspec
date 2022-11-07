@@ -31,8 +31,11 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
+  spec.add_dependency "sorbet-runtime", "~> 0.5.10539"
+
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "rspec", "~> 3.12.0"
   spec.add_development_dependency "rubocop", "~> 1.37.1"
+  spec.add_development_dependency "sorbet", "~> 0.5.10539"
   spec.metadata["rubygems_mfa_required"] = "true"
 end

@@ -1,37 +1,72 @@
-# Openfeature::Sdk
+# OpenFeature SDK for Ruby 
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/openfeature/sdk`. To experiment with that code, run `bin/console` for an interactive prompt.
+[![a](https://img.shields.io/badge/slack-%40cncf%2Fopenfeature-brightgreen?style=flat&logo=slack)](https://cloud-native.slack.com/archives/C0344AANLA1)
+[![v0.5.1](https://img.shields.io/static/v1?label=Specification&message=v0.5.1&color=yellow)](https://github.com/open-feature/spec/tree/v0.5.1)
+![Ruby](https://img.shields.io/badge/ruby-%23CC342D.svg?style=for-the-badge&logo=ruby&logoColor=white)
 
-TODO: Delete this and the text above, and describe your gem
+This is the Ruby implementation of [OpenFeature](https://openfeature.dev), a vendor-agnostic abstraction library for evaluating feature flags.
+
+We support multiple data types for flags (numbers, strings, booleans, objects) as well as hooks, which can alter the lifecycle of a flag evaluation.
+
+## Requirements
+
+- Ruby 2.7.6
+- Ruby 3.0.4
+- Ruby 3.1.2
 
 ## Installation
 
 Install the gem and add to the application's Gemfile by executing:
 
-    $ bundle add openfeature-sdk
+```sh
+bundle add openfeature-sdk
+```
 
 If bundler is not being used to manage dependencies, install the gem by executing:
 
-    $ gem install openfeature-sdk
+```sh
+gem install openfeature-sdk
+```
 
 ## Usage
 
-TODO: Write usage instructions here
+```ruby
+require 'openfeature/sdk'
+require 'json' # For JSON.dump
 
-## Development
+# API Initialization and configuration
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+OpenFeature::SDK.configure do |config|
+    # your provider of choice
+    config.provider = OpenFeature::SDK::Provider::NoOpProvider.new
+end
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+# Create a client
+client = OpenFeature::SDK.build_client(name: "my-app")
+
+# get a bool value
+const bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value: false);
+
+// get a string value
+const string_value = client.fetch_string_value(flag_key: 'string_flag', default_value: false);
+
+// get an numeric value
+const float_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1.0);
+const integer_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1);
+
+// get an object value
+const object = await client.fetch_object_value('object_value', JSON.dump({ name: 'object'}));
+```
+
+For complete documentation, visit: https://docs.openfeature.dev/docs/category/concepts
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/openfeature-sdk. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/openfeature-sdk/blob/main/CODE_OF_CONDUCT.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to the OpenFeature project.
+
+Our community meetings are held regularly and open to everyone. Check the [OpenFeature community calendar](https://calendar.google.com/calendar/u/0?cid=MHVhN2kxaGl2NWRoMThiMjd0b2FoNjM2NDRAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ) for specific dates and for the Zoom meeting links.
+
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
-
-## Code of Conduct
-
-Everyone interacting in the Openfeature::Sdk project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/openfeature-sdk/blob/main/CODE_OF_CONDUCT.md).
+[Apache License 2.0](LICENSE)

@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     openfeature-sdk (0.0.1)
-      sorbet-runtime
+      sorbet-runtime (~> 0.5.10539)
 
 GEM
   remote: https://rubygems.org/
@@ -66,7 +66,7 @@ DEPENDENCIES
   rake (~> 13.0)
   rspec (~> 3.12.0)
   rubocop (~> 1.37.1)
-  sorbet
+  sorbet (~> 0.5.10539)
 
 BUNDLED WITH
    2.3.25

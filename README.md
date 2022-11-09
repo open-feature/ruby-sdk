@@ -1,8 +1,10 @@
-# OpenFeature SDK for Ruby 
+# OpenFeature SDK for Ruby
 
 [![a](https://img.shields.io/badge/slack-%40cncf%2Fopenfeature-brightgreen?style=flat&logo=slack)](https://cloud-native.slack.com/archives/C0344AANLA1)
 [![v0.5.1](https://img.shields.io/static/v1?label=Specification&message=v0.5.1&color=yellow)](https://github.com/open-feature/spec/tree/v0.5.1)
 ![Ruby](https://img.shields.io/badge/ruby-%23CC342D.svg?style=for-the-badge&logo=ruby&logoColor=white)
+![Build](https://github.com/open-feature/openfeature-ruby/actions/workflows/main.yml/badge.svg?branch=main)
+![Gem version](https://img.shields.io/gem/v/openfeature-sdk)
 
 This is the Ruby implementation of [OpenFeature](https://openfeature.dev), a vendor-agnostic abstraction library for evaluating feature flags.
 
@@ -44,18 +46,18 @@ end
 # Create a client
 client = OpenFeature::SDK.build_client(name: "my-app")
 
-# get a bool value
-const bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value: false);
+# fetching boolean value feature flag
+bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value: false);
 
-// get a string value
-const string_value = client.fetch_string_value(flag_key: 'string_flag', default_value: false);
+# fetching string value feature flag
+string_value = client.fetch_string_value(flag_key: 'string_flag', default_value: false);
 
-// get an numeric value
-const float_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1.0);
-const integer_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1);
+# fetching number value feature flag
+float_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1.0);
+integer_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1);
 
-// get an object value
-const object = await client.fetch_object_value('object_value', JSON.dump({ name: 'object'}));
+# get an object value
+object = client.fetch_object_value('object_value', JSON.dump({ name: 'object'}));
 ```
 
 For complete documentation, visit: https://docs.openfeature.dev/docs/category/concepts

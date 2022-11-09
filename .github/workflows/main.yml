@@ -8,25 +8,72 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     name: Ruby ${{ matrix.ruby }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         ruby:
           - "3.1.2"
           - "2.7.6"
           - "3.0.4"
+    env:
+      BUNDLE_GEMFILE: Gemfile
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Ruby
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - run: bundle install
+      - run: bundle exec rake
+
+  rubocop:
+    runs-on: ${{ matrix.os }}
+    name: Rubocop ${{ matrix.ruby }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        ruby:
+          - "3.1.2"
+          - "2.7.6"
+          - "3.0.4"
+    env:
+      BUNDLE_GEMFILE: Gemfile
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Ruby ${{ matrix.ruby }}
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Install dependencies
-        run: bundle install
-      - name: Run the default task
-        run: bundle exec rake
-      - name: Rubocop
+      - name: Run style checks
         run: bundle exec rubocop
+
+  test:
+    runs-on: ${{ matrix.os }}
+    name: RSpec ${{ matrix.ruby }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        ruby:
+          - "3.1.2"
+          - "2.7.6"
+          - "3.0.4"
+    env:
+      BUNDLE_GEMFILE: Gemfile
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Ruby ${{ matrix.ruby }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - name: Run tests
+        run: bundle exec rspec

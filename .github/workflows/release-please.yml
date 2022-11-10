@@ -1,0 +1,50 @@
+on:
+  push:
+    branches:
+      - main
+
+name: Run Release Please
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+
+    # Release-please creates a PR that tracks all changes
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        id: release
+        with:
+          command: manifest
+          token: ${{secrets.GITHUB_TOKEN}}
+          default-branch: main
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      release_tag_name: ${{ steps.release.outputs.tag_name }}
+
+  gem-release:
+    needs: Release-please
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.release_created }}
+    steps:
+      # The logic below handles the npm publication:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.release-please.outputs.release_tag_name }}
+
+      # Set up Ruby if a release can be created.
+      - uses: ruby/setup-ruby@v1
+        with:
+          # Latest ruby version (remove to use .ruby-version).
+          ruby-version: 3.0
+
+      - name: Release Gem
+        run: |
+          gem install bundler
+          bundle config unset deployment
+          bundle install
+          mkdir -p $HOME/.gem
+          touch $HOME/.gem/credentials
+          chmod 0600 $HOME/.gem/credentials
+          printf -- "---\n:rubygems_api_key: ${RUBY_GEM_API_TOKEN}\n" > $HOME/.gem/credentials
+          gem build *.gemspec
+          gem push *.gem

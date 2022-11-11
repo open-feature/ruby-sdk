@@ -10,11 +10,14 @@ This is the Ruby implementation of [OpenFeature](https://openfeature.dev), a ven
 
 We support multiple data types for flags (numbers, strings, booleans, objects) as well as hooks, which can alter the lifecycle of a flag evaluation.
 
-## Requirements
+## Support Matrix
 
-- Ruby 2.7.6
-- Ruby 3.0.4
-- Ruby 3.1.2
+| Ruby Version | OS                          |
+| -----------  | -----------                 |
+| Ruby 2.7.6   | Windows, MacOS, Linux       |
+| Ruby 3.0.4   | Windows, MacOS, Linux       |
+| Ruby 3.1.2   | Windows, MacOS, Linux       |
+
 
 ## Installation
 

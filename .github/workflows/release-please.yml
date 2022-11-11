@@ -34,14 +34,11 @@ jobs:
       # Set up Ruby if a release can be created.
       - uses: ruby/setup-ruby@v1
         with:
-          # Latest ruby version (remove to use .ruby-version).
-          ruby-version: 3.0
+          bundler-cache: true
 
       - name: Release Gem
         run: |
-          gem install bundler
           bundle config unset deployment
-          bundle install
           mkdir -p $HOME/.gem
           touch $HOME/.gem/credentials
           chmod 0600 $HOME/.gem/credentials

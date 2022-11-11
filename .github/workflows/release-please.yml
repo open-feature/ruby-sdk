@@ -34,8 +34,7 @@ jobs:
 
       # Set up Ruby if a release can be created.
       - uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
+      - run: bundle install
 
       - name: Release Gem
         run: |

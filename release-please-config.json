@@ -1,8 +1,8 @@
 {
   "bootstrap-sha": "9bcc2bcbbcbce2d750ef1e0f67081fff4bb9ff79",
+  "release-type": "ruby",
   "packages": {
     ".": {
-      "release-type": "ruby",
       "monorepo-tags": false,
       "include-component-in-tag": false,
       "prerelease": false,

@@ -21,7 +21,7 @@ jobs:
       release_tag_name: ${{ steps.release.outputs.tag_name }}
 
   gem-release:
-    needs: Release-please
+    needs: release-please
     runs-on: ubuntu-latest
     if: ${{ needs.release-please.outputs.release_created }}
     steps:
@@ -47,3 +47,5 @@ jobs:
           printf -- "---\n:rubygems_api_key: ${RUBY_GEM_API_TOKEN}\n" > $HOME/.gem/credentials
           gem build *.gemspec
           gem push *.gem
+        env:
+          RUBY_GEM_API_TOKEN: "${{secrets.RUBY_GEM_API_TOKEN}}"

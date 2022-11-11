@@ -13,9 +13,10 @@ jobs:
       - uses: google-github-actions/release-please-action@v3
         id: release
         with:
-          command: manifest
-          token: ${{secrets.GITHUB_TOKEN}}
-          default-branch: main
+          release-type: ruby
+          package-name: openfeature-sdk
+          bump-minor-pre-major: true
+          version-file: "lib/openfeature/sdk/version.rb"
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       release_tag_name: ${{ steps.release.outputs.tag_name }}

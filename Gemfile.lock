@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    openfeature-sdk (0.0.1)
+    openfeature-sdk (0.0.2)
 
 GEM
   remote: https://rubygems.org/

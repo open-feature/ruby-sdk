@@ -2,9 +2,11 @@
 
 [![a](https://img.shields.io/badge/slack-%40cncf%2Fopenfeature-brightgreen?style=flat&logo=slack)](https://cloud-native.slack.com/archives/C0344AANLA1)
 [![v0.5.1](https://img.shields.io/static/v1?label=Specification&message=v0.5.1&color=yellow)](https://github.com/open-feature/spec/tree/v0.5.1)
-![Ruby](https://img.shields.io/badge/ruby-%23CC342D.svg?style=for-the-badge&logo=ruby&logoColor=white)
-![Build](https://github.com/open-feature/openfeature-ruby/actions/workflows/main.yml/badge.svg?branch=main)
+
+![Build](https://github.com/open-feature/openfeature-ruby/actions/workflows/release-please.yml/badge.svg?branch=main)
 ![Gem version](https://img.shields.io/gem/v/openfeature-sdk)
+[![Maintainability](https://api.codeclimate.com/v1/badges/6b20b54df9643b8e4090/maintainability)](https://codeclimate.com/github/open-feature/ruby-sdk/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/6b20b54df9643b8e4090/test_coverage)](https://codeclimate.com/github/open-feature/ruby-sdk/test_coverage)
 
 This is the Ruby implementation of [OpenFeature](https://openfeature.dev), a vendor-agnostic abstraction library for evaluating feature flags.
 

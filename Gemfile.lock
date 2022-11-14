@@ -1,12 +1,13 @@
 PATH
   remote: .
   specs:
-    openfeature-sdk (0.0.2)
+    openfeature-sdk (0.0.3)
 
 GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.2)
+    concurrent-ruby (1.1.10)
     diff-lcs (1.5.0)
     json (2.6.2)
     parallel (1.22.1)
@@ -55,6 +56,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  concurrent-ruby
   openfeature-sdk!
   rake (~> 13.0)
   rspec (~> 3.12.0)

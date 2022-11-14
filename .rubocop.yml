@@ -12,6 +12,13 @@ Style/StringLiteralsInInterpolation:
 
 Layout/LineLength:
   Max: 120
+  Exclude:
+    - 'spec/**/*.rb'
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*.rb'
+    - 'openfeature-sdk.gemspec'
 
 Gemspec/RequireMFA:
   Enabled: false

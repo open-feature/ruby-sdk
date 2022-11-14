@@ -2,6 +2,6 @@
 
 RSpec.describe OpenFeature::SDK do
   it "has a version number" do
-    expect(OpenFeature::SDK::VERSION).not_to be nil
+    expect(OpenFeature::SDK::VERSION).not_to be_nil
   end
 end

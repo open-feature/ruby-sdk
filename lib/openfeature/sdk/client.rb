@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require "concurrent"
-require "forwardable"
-
 module OpenFeature
   module SDK
     # TODO: Write documentation
@@ -19,7 +16,7 @@ module OpenFeature
         @provider = provider
         @metadata = client_options
         @context = context
-        @hooks = Concurrent::Array.new([])
+        @hooks = []
       end
 
       RESULT_TYPE.each do |result_type|

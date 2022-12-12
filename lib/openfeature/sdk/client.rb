@@ -8,7 +8,10 @@ module OpenFeature
     # TODO: Write documentation
     #
     class Client
-      extend Forwardable
+
+      RESULT_TYPE = %i(boolean string number object).freeze
+      SUFFIXES = %i(value details)
+
 
       attr_reader :metadata
 
@@ -21,44 +24,16 @@ module OpenFeature
         @hooks = Concurrent::Array.new([])
       end
 
-      def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil, evaluation_options: nil)
-        evaluate_flag_details(flag_type: :boolean, flag_key: flag_key, default_value: default_value,
-                              evaluation_context: evaluation_context, evaluation_options: evaluation_options)
-      end
 
-      def fetch_boolean_details(flag_key:, default_value:, evaluation_context: nil, evaluation_options: nil)
-        evaluate_flag_details(flag_type: :boolean, flag_key: flag_key, default_value: default_value,
-                              evaluation_context: evaluation_context, evaluation_options: evaluation_options)
-      end
-
-      def fetch_string_value(flag_key:, default_value:, evaluation_context: nil, evaluation_options: nil)
-        evaluate_flag_details(flag_type: :boolean, flag_key: flag_key, default_value: default_value,
-                              evaluation_context: evaluation_context, evaluation_options: evaluation_options)
-      end
-
-      def fetch_string_details(flag_key:, default_value:, evaluation_context: nil, evaluation_options: nil)
-        evaluate_flag_details(flag_type: :boolean, flag_key: flag_key, default_value: default_value,
-                              evaluation_context: evaluation_context, evaluation_options: evaluation_options)
-      end
-
-      def fetch_number_value(flag_key:, default_value:, evaluation_context: nil, evaluation_options: nil)
-        evaluate_flag_details(flag_type: :boolean, flag_key: flag_key, default_value: default_value,
-                              evaluation_context: evaluation_context, evaluation_options: evaluation_options)
-      end
-
-      def fetch_number_details(flag_key:, default_value:, evaluation_context: nil, evaluation_options: nil)
-        evaluate_flag_details(flag_type: :boolean, flag_key: flag_key, default_value: default_value,
-                              evaluation_context: evaluation_context, evaluation_options: evaluation_options)
-      end
-
-      def fetch_object_value(flag_key:, default_value:, evaluation_context: nil, evaluation_options: nil)
-        evaluate_flag_details(flag_type: :boolean, flag_key: flag_key, default_value: default_value,
-                              evaluation_context: evaluation_context, evaluation_options: evaluation_options)
-      end
-
-      def fetch_object_details(flag_key:, default_value:, evaluation_context: nil, evaluation_options: nil)
-        evaluate_flag_details(flag_type: :boolean, flag_key: flag_key, default_value: default_value,
-                              evaluation_context: evaluation_context, evaluation_options: evaluation_options)
+      RESULT_TYPE.each do |result_type|
+        SUFFIXES.each do |suffix|
+          class_eval <<-RUBY, __FILE__, __LINE__ + 1
+            def fetch_#{result_type}_#{suffix}(flag_key:, default_value:, evaluation_context: nil)
+              evaluate_flag_#{suffix}(flag_type: #{result_type.inspect}, flag_key: flag_key, default_value: default_value,
+                evaluation_context: evaluation_context)
+            end
+          RUBY
+        end
       end
 
       def evaluate_flag_details(flag_type:, flag_key:, default_value:, evaluation_context: nil)
@@ -76,8 +51,13 @@ module OpenFeature
           @provider.fetch_object_value(flag_key: flag_key, default_value: default_value,
                                        evaluation_context: evaluation_context)
         else
-          StandardError.new("Unsupported flag_type")
+          raise ArgumentError.new("Unsupported flag_type: #{flag_type}")
         end
+      end
+
+      def evaluate_flag_value(flag_type:, flag_key:, default_value:, evaluation_context: nil)
+        details = evaluate_flag_details(flag_key: flag_key, flag_type: flag_type, default_value: default_value, evaluation_context: evaluation_context)
+        details.value
       end
     end
   end

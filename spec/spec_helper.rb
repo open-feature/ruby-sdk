@@ -15,7 +15,7 @@ RSpec.configure do |config|
 
   # ie for GitHub Actions
   # see https://docs.github.com/en/actions/learn-github-actions/environment-variables#default-environment-variables
-  if ENV['CI'] == 'true'
+  if ENV["CI"] == "true"
     # force tty to get output, which Actions does support
     config.tty = true
   end

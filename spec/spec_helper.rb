@@ -12,4 +12,11 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  # ie for GitHub Actions
+  # see https://docs.github.com/en/actions/learn-github-actions/environment-variables#default-environment-variables
+  if ENV['CI'] == 'true'
+    # force tty to get output, which Actions does support
+    config.tty = true
+  end
 end

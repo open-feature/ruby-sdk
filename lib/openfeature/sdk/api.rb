@@ -46,7 +46,7 @@ module OpenFeature
       def build_client(name: nil, version: nil)
         client_options = Metadata.new(name: name, version: version).freeze
         provider = Provider::NoOpProvider.new if provider.nil?
-        Client.new(provider, client_options, context)
+        Client.new(provider: provider, client_options: client_options, context: context)
       end
     end
   end

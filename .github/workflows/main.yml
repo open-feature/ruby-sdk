@@ -1,23 +1,19 @@
-name: Ruby
+name: CI
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+on: push
 
 jobs:
-  build:
+  rspec:
     runs-on: ${{ matrix.os }}
-    name: Ruby ${{ matrix.ruby }}
+    name: Ruby ${{ matrix.ruby }} on ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         ruby:
-          - "3.1.2"
-          - "2.7.6"
-          - "3.0.4"
+          - "2.7"
+          - "3.0"
+          - "3.1"
     env:
       BUNDLE_GEMFILE: Gemfile
 
@@ -27,8 +23,30 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
       - run: bundle install
-      - run: bundle exec rake
-      - name: Run style checks
-        run: bundle exec rubocop
-      - name: Run tests
+      - name: RSpec
         run: bundle exec rspec
+  rubocop:
+    name: Rubocop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1
+      - run: bundle install
+      - name: Rubocop
+        run: bundle exec rubocop --color
+  # check the status of other jobs, so we can have a single job dependency for branch protection
+  # https://github.com/community/community/discussions/4324#discussioncomment-3477871
+  status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [rspec, rubocop]
+    if: always()
+    steps:
+      - name: Successful CI
+        if: ${{ !(contains(needs.*.result, 'failure')) }}
+        run: exit 0
+      - name: Failing CI
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1

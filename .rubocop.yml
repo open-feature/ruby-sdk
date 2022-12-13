@@ -22,3 +22,7 @@ Metrics/BlockLength:
 
 Gemspec/RequireMFA:
   Enabled: false
+
+Style/DocumentDynamicEvalDefinition:
+  # TODO re-enable after figuring out what it actually wants
+  Enabled: false

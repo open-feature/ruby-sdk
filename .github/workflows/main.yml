@@ -39,6 +39,7 @@ jobs:
   # check the status of other jobs, so we can have a single job dependency for branch protection
   # https://github.com/community/community/discussions/4324#discussioncomment-3477871
   status:
+    name: CI Status
     runs-on: ubuntu-latest
     needs: [rspec, rubocop]
     if: always()

@@ -7,6 +7,9 @@ RSpec::Core::RakeTask.new(:spec)
 
 require "rubocop/rake_task"
 
-RuboCop::RakeTask.new
+RuboCop::RakeTask.new do |task|
+  task.options = ["--parallel"]
+  task.options << "--color" if ENV["CI"] == "true"
+end
 
 task default: %i[spec rubocop]

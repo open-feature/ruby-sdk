@@ -1,4 +1,4 @@
-name: Ruby
+name: CI
 
 on:
   push:
@@ -7,17 +7,17 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  rspec:
     runs-on: ${{ matrix.os }}
-    name: Ruby ${{ matrix.ruby }}
+    name: Ruby ${{ matrix.ruby }} on ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         ruby:
-          - "3.1.2"
-          - "2.7.6"
-          - "3.0.4"
+          - "2.7"
+          - "3.0"
+          - "3.1"
     env:
       BUNDLE_GEMFILE: Gemfile
 
@@ -27,8 +27,13 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
       - run: bundle install
-      - run: bundle exec rake
-      - name: Run style checks
-        run: bundle exec rubocop
-      - name: Run tests
+      - name: Run RSpec
         run: bundle exec rspec
+  rubocop:
+    name: Rubocop
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+      - run: bundle install
+      - name: Run RSpec
+        run: bundle exec rubocop --color

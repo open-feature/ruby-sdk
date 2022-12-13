@@ -27,9 +27,12 @@ jobs:
         run: bundle exec rspec
   rubocop:
     name: Rubocop
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1
       - run: bundle install
       - name: Run RSpec
         run: bundle exec rubocop --color

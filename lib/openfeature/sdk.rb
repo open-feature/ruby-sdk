@@ -7,7 +7,6 @@ module OpenFeature
   # TODO: Add documentation
   #
   module SDK
-
     class << self
       def method_missing(method_name, *args, **kwargs, &block)
         if API.instance.respond_to?(method_name)
@@ -21,6 +20,5 @@ module OpenFeature
         API.instance.respond_to?(method_name, include_private) || super
       end
     end
-
   end
 end

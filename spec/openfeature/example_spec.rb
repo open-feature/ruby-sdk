@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe "README example" do
   before do
     @readme_md = Pathname.new("../../../README.md").expand_path(__FILE__)
@@ -12,7 +14,7 @@ RSpec.describe "README example" do
   end
 
   it "works" do
-    eval @example_codeblock.string_content,
+    eval @example_codeblock.string_content, # rubocop:disable Security/Eval
          binding,
          @readme_md.to_s,
          @example_codeblock.source_position[:start_line] + 1

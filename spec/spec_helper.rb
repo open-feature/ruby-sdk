@@ -2,7 +2,7 @@
 
 require "openfeature/sdk"
 
-require 'markly'
+require "markly"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

@@ -9,7 +9,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os:
+          - ubuntu-latest
+          # NOTE: hold off testing other platforms until we start having native dependencies or running into issues on them
+          # - macos-latest
+          # - windows-latest
         ruby:
           - "2.7"
           - "3.0"

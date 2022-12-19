@@ -50,17 +50,17 @@ end
 client = OpenFeature::SDK.build_client(name: "my-app")
 
 # fetching boolean value feature flag
-bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value: false);
+bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value: false)
 
 # fetching string value feature flag
-string_value = client.fetch_string_value(flag_key: 'string_flag', default_value: false);
+string_value = client.fetch_string_value(flag_key: 'string_flag', default_value: false)
 
 # fetching number value feature flag
-float_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1.0);
-integer_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1);
+float_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1.0)
+integer_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1)
 
 # get an object value
-object = client.fetch_object_value('object_value', JSON.dump({ name: 'object'}));
+object = client.fetch_object_value(flag_key: 'object_value', default_value: JSON.dump({ name: 'object'}))
 ```
 
 For complete documentation, visit: https://docs.openfeature.dev/docs/category/concepts

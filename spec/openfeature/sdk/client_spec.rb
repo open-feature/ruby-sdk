@@ -6,7 +6,7 @@ require "openfeature/sdk/client"
 require "openfeature/sdk/metadata"
 require "openfeature/sdk/provider/no_op_provider"
 
-# https://docs.openfeature.dev/docs/specification/sections/flag-evaluation#12-client-usage
+# https://openfeature.dev/docs/specification/sections/flag-evaluation#12-client-usage
 
 RSpec.describe OpenFeature::SDK::Client do
   subject(:client) { described_class.new(provider: provider, client_options: client_metadata) }

@@ -63,7 +63,7 @@ integer_value = client.fetch_number_value(flag_key: 'number_value', default_valu
 object = client.fetch_object_value(flag_key: 'object_value', default_value: JSON.dump({ name: 'object'}))
 ```
 
-For complete documentation, visit: https://docs.openfeature.dev/docs/category/concepts
+For complete documentation, visit: https://openfeature.dev/docs/category/concepts
 
 ## Contributing
 

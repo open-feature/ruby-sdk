@@ -6,7 +6,7 @@ require "openfeature/sdk/configuration"
 require "openfeature/sdk/api"
 require "openfeature/sdk/metadata"
 
-# https://docs.openfeature.dev/docs/specification/sections/flag-evaluation#11-api-initialization-and-configuration
+# https://openfeature.dev/docs/specification/sections/flag-evaluation#11-api-initialization-and-configuration
 
 RSpec.describe OpenFeature::SDK::API do
   subject(:api) { described_class.instance }

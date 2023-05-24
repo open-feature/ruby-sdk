@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.0](https://github.com/open-feature/ruby-sdk/compare/v0.0.3...v0.1.0) (2022-12-15)
+
+
+### Features
+
+* Add client object ([#34](https://github.com/open-feature/ruby-sdk/issues/34)) ([92f8d0d](https://github.com/open-feature/ruby-sdk/commit/92f8d0d4bf693bf74d0f076621f3453f11d4ca65))
+* OpenFeature::SDK.configure ([#41](https://github.com/open-feature/ruby-sdk/issues/41)) ([7587799](https://github.com/open-feature/ruby-sdk/commit/75877997dcb49aeb38a4969734df87b2845e1e6a))
+* **spec:** Add API implementation ([#32](https://github.com/open-feature/ruby-sdk/issues/32)) ([d6b0922](https://github.com/open-feature/ruby-sdk/commit/d6b0922a54e9cb714c44dfe58ddab01356f6916b))
+
 ## [0.0.3](https://github.com/open-feature/ruby-sdk/compare/v0.0.2...v0.0.3) (2022-11-11)
 
 

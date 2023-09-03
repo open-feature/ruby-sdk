@@ -12,7 +12,7 @@ module OpenFeature
 
       attr_accessor :hooks
 
-      def initialize(provider:, client_options: nil, context: nil)
+      def initialize(provider:, client_options: nil, context: {})
         @provider = provider
         @metadata = client_options
         @context = context
@@ -25,7 +25,8 @@ module OpenFeature
             # def fetch_boolean_details(flag_key:, default_value:, evaluation_context: nil)
             #   result = @provider.fetch_boolean_value(flag_key: flag_key, default_value: default_value, evaluation_context: evaluation_context)
             # end
-            def fetch_#{result_type}_#{suffix}(flag_key:, default_value:, evaluation_context: nil)
+            def fetch_#{result_type}_#{suffix}(flag_key:, default_value:, evaluation_context: {})
+              evaluation_context = OpenFeature::SDK.context.merge(@context).merge(evaluation_context)
               result = @provider.fetch_#{result_type}_value(flag_key: flag_key, default_value: default_value, evaluation_context: evaluation_context)
               #{"result.value" if suffix == :value}
             end

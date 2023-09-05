@@ -43,6 +43,17 @@ jobs:
       - run: bundle install
       - name: Rubocop
         run: bundle exec rubocop --color
+  steep:
+    runs-on: ubuntu-latest
+    name: Steep
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
+      - run: bundle install
+      - name: Steep
+        run: bundle exec steep check
   # check the status of other jobs, so we can have a single job dependency for branch protection
   # https://github.com/community/community/discussions/4324#discussioncomment-3477871
   status:

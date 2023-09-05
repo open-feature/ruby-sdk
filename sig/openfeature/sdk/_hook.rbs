@@ -1,0 +1,31 @@
+type flagValue = bool | Numeric | String | Hash[String, untyped]
+type flagValueType = :bool | :integer | :float | :string | :object
+type evaluationContext = { targeting_key: String? }
+type evaluationDetails = { flag_key: String, flag_value?: flagValue }
+
+type hookContext[T] = {
+    flag_key: String,
+    flag_value_type: flagValueType,
+    evaluation_context: evaluationContext,
+    default_value: T,
+  }
+
+type hookHints = Hash[String, flagValue]
+
+interface _BeforeHook
+  def before: (evaluationContext, ?hookHints) -> (evaluationContext | void)
+end
+
+interface _AfterHook[T]
+  def after: (hookContext[T], evaluationDetails, ?hookHints) -> void
+end
+
+interface _ErrorHook[T]
+  def error: (hookContext[T], Exception, ?hookHints) -> void
+end
+
+interface _FinallyHook[T]
+  def finally: (hookContext[T], ?hookHints) -> void
+end
+
+type hook = _BeforeHook | _AfterHook[flagValue] | _ErrorHook[flagValue] | _FinallyHook[flagValue]

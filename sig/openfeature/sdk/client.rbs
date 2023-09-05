@@ -1,0 +1,17 @@
+module OpenFeature
+  module SDK
+    class Client
+      RESULT_TYPE: Array[Symbol]
+      SUFFIXES: Array[Symbol]
+
+      @context: evaluationContext
+      @hooks: Array[hook]
+
+      attr_accessor hooks: Array[hook]
+      attr_reader metadata: Metadata?
+      attr_reader provider: untyped
+
+      def initialize: (provider: untyped , client_options: untyped, context: untyped) -> void
+    end
+  end
+end

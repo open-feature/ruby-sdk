@@ -1,0 +1,22 @@
+module OpenFeature
+  module SDK
+
+    interface _Configuration
+      def context: () -> void
+    end
+
+    class API
+      include _Configuration
+      extend Forwardable
+
+      attr_reader configuration: Configuration
+
+      def build_client: -> Client
+
+      def configure: () { (Configuration) -> void } -> void
+
+      # Singleton's RBS doesn't quite work
+      def self.instance: () -> instance
+    end
+  end
+end

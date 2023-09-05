@@ -1,0 +1,19 @@
+
+module Concurrent
+  class Array[T] < ::Array[T]
+    def initialize: (?::Array[T]) -> void
+  end
+end
+
+module OpenFeature
+  module SDK
+    class Configuration
+      extend Forwardable
+
+      attr_accessor context: evaluationContext
+      attr_accessor hooks: [hook]
+      attr_accessor metadata: Metadata
+      attr_accessor provider: untyped
+    end
+  end
+end

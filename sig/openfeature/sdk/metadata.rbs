@@ -1,0 +1,12 @@
+module OpenFeature
+  module SDK
+    class Metadata
+      attr_reader name: String
+      attr_reader version: String?
+
+      def initialize: (name: String, ?version: String?) -> void
+
+      def ==: (untyped other) -> untyped
+    end
+  end
+end

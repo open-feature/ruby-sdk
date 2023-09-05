@@ -26,7 +26,7 @@ module OpenFeature
       end
 
       def ==(other)
-        raise ArgumentError("Expected comparison to be between Metadata object") unless other.is_a?(Metadata)
+        raise ArgumentError, "Expected comparison to be between Metadata object" unless other.is_a?(Metadata)
 
         @name == other.name && @version == other.version
       end

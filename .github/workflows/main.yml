@@ -32,6 +32,12 @@ jobs:
       - run: bundle install
       - name: RSpec
         run: bundle exec rspec
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@398b9de041a7e69750d45077b10c5912201a3466
+        with:
+          fail_ci_if_error: true
+          verbose: true
+          file: coverage/coverage.xml
   rubocop:
     name: Rubocop
     runs-on: ubuntu-latest

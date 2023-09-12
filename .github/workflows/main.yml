@@ -33,7 +33,7 @@ jobs:
       - name: RSpec
         run: bundle exec rspec
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@398b9de041a7e69750d45077b10c5912201a3466
+        uses: codecov/codecov-action@8e29a53ea65f98e97f4ad4594d355d8e8fd5bcfe
         with:
           fail_ci_if_error: true
           verbose: true

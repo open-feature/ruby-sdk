@@ -18,7 +18,7 @@ module OpenFeature
       def_delegator :@provider, :metadata
 
       def initialize
-        @hooks = Concurrent::Array.new([])
+        @hooks = []
       end
     end
   end

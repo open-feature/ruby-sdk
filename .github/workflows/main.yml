@@ -37,6 +37,7 @@ jobs:
         uses: codecov/codecov-action@c9e4b7326764720e2d95c3a9615d9e6ba7fc949f
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          name: Ruby SDK
           fail_ci_if_error: true
           verbose: true
           file: coverage/coverage.xml

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/open-feature/ruby-sdk/compare/v0.1.0...v0.1.1) (2023-09-13)
+
+
+### Bug Fixes
+
+* OpenFeature::SDK::Configuration uses concurrent-ruby gem even though it doesn't depend on it ([#61](https://github.com/open-feature/ruby-sdk/issues/61)) ([c3c1222](https://github.com/open-feature/ruby-sdk/commit/c3c12226a21e43d62358562f4008a4a44a10e72b))
+
 ## [0.1.0](https://github.com/open-feature/ruby-sdk/compare/v0.0.3...v0.1.0) (2022-12-15)
 
 

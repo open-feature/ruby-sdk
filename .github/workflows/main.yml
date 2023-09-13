@@ -17,10 +17,10 @@ jobs:
           # - macos-latest
           # - windows-latest
         ruby:
-          - "2.7"
-          - "3.0"
-          - "3.1"
           - "3.2"
+          - "3.1"
+          - "3.0"
+          - "2.7"
     env:
       BUNDLE_GEMFILE: Gemfile
 
@@ -33,8 +33,11 @@ jobs:
       - name: RSpec
         run: bundle exec rspec
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@8e29a53ea65f98e97f4ad4594d355d8e8fd5bcfe
+        if: ${{ strategy.job-index == 0 }} # only run codecov on first run
+        uses: codecov/codecov-action@c9e4b7326764720e2d95c3a9615d9e6ba7fc949f
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          name: Ruby SDK
           fail_ci_if_error: true
           verbose: true
           file: coverage/coverage.xml

@@ -25,7 +25,7 @@ jobs:
       BUNDLE_GEMFILE: Gemfile
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
@@ -34,10 +34,9 @@ jobs:
         run: bundle exec rspec
       - name: Upload coverage to Codecov
         if: ${{ strategy.job-index == 0 }} # only run codecov on first run
-        uses: codecov/codecov-action@c9e4b7326764720e2d95c3a9615d9e6ba7fc949f
+        uses: codecov/codecov-action@845c445181131d954f0198d3d0f26242acc0376e
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          name: Ruby SDK
           fail_ci_if_error: true
           verbose: true
           file: coverage/coverage.xml
@@ -45,7 +44,7 @@ jobs:
     name: Rubocop
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.2

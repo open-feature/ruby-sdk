@@ -34,7 +34,9 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "markly"
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "rspec", "~> 3.12.0"
-  spec.add_development_dependency "rubocop", "~> 1.37.1"
+  spec.add_development_dependency "rubocop", "~> 1.56"
+  spec.add_development_dependency "rubocop-rake", "~> 0.6"
+  spec.add_development_dependency "rubocop-rspec", "~> 2.24"
   spec.add_development_dependency "simplecov", "~> 0.22.0"
   spec.add_development_dependency "simplecov-cobertura", "~> 2.1.0"
 end

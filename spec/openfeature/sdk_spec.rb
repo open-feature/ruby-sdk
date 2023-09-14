@@ -6,9 +6,9 @@ RSpec.describe OpenFeature::SDK do
   end
 
   it "can be configured" do
-    expect(OpenFeature::SDK).to respond_to(:configure)
+    expect(described_class).to respond_to(:configure)
 
-    OpenFeature::SDK.configure do |config|
+    described_class.configure do |config|
       # don't test here, rely on OpenFeature::SDK::API instead
     end
   end

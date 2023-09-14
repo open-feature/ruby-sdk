@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe "README example" do
+# rubocop:disable RSpec/InstanceVariable, RSpec/ExampleLength
+RSpec.describe "README example" do # rubocop:disable RSpec/DescribeClass
   before do
     @readme_md = Pathname.new("../../../README.md").expand_path(__FILE__)
 
@@ -13,7 +14,7 @@ RSpec.describe "README example" do
     end
   end
 
-  it "works" do
+  it "exercises code in the README" do
     expect do
       eval @example_codeblock.string_content, # rubocop:disable Security/Eval
            binding,
@@ -22,3 +23,4 @@ RSpec.describe "README example" do
     end.not_to raise_error
   end
 end
+# rubocop:enable RSpec/InstanceVariable, RSpec/ExampleLength

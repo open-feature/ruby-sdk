@@ -10,6 +10,7 @@ require "openfeature/sdk/provider/no_op_provider"
 
 RSpec.describe OpenFeature::SDK::Client do
   subject(:client) { described_class.new(provider: provider, client_options: client_metadata) }
+
   let(:provider) { OpenFeature::SDK::Provider::NoOpProvider.new }
   let(:client_metadata) { OpenFeature::SDK::Metadata.new(name: name) }
   let(:name) { "my-openfeature-client" }
@@ -29,8 +30,6 @@ RSpec.describe OpenFeature::SDK::Client do
 
   context "Requirement 1.2.2" do
     it "MUST define a metadata member or accessor, containing an immutable name field or accessor of type string, which corresponds to the name value supplied during client creation." do
-      expect(client).to respond_to(:metadata)
-      expect(client.metadata).to respond_to(:name)
       expect(client.metadata.name).to eq(name)
     end
   end

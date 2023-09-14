@@ -24,9 +24,27 @@ Metrics/BlockLength:
     - 'spec/**/*.rb'
     - 'openfeature-sdk.gemspec'
 
+Gemspec/DevelopmentDependencies:
+  EnforcedStyle: gemspec
+
 Gemspec/RequireMFA:
   Enabled: false
 
 Style/DocumentDynamicEvalDefinition:
   # TODO re-enable after figuring out what it actually wants
+  Enabled: false
+
+RSpec/ContextWording:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Max: 2
+
+RSpec/NestedGroups:
+  Enabled: false
+
+RSpec/PendingWithoutReason:
+  Enabled: false
+
+RSpec/SpecFilePathFormat:
   Enabled: false

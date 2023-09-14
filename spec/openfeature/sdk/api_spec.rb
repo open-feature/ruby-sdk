@@ -39,17 +39,17 @@ RSpec.describe OpenFeature::SDK::API do
     before do
       api.configure do |config|
         config.provider = OpenFeature::SDK::Provider::NoOpProvider.new
-        config.hooks << hook1
-        config.hooks << hook2
+        config.hooks << first_hook
+        config.hooks << second_hook
       end
     end
 
-    let(:hook1) { "my_hook" }
-    let(:hook2) { "my_other_hook" }
+    let(:first_hook) { "my_hook" }
+    let(:second_hook) { "my_other_hook" }
 
     it do
       expect(api).to respond_to(:hooks)
-      expect(api.hooks).to have_attributes(size: 2).and eq([hook1, hook2])
+      expect(api.hooks).to have_attributes(size: 2).and eq([first_hook, second_hook])
     end
   end
 

@@ -34,7 +34,7 @@ jobs:
         run: bundle exec rspec
       - name: Upload coverage to Codecov
         if: ${{ strategy.job-index == 0 }} # only run codecov on first run
-        uses: codecov/codecov-action@845c445181131d954f0198d3d0f26242acc0376e
+        uses: codecov/codecov-action@b65fbdcf9751c92f3e0ac5e72616e5d5dd72bcdb
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

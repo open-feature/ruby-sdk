@@ -38,7 +38,7 @@ module OpenFeature
       end
 
       def configure(&block)
-        return unless block_given?
+        return unless block
 
         block.call(configuration)
       end

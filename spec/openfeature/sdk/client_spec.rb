@@ -87,7 +87,7 @@ RSpec.describe OpenFeature::SDK::Client do
 
           it do
             expect(client.fetch_object_value(flag_key: flag_key,
-                                             default_value: { data: "some-data" })).is_a?(Hash)
+              default_value: {data: "some-data"})).is_a?(Hash)
           end
         end
       end
@@ -199,14 +199,14 @@ RSpec.describe OpenFeature::SDK::Client do
 
           it do
             expect(client.fetch_object_details(flag_key: flag_key,
-                                               default_value: { name: "some-name" })).is_a?(OpenFeature::SDK::Provider::NoOpProvider::ResolutionDetails)
+              default_value: {name: "some-name"})).is_a?(OpenFeature::SDK::Provider::NoOpProvider::ResolutionDetails)
           end
         end
 
         context "Requirement 1.4.2" do
           it "The evaluation details structure's value field MUST contain the evaluated flag value" do
             expect(client.fetch_object_details(flag_key: flag_key,
-                                               default_value: { name: "some-name" }).value).is_a?(String)
+              default_value: {name: "some-name"}).value).is_a?(String)
           end
         end
 

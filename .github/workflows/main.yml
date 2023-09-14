@@ -50,7 +50,7 @@ jobs:
           ruby-version: 3.2
       - run: bundle install
       - name: Standard
-        run: bundle exec standard
+        run: bundle exec rake standard
   # check the status of other jobs, so we can have a single job dependency for branch protection
   # https://github.com/community/community/discussions/4324#discussioncomment-3477871
   status:

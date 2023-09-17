@@ -43,7 +43,10 @@ module OpenFeature
       end
 
       def set_provider(provider) # rubocop:disable Naming/AccessorMethodName
+        configuration.provider.shutdown if configuration&.provider.respond_to?(:shutdown)
+
         provider.init if provider.respond_to?(:init)
+
         configuration.provider = provider
       end
 

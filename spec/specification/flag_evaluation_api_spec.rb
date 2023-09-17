@@ -9,5 +9,15 @@ RSpec.describe "Flag Evaluation API" do
         expect(OpenFeature::SDK::API).to include(Singleton)
       end
     end
+
+    context "Requirement 1.1.2.1" do
+      specify "the API must define a provider mutator" do
+        provider = OpenFeature::SDK::Provider::NoOpProvider.new
+
+        OpenFeature::SDK.set_provider(provider)
+
+        expect(OpenFeature::SDK.provider).to be(provider)
+      end
+    end
   end
 end

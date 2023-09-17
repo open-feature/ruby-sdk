@@ -7,30 +7,6 @@ require "spec_helper"
 RSpec.describe OpenFeature::SDK::API do
   subject(:api) { described_class.instance }
 
-  describe "#set_provider" do
-    context "when provider has an init method" do
-      let(:provider) { TestProvider.new }
-
-      it "inits and sets the provider" do
-        expect(provider).to receive(:init)
-
-        api.set_provider(provider)
-
-        expect(api.provider).to be(provider)
-      end
-    end
-
-    context "when provider does not have an init method" do
-      it "sets the provider" do
-        provider = OpenFeature::SDK::Provider::NoOpProvider.new
-
-        api.set_provider(provider)
-
-        expect(api.provider).to be(provider)
-      end
-    end
-  end
-
   context "with Requirement 1.1.3" do
     before do
       api.configure do |config|

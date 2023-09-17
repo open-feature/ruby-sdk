@@ -30,7 +30,7 @@ module OpenFeature
       include Singleton # Satisfies Flag Evaluation API Requirement 1.1.1
       extend Forwardable
 
-      def_delegators :configuration, :provider, :provider=, :hooks, :context
+      def_delegators :@configuration, :provider, :set_provider, :hooks, :context
 
       def configuration
         @configuration ||= Configuration.new
@@ -40,14 +40,6 @@ module OpenFeature
         return unless block
 
         block.call(configuration)
-      end
-
-      def set_provider(provider) # rubocop:disable Naming/AccessorMethodName
-        configuration.provider.shutdown if configuration&.provider.respond_to?(:shutdown)
-
-        provider.init if provider.respond_to?(:init)
-
-        configuration.provider = provider
       end
 
       def build_client(name: nil, version: nil)

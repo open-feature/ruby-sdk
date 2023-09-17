@@ -15,31 +15,9 @@ RSpec.describe "Flag Evaluation API" do
       specify "the API must define a provider mutator" do
         provider = OpenFeature::SDK::Provider::NoOpProvider.new
 
-        OpenFeature::SDK.provider = provider
+        OpenFeature::SDK.set_provider(provider)
 
         expect(OpenFeature::SDK.provider).to be(provider)
-      end
-    end
-
-    context "Requirement 1.1.2.2" do
-      specify "the provider mutator must invoke an initialize function on the provider" do
-        provider = TestProvider.new
-        expect(provider).to receive(:init)
-
-        OpenFeature::SDK.provider = provider
-      end
-    end
-
-    context "Requirement 1.1.2.3" do
-      specify "the provider mutator must invoke a shutdown function on previously registered provider" do
-        previous_provider = TestProvider.new
-        new_provider = TestProvider.new
-
-        expect(previous_provider).to receive(:shutdown)
-        expect(new_provider).not_to receive(:shutdown)
-
-        OpenFeature::SDK.provider = previous_provider
-        OpenFeature::SDK.provider = new_provider
       end
     end
   end

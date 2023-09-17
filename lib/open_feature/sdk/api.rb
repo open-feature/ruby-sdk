@@ -42,6 +42,10 @@ module OpenFeature
         block.call(configuration)
       end
 
+      def set_provider(provider) # rubocop:disable Naming/AccessorMethodName
+        configuration.provider = provider
+      end
+
       def build_client(name: nil, version: nil)
         client_options = Metadata.new(name: name, version: version).freeze
         provider = Provider::NoOpProvider.new if provider.nil?

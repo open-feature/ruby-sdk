@@ -13,12 +13,21 @@ module OpenFeature
     class Configuration
       extend Forwardable
 
-      attr_accessor :context, :provider, :hooks
+      attr_accessor :context, :hooks
+      attr_reader :provider
 
       def_delegator :@provider, :metadata
 
       def initialize
         @hooks = []
+      end
+
+      def provider=(provider)
+        @provider.shutdown if @provider.respond_to?(:shutdown)
+
+        provider.init if provider.respond_to?(:init)
+
+        @provider = provider
       end
     end
   end

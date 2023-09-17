@@ -65,6 +65,12 @@ object = client.fetch_object_value(flag_key: 'object_value', default_value: JSON
 
 For complete documentation, visit: https://openfeature.dev/docs/category/concepts
 
+### Providers
+
+Providers are allowed to implement an `initialize` method that is invoked when they are set in the API. In order to avoid conflicting with the Ruby `initialize` method, this method should be named `init`. In addition, it should not accept any parameters and the return value is not used.
+
+For complete documentation on the Provider interface, visit: https://openfeature.dev/specification/sections/providers
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to the OpenFeature project.

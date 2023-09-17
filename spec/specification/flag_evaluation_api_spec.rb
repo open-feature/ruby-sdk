@@ -19,5 +19,14 @@ RSpec.describe "Flag Evaluation API" do
         expect(OpenFeature::SDK.provider).to be(provider)
       end
     end
+
+    context "Requirement 1.1.2.2" do
+      specify "the provider mutator must invoke an initialize function on the provider" do
+        provider = double
+        expect(provider).to receive(:init)
+
+        OpenFeature::SDK.set_provider(provider)
+      end
+    end
   end
 end

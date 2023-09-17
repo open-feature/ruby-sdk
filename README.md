@@ -67,7 +67,9 @@ For complete documentation, visit: https://openfeature.dev/docs/category/concept
 
 ### Providers
 
-Providers are allowed to implement an `initialize` method that is invoked when they are set in the API. In order to avoid conflicting with the Ruby `initialize` method, this method should be named `init`. In addition, it should not accept any parameters and the return value is not used.
+Providers are allowed to implement an initialize method that is invoked when they are set in the API. In order to avoid conflicting with the Ruby `initialize` method, this method should be named `init`. In addition, it should not accept any parameters and the return value is not used.
+
+Providers are also allowed to implement a `shutdown` method that is invoked on a provider when a new provider is set. This should not accept any parameters and the return value is not used.
 
 For complete documentation on the Provider interface, visit: https://openfeature.dev/specification/sections/providers
 

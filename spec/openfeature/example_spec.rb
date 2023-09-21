@@ -16,9 +16,9 @@ RSpec.describe "README example" do
   it "works" do
     expect do
       eval @example_codeblock.string_content, # rubocop:disable Security/Eval
-           binding,
-           @readme_md.to_s,
-           @example_codeblock.source_position[:start_line] + 1
+        binding,
+        @readme_md.to_s,
+        @example_codeblock.source_position[:start_line] + 1
     end.not_to raise_error
   end
 end

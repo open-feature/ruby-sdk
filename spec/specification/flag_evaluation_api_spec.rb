@@ -42,5 +42,29 @@ RSpec.describe "Flag Evaluation API" do
         OpenFeature::SDK.set_provider(new_provider)
       end
     end
+
+    context "Requirement 1.1.3" do
+      specify "the API must provide a function to bind a given provider to one or more client names" do
+        first_provider = TestProvider.new
+        second_provider = TestProvider.new
+
+        OpenFeature::SDK.set_provider(first_provider, name: "first")
+        OpenFeature::SDK.set_provider(second_provider, name: "second")
+
+        expect(OpenFeature::SDK.provider(name: "first")).to be(first_provider)
+        expect(OpenFeature::SDK.provider(name: "second")).to be(second_provider)
+      end
+
+      specify "if client name is already bound, it is overwritten" do
+        previous_provider = TestProvider.new
+        new_provider = TestProvider.new
+
+        OpenFeature::SDK.set_provider(previous_provider, name: "testing")
+        expect(OpenFeature::SDK.provider(name: "testing")).to be(previous_provider)
+
+        OpenFeature::SDK.set_provider(new_provider, name: "testing")
+        expect(OpenFeature::SDK.provider(name: "testing")).to be(new_provider)
+      end
+    end
   end
 end

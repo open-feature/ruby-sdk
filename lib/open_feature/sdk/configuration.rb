@@ -22,20 +22,20 @@ module OpenFeature
         @providers = {}
       end
 
-      def provider
-        @providers[nil]
+      def provider(name: nil)
+        @providers[name]
       end
 
-      # When switching providers, there are a few lifecycle methods that need to be taken care of.
+	  # When switching providers, there are a few lifecycle methods that need to be taken care of.
       #   1. If a provider is already set, we need to call `shutdown` on it.
       #   2. On the new provider, call `init`.
       #   3. Finally, set the internal provider to the new provider
-      def set_provider(provider)
-        @providers[nil].shutdown if @providers[nil].respond_to?(:shutdown)
+      def set_provider(provider, name: nil)
+        @providers[name].shutdown if @providers[name].respond_to?(:shutdown)
 
         provider.init if provider.respond_to?(:init)
 
-        @providers[nil] = provider
+        @providers[name] = provider
       end
     end
   end

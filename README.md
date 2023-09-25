@@ -42,8 +42,10 @@ require 'json' # For JSON.dump
 # API Initialization and configuration
 
 OpenFeature::SDK.configure do |config|
-    # your provider of choice
-    config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
+  # your provider of choice, which will be used as the default provider
+  config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
+  # alternatively, you can bind multiple providers to different names
+  config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new, name: "legacy_flags")
 end
 
 # Create a client

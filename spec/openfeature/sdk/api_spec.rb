@@ -11,10 +11,6 @@ require "openfeature/sdk/metadata"
 RSpec.describe OpenFeature::SDK::API do
   subject(:api) { described_class.instance }
 
-  context "with Requirement 1.1.1" do
-    pending
-  end
-
   context "with Requirement 1.1.2" do
     before do
       api.configure do |config|

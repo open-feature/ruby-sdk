@@ -14,12 +14,16 @@ module OpenFeature
       extend Forwardable
 
       attr_accessor :context, :hooks
-      attr_reader :provider
 
-      def_delegator :@provider, :metadata
+      def_delegator :provider, :metadata
 
       def initialize
         @hooks = []
+        @providers = {}
+      end
+
+      def provider
+        @providers[nil]
       end
 
       # When switching providers, there are a few lifecycle methods that need to be taken care of.
@@ -27,11 +31,11 @@ module OpenFeature
       #   2. On the new provider, call `init`.
       #   3. Finally, set the internal provider to the new provider
       def set_provider(provider)
-        @provider.shutdown if @provider.respond_to?(:shutdown)
+        @providers[nil].shutdown if @providers[nil].respond_to?(:shutdown)
 
         provider.init if provider.respond_to?(:init)
 
-        @provider = provider
+        @providers[nil] = provider
       end
     end
   end

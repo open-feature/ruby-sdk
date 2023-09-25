@@ -12,7 +12,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
       it "inits and sets the provider" do
         expect(provider).to receive(:init)
 
-        configuration.provider = provider
+        configuration.set_provider(provider)
 
         expect(configuration.provider).to be(provider)
       end
@@ -22,7 +22,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
       it "sets the provider" do
         provider = OpenFeature::SDK::Provider::NoOpProvider.new
 
-        configuration.provider = provider
+        configuration.set_provider(provider)
 
         expect(configuration.provider).to be(provider)
       end

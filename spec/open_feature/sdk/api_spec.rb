@@ -10,7 +10,7 @@ RSpec.describe OpenFeature::SDK::API do
   context "with Requirement 1.1.3" do
     before do
       api.configure do |config|
-        config.provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
         config.hooks << hook1
         config.hooks << hook2
       end
@@ -28,7 +28,7 @@ RSpec.describe OpenFeature::SDK::API do
   context "with Requirement 1.1.4" do
     before do
       api.configure do |config|
-        config.provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
       end
     end
 
@@ -52,7 +52,7 @@ RSpec.describe OpenFeature::SDK::API do
   context "with Requirement 1.1.5" do
     before do
       api.configure do |config|
-        config.provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
       end
 
       api.build_client(name: "requirement-1.1.5")

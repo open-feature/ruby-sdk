@@ -43,7 +43,7 @@ require 'json' # For JSON.dump
 
 OpenFeature::SDK.configure do |config|
     # your provider of choice
-    config.provider = OpenFeature::SDK::Provider::NoOpProvider.new
+    config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
 end
 
 # Create a client

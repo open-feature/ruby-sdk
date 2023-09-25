@@ -26,7 +26,7 @@ module OpenFeature
       #   1. If a provider is already set, we need to call `shutdown` on it.
       #   2. On the new provider, call `init`.
       #   3. Finally, set the internal provider to the new provider
-      def provider=(provider)
+      def set_provider(provider)
         @provider.shutdown if @provider.respond_to?(:shutdown)
 
         provider.init if provider.respond_to?(:init)

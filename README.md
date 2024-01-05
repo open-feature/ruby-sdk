@@ -5,6 +5,7 @@
 ![Ruby](https://img.shields.io/badge/ruby-%23CC342D.svg?style=for-the-badge&logo=ruby&logoColor=white)
 ![Build](https://github.com/open-feature/openfeature-ruby/actions/workflows/main.yml/badge.svg?branch=main)
 ![Gem version](https://img.shields.io/gem/v/openfeature-sdk)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopen-feature%2Fruby-sdk.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopen-feature%2Fruby-sdk?ref=badge_shield)
 
 This is the Ruby implementation of [OpenFeature](https://openfeature.dev), a vendor-agnostic abstraction library for evaluating feature flags.
 
@@ -76,3 +77,6 @@ Our community meetings are held regularly and open to everyone. Check the [OpenF
 ## License
 
 [Apache License 2.0](LICENSE)
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopen-feature%2Fruby-sdk.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopen-feature%2Fruby-sdk?ref=badge_large)

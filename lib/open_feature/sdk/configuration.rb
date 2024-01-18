@@ -22,8 +22,12 @@ module OpenFeature
         @hooks = []
       end
 
+      # When switching providers, there are a few lifecycle methods that need to be taken care of.
+      #   1. If a provider is already set, we need to call `shutdown` on it.
+      #   2. On the new provider, call `init`.
+      #   3. Finally, set the internal provider to the new provider
       def provider=(provider)
-        @provider.shutdown if @provider.respond_to?(:shutdown)
+        @provider.shutdown if !@provider.nil? && @provider.respond_to?(:shutdown)
 
         provider.init if provider.respond_to?(:init)
 

@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../../spec_helper"
-
-require "openfeature/sdk/configuration"
-require "openfeature/sdk/api"
-require "openfeature/sdk/metadata"
+require "spec_helper"
 
 # https://openfeature.dev/docs/specification/sections/flag-evaluation#11-api-initialization-and-configuration
 

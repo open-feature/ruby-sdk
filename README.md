@@ -16,6 +16,7 @@ We support multiple data types for flags (numbers, strings, booleans, objects) a
 | -----------  | -----------                 |
 | Ruby 3.1.4   | Windows, MacOS, Linux       |
 | Ruby 3.2.3   | Windows, MacOS, Linux       |
+| Ruby 3.3.0   | Windows, MacOS, Linux       |
 
 
 ## Installation

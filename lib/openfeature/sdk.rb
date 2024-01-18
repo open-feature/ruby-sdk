@@ -8,9 +8,9 @@ module OpenFeature
   #
   module SDK
     class << self
-      def method_missing(method_name, *args, **kwargs, &block)
+      def method_missing(method_name, ...)
         if API.instance.respond_to?(method_name)
-          API.instance.send(method_name, *args, **kwargs, &block)
+          API.instance.send(method_name, ...)
         else
           super
         end

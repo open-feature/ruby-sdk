@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../../spec_helper"
-
-require "openfeature/sdk/client"
-require "openfeature/sdk/metadata"
-require "openfeature/sdk/provider/no_op_provider"
+require "spec_helper"
 
 # https://openfeature.dev/docs/specification/sections/flag-evaluation#12-client-usage
 

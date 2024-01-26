@@ -9,7 +9,7 @@
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "package-name": "openfeature-sdk",
-      "version-file": "lib/openfeature/sdk/version.rb"
+      "version-file": "lib/open_feature/sdk/version.rb"
     }
   }
 }

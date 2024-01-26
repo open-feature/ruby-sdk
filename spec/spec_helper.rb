@@ -2,7 +2,7 @@
 
 require "simplecov"
 
-require "openfeature/sdk"
+require "open_feature/sdk"
 
 require "markly"
 

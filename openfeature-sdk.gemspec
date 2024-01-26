@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "lib/openfeature/sdk/version"
+require_relative "lib/open_feature/sdk/version"
 
 Gem::Specification.new do |spec|
   spec.name = "openfeature-sdk"

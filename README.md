@@ -36,7 +36,7 @@ gem install openfeature-sdk
 ## Usage
 
 ```ruby
-require 'openfeature/sdk'
+require 'open_feature/sdk'
 require 'json' # For JSON.dump
 
 # API Initialization and configuration

@@ -67,9 +67,9 @@ For complete documentation, visit: https://openfeature.dev/docs/category/concept
 
 ### Providers
 
-Providers are the abstraction layer between OpenFeature and different flag management systems. Custom ones can easily be implemented.
+Providers are the abstraction layer between OpenFeature and different flag management systems.
 
-The `NoOpProvider` is an example of a minimally functioning provider. For complete documentation on the Provider interface, visit: https://openfeature.dev/specification/sections/providers.
+The `NoOpProvider` is an example of a minimalist provider. For complete documentation on the Provider interface, visit: https://openfeature.dev/specification/sections/providers.
 
 In addition to the `fetch_*` methods, providers can optionally implement lifecycle methods that are invoked when the underlying provider is switched out. For example:
 

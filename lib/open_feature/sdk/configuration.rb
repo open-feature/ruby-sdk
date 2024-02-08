@@ -27,7 +27,7 @@ module OpenFeature
       #   2. On the new provider, call `init`.
       #   3. Finally, set the internal provider to the new provider
       def provider=(provider)
-        @provider.shutdown if !@provider.nil? && @provider.respond_to?(:shutdown)
+        @provider.shutdown if @provider.respond_to?(:shutdown)
 
         provider.init if provider.respond_to?(:init)
 

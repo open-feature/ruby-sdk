@@ -4,6 +4,7 @@ require "forwardable"
 require "singleton"
 
 require_relative "configuration"
+require_relative "evaluation_details"
 require_relative "client"
 require_relative "metadata"
 require_relative "provider"

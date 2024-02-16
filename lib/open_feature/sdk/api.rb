@@ -6,7 +6,7 @@ require "singleton"
 require_relative "configuration"
 require_relative "client"
 require_relative "metadata"
-require_relative "provider/no_op_provider"
+require_relative "provider"
 
 module OpenFeature
   module SDK

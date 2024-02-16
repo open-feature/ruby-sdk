@@ -30,8 +30,6 @@ module OpenFeature
 
         attr_reader :metadata
 
-        ResolutionDetails = Struct.new(:value, :reason, :variant, :error_code, :error_message)
-
         def initialize
           @metadata = Metadata.new(name: NAME).freeze
         end

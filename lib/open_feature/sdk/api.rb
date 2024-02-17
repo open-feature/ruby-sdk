@@ -30,9 +30,7 @@ module OpenFeature
       include Singleton
       extend Forwardable
 
-      def_delegator :configuration, :provider
-      def_delegator :configuration, :hooks
-      def_delegator :configuration, :context
+      def_delegators :configuration, :provider, :hooks, :context
 
       def configuration
         @configuration ||= Configuration.new

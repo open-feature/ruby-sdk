@@ -103,7 +103,7 @@ RSpec.describe OpenFeature::SDK::Client do
           end
 
           it do
-            expect(client.fetch_boolean_details(flag_key: flag_key, default_value: false)).is_a?(OpenFeature::SDK::Provider::NoOpProvider::ResolutionDetails)
+            expect(client.fetch_boolean_details(flag_key: flag_key, default_value: false)).is_a?(OpenFeature::SDK::Provider::ResolutionDetails)
           end
         end
 
@@ -136,8 +136,8 @@ RSpec.describe OpenFeature::SDK::Client do
           end
 
           it do
-            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1.2)).is_a?(OpenFeature::SDK::Provider::NoOpProvider::ResolutionDetails)
-            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1)).is_a?(OpenFeature::SDK::Provider::NoOpProvider::ResolutionDetails)
+            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1.2)).is_a?(OpenFeature::SDK::Provider::ResolutionDetails)
+            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1)).is_a?(OpenFeature::SDK::Provider::ResolutionDetails)
           end
         end
 
@@ -166,7 +166,7 @@ RSpec.describe OpenFeature::SDK::Client do
           end
 
           it do
-            expect(client.fetch_string_details(flag_key: flag_key, default_value: "some-string")).is_a?(OpenFeature::SDK::Provider::NoOpProvider::ResolutionDetails)
+            expect(client.fetch_string_details(flag_key: flag_key, default_value: "some-string")).is_a?(OpenFeature::SDK::Provider::ResolutionDetails)
           end
         end
 
@@ -195,7 +195,7 @@ RSpec.describe OpenFeature::SDK::Client do
 
           it do
             expect(client.fetch_object_details(flag_key: flag_key,
-              default_value: {name: "some-name"})).is_a?(OpenFeature::SDK::Provider::NoOpProvider::ResolutionDetails)
+              default_value: {name: "some-name"})).is_a?(OpenFeature::SDK::Provider::ResolutionDetails)
           end
         end
 

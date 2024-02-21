@@ -26,8 +26,9 @@ module OpenFeature
             #   result = @provider.fetch_boolean_value(flag_key: flag_key, default_value: default_value, evaluation_context: evaluation_context)
             # end
             def fetch_#{result_type}_#{suffix}(flag_key:, default_value:, evaluation_context: nil)
-              result = @provider.fetch_#{result_type}_value(flag_key: flag_key, default_value: default_value, evaluation_context: evaluation_context)
-              #{"result.value" if suffix == :value}
+              resolution_details = @provider.fetch_#{result_type}_value(flag_key:, default_value:, evaluation_context:)
+              evaluation_details = EvaluationDetails.new(flag_key:, resolution_details:)
+              #{"evaluation_details.value" if suffix == :value}
             end
           RUBY
         end

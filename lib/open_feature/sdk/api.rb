@@ -4,9 +4,10 @@ require "forwardable"
 require "singleton"
 
 require_relative "configuration"
+require_relative "evaluation_details"
 require_relative "client"
 require_relative "metadata"
-require_relative "provider/no_op_provider"
+require_relative "provider"
 
 module OpenFeature
   module SDK
@@ -29,7 +30,7 @@ module OpenFeature
       include Singleton # Satisfies Flag Evaluation API Requirement 1.1.1
       extend Forwardable
 
-      def_delegators :@configuration, :provider, :provider=, :hooks, :context
+      def_delegators :configuration, :provider, :hooks, :context
 
       def configuration
         @configuration ||= Configuration.new

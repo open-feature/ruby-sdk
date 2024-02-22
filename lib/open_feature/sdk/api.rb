@@ -27,10 +27,10 @@ module OpenFeature
     #
     #   client = OpenFeature::SDK::API.instance.build_client(name: 'my-open-feature-client')
     class API
-      include Singleton
+      include Singleton # Satisfies Flag Evaluation API Requirement 1.1.1
       extend Forwardable
 
-      def_delegators :configuration, :provider, :hooks, :context
+      def_delegators :configuration, :provider, :provider=, :hooks, :context
 
       def configuration
         @configuration ||= Configuration.new

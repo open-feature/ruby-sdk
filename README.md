@@ -65,6 +65,30 @@ object = client.fetch_object_value(flag_key: 'object_value', default_value: JSON
 
 For complete documentation, visit: https://openfeature.dev/docs/category/concepts
 
+### Providers
+
+Providers are the abstraction layer between OpenFeature and different flag management systems.
+
+The `NoOpProvider` is an example of a minimalist provider. For complete documentation on the Provider interface, visit: https://openfeature.dev/specification/sections/providers.
+
+In addition to the `fetch_*` methods, providers can optionally implement lifecycle methods that are invoked when the underlying provider is switched out. For example:
+
+```ruby
+class MyProvider
+  def init
+    # Perform any initialization steps with flag management system here
+    # Return value is ignored
+  end
+
+  def shutdown
+    # Perform any shutdown/reclamation steps with flag management system here
+    # Return value is ignored
+  end
+end
+```
+
+**Note** The OpenFeature spec defines a lifecycle method called `initialize` to be called when a new provider is set. To avoid conflicting with the Ruby `initialize` method, this method should be named `init` when creating a provider.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to the OpenFeature project.

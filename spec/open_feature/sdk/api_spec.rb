@@ -7,26 +7,6 @@ require "spec_helper"
 RSpec.describe OpenFeature::SDK::API do
   subject(:api) { described_class.instance }
 
-  context "with Requirement 1.1.2" do
-    before do
-      api.configure do |config|
-        config.provider = OpenFeature::SDK::Provider::NoOpProvider.new
-      end
-    end
-
-    it do
-      expect(api).to respond_to(:provider)
-    end
-
-    it do
-      expect(api.provider).not_to be_nil
-    end
-
-    it do
-      expect(api.provider).is_a?(OpenFeature::SDK::Provider)
-    end
-  end
-
   context "with Requirement 1.1.3" do
     before do
       api.configure do |config|

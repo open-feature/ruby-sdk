@@ -33,9 +33,9 @@ RSpec.describe OpenFeature::SDK::Configuration do
         provider = TestProvider.new
         expect(provider).to receive(:init)
 
-        configuration.set_provider(provider, name: "testing")
+        configuration.set_provider(provider, domain: "testing")
 
-        expect(configuration.provider(name: "testing")).to be(provider)
+        expect(configuration.provider(domain: "testing")).to be(provider)
       end
     end
   end

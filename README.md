@@ -44,8 +44,8 @@ require 'json' # For JSON.dump
 OpenFeature::SDK.configure do |config|
   # your provider of choice, which will be used as the default provider
   config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
-  # alternatively, you can bind multiple providers to different names
-  config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new, name: "legacy_flags")
+  # alternatively, you can bind multiple providers to different domains
+  config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new, domain: "legacy_flags")
 end
 
 # Create a client

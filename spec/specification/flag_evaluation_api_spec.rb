@@ -48,22 +48,22 @@ RSpec.describe "Flag Evaluation API" do
         first_provider = TestProvider.new
         second_provider = TestProvider.new
 
-        OpenFeature::SDK.set_provider(first_provider, name: "first")
-        OpenFeature::SDK.set_provider(second_provider, name: "second")
+        OpenFeature::SDK.set_provider(first_provider, domain: "first")
+        OpenFeature::SDK.set_provider(second_provider, domain: "second")
 
-        expect(OpenFeature::SDK.provider(name: "first")).to be(first_provider)
-        expect(OpenFeature::SDK.provider(name: "second")).to be(second_provider)
+        expect(OpenFeature::SDK.provider(domain: "first")).to be(first_provider)
+        expect(OpenFeature::SDK.provider(domain: "second")).to be(second_provider)
       end
 
       specify "if client name is already bound, it is overwritten" do
         previous_provider = TestProvider.new
         new_provider = TestProvider.new
 
-        OpenFeature::SDK.set_provider(previous_provider, name: "testing")
-        expect(OpenFeature::SDK.provider(name: "testing")).to be(previous_provider)
+        OpenFeature::SDK.set_provider(previous_provider, domain: "testing")
+        expect(OpenFeature::SDK.provider(domain: "testing")).to be(previous_provider)
 
-        OpenFeature::SDK.set_provider(new_provider, name: "testing")
-        expect(OpenFeature::SDK.provider(name: "testing")).to be(new_provider)
+        OpenFeature::SDK.set_provider(new_provider, domain: "testing")
+        expect(OpenFeature::SDK.provider(domain: "testing")).to be(new_provider)
       end
     end
   end

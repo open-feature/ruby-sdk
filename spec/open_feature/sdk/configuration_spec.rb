@@ -7,7 +7,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
 
   describe "#provider=" do
     context "when provider has an init method" do
-      let(:provider) { TestProvider.new }
+      let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
 
       it "inits and sets the provider" do
         expect(provider).to receive(:init)

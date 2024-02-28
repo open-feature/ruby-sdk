@@ -10,6 +10,14 @@ module OpenFeature
           @flags = flags
         end
 
+        def init
+          # Intentional no-op, used for testing
+        end
+
+        def shutdown
+          # Intentional no-op, used for testing
+        end
+
         def add_flag(flag_key:, value:)
           flags[flag_key] = value
           # TODO: Emit PROVIDER_CONFIGURATION_CHANGED event once events are implemented

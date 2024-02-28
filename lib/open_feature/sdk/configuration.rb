@@ -26,7 +26,7 @@ module OpenFeature
         @providers[name]
       end
 
-	  # When switching providers, there are a few lifecycle methods that need to be taken care of.
+      # When switching providers, there are a few lifecycle methods that need to be taken care of.
       #   1. If a provider is already set, we need to call `shutdown` on it.
       #   2. On the new provider, call `init`.
       #   3. Finally, set the internal provider to the new provider

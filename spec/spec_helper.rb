@@ -17,6 +17,8 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 
+  config.filter_run_when_matching :focus
+
   # ie for GitHub Actions
   # see https://docs.github.com/en/actions/learn-github-actions/environment-variables#default-environment-variables
   if ENV["CI"] == "true"

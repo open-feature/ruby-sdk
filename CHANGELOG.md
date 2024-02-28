@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.0](https://github.com/open-feature/ruby-sdk/compare/v0.1.1...v1.0.0) (2024-02-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename top-level lib folder to `open_feature` ([#90](https://github.com/open-feature/ruby-sdk/issues/90))
+* Drop Ruby 2.7 and 3.0, add Ruby 3.3 ([#91](https://github.com/open-feature/ruby-sdk/issues/91))
+
+### Features
+
+* Implement Requirement 1.1.2 ([#78](https://github.com/open-feature/ruby-sdk/issues/78)) ([8cea7d0](https://github.com/open-feature/ruby-sdk/commit/8cea7d0cefc31ddeb2095ac60c40db3b038b02c5))
+* Updates to `Provider` module in preparation for `InMemoryProvider` ([#99](https://github.com/open-feature/ruby-sdk/issues/99)) ([2d89570](https://github.com/open-feature/ruby-sdk/commit/2d89570b2ebace61bcb261cfcb54b2724a4a75f7))
+
+
+### Miscellaneous Chores
+
+* Drop Ruby 2.7 and 3.0, add Ruby 3.3 ([#91](https://github.com/open-feature/ruby-sdk/issues/91)) ([51cd3a1](https://github.com/open-feature/ruby-sdk/commit/51cd3a1801e589f9049bffd7349d56bb6d32d05e))
+* rename top-level lib folder to `open_feature` ([#90](https://github.com/open-feature/ruby-sdk/issues/90)) ([e1a9a01](https://github.com/open-feature/ruby-sdk/commit/e1a9a018e18cb62acedd1b5cd5a00ad3ecb4321a))
+
 ## [0.1.1](https://github.com/open-feature/ruby-sdk/compare/v0.1.0...v0.1.1) (2023-09-13)
 
 

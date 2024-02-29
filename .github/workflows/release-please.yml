@@ -10,12 +10,13 @@ jobs:
 
     # Release-please creates a PR that tracks all changes
     steps:
-      - uses: google-github-actions/release-please-action@cc61a07e2da466bebbc19b3a7dd01d6aecb20d1e # v4
+      - uses: google-github-actions/release-please-action@v3
         id: release
         with:
           release-type: ruby
           package-name: openfeature-sdk
           bump-minor-pre-major: true
+          bump-patch-for-minor-pre-major: true
           version-file: "lib/open_feature/sdk/version.rb"
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}

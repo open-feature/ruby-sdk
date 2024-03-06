@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../support/test_provider"
 
 RSpec.describe "Flag Evaluation API" do
   context "1.1 - API Initialization and Configuration" do
@@ -23,7 +22,7 @@ RSpec.describe "Flag Evaluation API" do
 
     context "Requirement 1.1.2.2" do
       specify "the provider mutator must invoke an initialize function on the provider" do
-        provider = TestProvider.new
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         expect(provider).to receive(:init)
 
         OpenFeature::SDK.set_provider(provider)
@@ -32,8 +31,8 @@ RSpec.describe "Flag Evaluation API" do
 
     context "Requirement 1.1.2.3" do
       specify "the provider mutator must invoke a shutdown function on previously registered provider" do
-        previous_provider = TestProvider.new
-        new_provider = TestProvider.new
+        previous_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        new_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
 
         expect(previous_provider).to receive(:shutdown)
         expect(new_provider).not_to receive(:shutdown)

@@ -43,7 +43,12 @@ require 'json' # For JSON.dump
 
 OpenFeature::SDK.configure do |config|
   # your provider of choice, which will be used as the default provider
-  config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
+  config.provider = OpenFeature::SDK::Provider::InMemoryProvider.new(
+    {
+      "flag1" => true,
+      "flag2" => 1
+    }
+  )
   # alternatively, you can bind multiple providers to different domains
   config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new, domain: "legacy_flags")
 end
@@ -71,7 +76,7 @@ For complete documentation, visit: https://openfeature.dev/docs/category/concept
 
 Providers are the abstraction layer between OpenFeature and different flag management systems.
 
-The `NoOpProvider` is an example of a minimalist provider. For complete documentation on the Provider interface, visit: https://openfeature.dev/specification/sections/providers.
+The `NoOpProvider` is an example of a minimalist provider. The `InMemoryProvider` is a provider that can be initialized with flags and used to store flags in process. For complete documentation on the Provider interface, visit: https://openfeature.dev/specification/sections/providers.
 
 In addition to the `fetch_*` methods, providers can optionally implement lifecycle methods that are invoked when the underlying provider is switched out. For example:
 

@@ -43,12 +43,12 @@ require 'json' # For JSON.dump
 
 OpenFeature::SDK.configure do |config|
   # your provider of choice, which will be used as the default provider
-  config.provider = OpenFeature::SDK::Provider::InMemoryProvider.new(
+  config.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new(
     {
       "flag1" => true,
       "flag2" => 1
     }
-  )
+  ))
   # alternatively, you can bind multiple providers to different domains
   config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new, domain: "legacy_flags")
 end

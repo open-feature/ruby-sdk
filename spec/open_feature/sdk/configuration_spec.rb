@@ -30,7 +30,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
 
     context "when name is given" do
       it "binds the provider to that name" do
-        provider = TestProvider.new
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         expect(provider).to receive(:init)
 
         configuration.set_provider(provider, domain: "testing")

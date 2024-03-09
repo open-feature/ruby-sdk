@@ -19,7 +19,7 @@ module OpenFeature
     # To use the SDK, you can optionally configure a <tt>Provider</tt>, with <tt>Hook</tt>
     #
     #   OpenFeature::SDK::API.instance.configure do |config|
-    #     config.provider = NoOpProvider.new
+    #     config.set_provider NoOpProvider.new
     #   end
     #
     # If no provider is specified, the <tt>NoOpProvider</tt> is set as the default <tt>Provider</tt>.
@@ -30,7 +30,7 @@ module OpenFeature
       include Singleton # Satisfies Flag Evaluation API Requirement 1.1.1
       extend Forwardable
 
-      def_delegators :configuration, :provider, :provider=, :hooks, :context
+      def_delegators :configuration, :provider, :set_provider, :hooks, :context
 
       def configuration
         @configuration ||= Configuration.new

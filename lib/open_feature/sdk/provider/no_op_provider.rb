@@ -11,7 +11,7 @@ module OpenFeature
       # To use <tt>NoOpProvider</tt>, it can be set during the configuration of the SDK
       #
       #   OpenFeature::SDK.configure do |config|
-      #     config.provider = NoOpProvider.new
+      #     config.set_provider NoOpProvider.new
       #   end
       #
       # Within the <tt>NoOpProvider</tt>, the following methods exist

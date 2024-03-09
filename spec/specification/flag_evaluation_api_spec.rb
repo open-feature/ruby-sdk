@@ -14,7 +14,7 @@ RSpec.describe "Flag Evaluation API" do
       specify "the API must define a provider mutator" do
         provider = OpenFeature::SDK::Provider::NoOpProvider.new
 
-        OpenFeature::SDK.provider = provider
+        OpenFeature::SDK.set_provider(provider)
 
         expect(OpenFeature::SDK.provider).to be(provider)
       end
@@ -25,7 +25,7 @@ RSpec.describe "Flag Evaluation API" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         expect(provider).to receive(:init)
 
-        OpenFeature::SDK.provider = provider
+        OpenFeature::SDK.set_provider(provider)
       end
     end
 
@@ -37,8 +37,32 @@ RSpec.describe "Flag Evaluation API" do
         expect(previous_provider).to receive(:shutdown)
         expect(new_provider).not_to receive(:shutdown)
 
-        OpenFeature::SDK.provider = previous_provider
-        OpenFeature::SDK.provider = new_provider
+        OpenFeature::SDK.set_provider(previous_provider)
+        OpenFeature::SDK.set_provider(new_provider)
+      end
+    end
+
+    context "Requirement 1.1.3" do
+      specify "the API must provide a function to bind a given provider to one or more client names" do
+        first_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        second_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+        OpenFeature::SDK.set_provider(first_provider, domain: "first")
+        OpenFeature::SDK.set_provider(second_provider, domain: "second")
+
+        expect(OpenFeature::SDK.provider(domain: "first")).to be(first_provider)
+        expect(OpenFeature::SDK.provider(domain: "second")).to be(second_provider)
+      end
+
+      specify "if client name is already bound, it is overwritten" do
+        previous_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        new_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+        OpenFeature::SDK.set_provider(previous_provider, domain: "testing")
+        expect(OpenFeature::SDK.provider(domain: "testing")).to be(previous_provider)
+
+        OpenFeature::SDK.set_provider(new_provider, domain: "testing")
+        expect(OpenFeature::SDK.provider(domain: "testing")).to be(new_provider)
       end
     end
   end

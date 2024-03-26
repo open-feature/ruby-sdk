@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "concurrent-ruby"
+gem "cowsay"
+gem "openfeature-sdk", path: ".."
+gem "puma"
+gem "sinatra"

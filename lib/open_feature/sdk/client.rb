@@ -8,7 +8,7 @@ module OpenFeature
       RESULT_TYPE = %i[boolean string number object].freeze
       SUFFIXES = %i[value details].freeze
 
-      attr_reader :metadata
+      attr_reader :metadata, :provider
 
       attr_accessor :hooks
 

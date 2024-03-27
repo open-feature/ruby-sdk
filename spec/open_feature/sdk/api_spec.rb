@@ -70,4 +70,44 @@ RSpec.describe OpenFeature::SDK::API do
   context "with Requirement 1.1.6" do
     pending
   end
+
+  context "when domain is given" do
+    it "can generate a client both with and without that domain" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+      api.configure do |config|
+        config.set_provider(provider, domain: 'testing1')
+      end
+
+      client = api.build_client(name: "with-domain", domain: "testing1")
+      no_domain_client = api.build_client(name: "without-domain")
+
+      expect(client.provider).to be(provider)
+      expect(no_domain_client.provider).to be_an_instance_of(OpenFeature::SDK::Provider::NoOpProvider)
+    end
+  end
+
+  context "when domain is not provided" do
+    it "can generate a client without a domain properly" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+      api.configure do |config|
+        config.set_provider(provider)
+      end
+
+      no_domain_client = api.build_client(name: "without-domain")
+
+      expect(no_domain_client.provider).to be(provider)
+    end
+
+    it "can generate a client with a domain properly" do
+      api.configure do |config|
+        config.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new)
+      end
+
+      domain_client = api.build_client(name: "with-domain", domain: "testing2")
+      # This domain was never given a provider, so it should default to the NoOpProvider
+      expect(domain_client.provider).to be_an_instance_of(OpenFeature::SDK::Provider::NoOpProvider)
+    end
+  end
 end

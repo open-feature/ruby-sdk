@@ -42,10 +42,12 @@ module OpenFeature
         block.call(configuration)
       end
 
-      def build_client(name: nil, version: nil)
-        client_options = Metadata.new(name: name, version: version).freeze
-        provider = Provider::NoOpProvider.new if provider.nil?
-        Client.new(provider: provider, client_options: client_options, context: context)
+      def build_client(name: nil, version: nil, domain: nil)
+        client_options = Metadata.new(name: name, version: version, domain: domain).freeze
+
+        active_provider = provider(domain:).nil? ? Provider::NoOpProvider.new : provider(domain:)
+
+        Client.new(provider: active_provider, client_options:, context:)
       end
     end
   end

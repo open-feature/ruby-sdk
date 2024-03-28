@@ -10,19 +10,22 @@ module OpenFeature
     #
     # * <tt>version</tt> - Allows you to specify version of the Metadata structure
     #
+    # * <tt>domain</tt> - Allows you to specify the domain of the Metadata structure
+    #
     # Usage:
     #
-    #   metadata = Metadata.new(name: 'name-for-metadata', version: 'v1.1.3')
+    #   metadata = Metadata.new(name: 'name-for-metadata', version: 'v1.1.3', domain: 'test')
     #   metadata.name # 'name-for-metadata'
     #   metadata.version # version
     #   metadata_two = Metadata.new(name: 'name-for-metadata')
     #   metadata_two == metadata # true - equality based on values
     class Metadata
-      attr_reader :name, :version
+      attr_reader :name, :version, :domain
 
-      def initialize(name:, version: nil)
+      def initialize(name:, version: nil, domain: nil)
         @name = name
         @version = version
+        @domain = domain
       end
 
       def ==(other)

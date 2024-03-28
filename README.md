@@ -53,9 +53,9 @@ OpenFeature::SDK.configure do |config|
 end
 
 # Create a client
-client = OpenFeature::SDK.build_client(name: "my-app")
+client = OpenFeature::SDK.build_client
 # Create a client for a different domain, this will use the provider assigned to that domain
-legacy_flag_client = OpenFeature::SDK.build_client(name: "Legacy", domain: "legacy_flags")
+legacy_flag_client = OpenFeature::SDK.build_client(domain: "legacy_flags")
 
 # fetching boolean value feature flag
 bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value: false)

@@ -7,7 +7,8 @@ require "spec_helper"
 RSpec.describe OpenFeature::SDK::Client do
   subject(:client) { described_class.new(provider: provider, client_options: client_metadata) }
   let(:provider) { OpenFeature::SDK::Provider::NoOpProvider.new }
-  let(:client_metadata) { OpenFeature::SDK::Metadata.new(name: name) }
+  let(:client_metadata) { OpenFeature::SDK::Metadata.new(name: name, domain: domain) }
+  let(:domain) { "testing" }
   let(:name) { "my-openfeature-client" }
 
   context "Requirement 1.2.1" do
@@ -28,6 +29,7 @@ RSpec.describe OpenFeature::SDK::Client do
       expect(client).to respond_to(:metadata)
       expect(client.metadata).to respond_to(:name)
       expect(client.metadata.name).to eq(name)
+      expect(client.metadata.domain).to eq(domain)
     end
   end
 

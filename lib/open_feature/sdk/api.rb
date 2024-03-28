@@ -47,7 +47,7 @@ module OpenFeature
 
         active_provider = provider(domain:).nil? ? Provider::NoOpProvider.new : provider(domain:)
 
-        Client.new(provider: active_provider, client_options: client_options, context: context)
+        Client.new(provider: active_provider, client_options:, context:)
       end
     end
   end

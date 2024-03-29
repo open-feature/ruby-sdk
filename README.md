@@ -12,12 +12,11 @@ We support multiple data types for flags (numbers, strings, booleans, objects) a
 
 ## Support Matrix
 
-| Ruby Version | OS                          |
-| -----------  | -----------                 |
-| Ruby 3.1.4   | Windows, MacOS, Linux       |
-| Ruby 3.2.3   | Windows, MacOS, Linux       |
-| Ruby 3.3.0   | Windows, MacOS, Linux       |
-
+| Ruby Version | OS                    |
+| ------------ | --------------------- |
+| Ruby 3.1.4   | Windows, MacOS, Linux |
+| Ruby 3.2.3   | Windows, MacOS, Linux |
+| Ruby 3.3.0   | Windows, MacOS, Linux |
 
 ## Installation
 
@@ -54,7 +53,9 @@ OpenFeature::SDK.configure do |config|
 end
 
 # Create a client
-client = OpenFeature::SDK.build_client(name: "my-app")
+client = OpenFeature::SDK.build_client
+# Create a client for a different domain, this will use the provider assigned to that domain
+legacy_flag_client = OpenFeature::SDK.build_client(domain: "legacy_flags")
 
 # fetching boolean value feature flag
 bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value: false)
@@ -101,7 +102,6 @@ end
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to the OpenFeature project.
 
 Our community meetings are held regularly and open to everyone. Check the [OpenFeature community calendar](https://calendar.google.com/calendar/u/0?cid=MHVhN2kxaGl2NWRoMThiMjd0b2FoNjM2NDRAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ) for specific dates and for the Zoom meeting links.
-
 
 ## License
 

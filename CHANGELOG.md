@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/open-feature/ruby-sdk/compare/v0.2.0...v0.2.1) (2024-03-29)
+
+
+### Bug Fixes
+
+* Add domain to build_client ([#109](https://github.com/open-feature/ruby-sdk/issues/109)) ([56ccf17](https://github.com/open-feature/ruby-sdk/commit/56ccf17ec340df0ea14a72ea7379c51dbb9d7b13))
+
 ## [0.2.0](https://github.com/open-feature/ruby-sdk/compare/v0.1.1...v0.2.0) (2024-03-09)
 
 

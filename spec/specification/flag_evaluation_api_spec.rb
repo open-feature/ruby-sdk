@@ -43,7 +43,7 @@ RSpec.describe "Flag Evaluation API" do
     end
 
     context "Requirement 1.1.3" do
-      specify "the API must provide a function to bind a given provider to one or more client names" do
+      specify "the API must provide a function to bind a given provider to one or more client domains" do
         first_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         second_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
 
@@ -54,7 +54,7 @@ RSpec.describe "Flag Evaluation API" do
         expect(OpenFeature::SDK.provider(domain: "second")).to be(second_provider)
       end
 
-      specify "if client name is already bound, it is overwritten" do
+      specify "if client domain is already bound, it is overwritten" do
         previous_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         new_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
 

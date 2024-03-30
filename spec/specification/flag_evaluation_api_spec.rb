@@ -65,5 +65,11 @@ RSpec.describe "Flag Evaluation API" do
         expect(OpenFeature::SDK.provider(domain: "testing")).to be(new_provider)
       end
     end
+
+    context "Requirement 1.1.4" do
+      pending "The API must provide a function to add hooks which accepts one or more API-conformant hooks, and appends them to the collection of any previously added hooks."
+
+      pending "When new hooks are added, previously added hooks are not removed."
+    end
   end
 end

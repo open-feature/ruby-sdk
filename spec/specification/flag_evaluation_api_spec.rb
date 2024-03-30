@@ -71,5 +71,27 @@ RSpec.describe "Flag Evaluation API" do
 
       pending "When new hooks are added, previously added hooks are not removed."
     end
+
+    context "Requirement 1.1.5" do
+      before do
+        default_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider(default_provider)
+
+        domain_1_provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        OpenFeature::SDK.set_provider(domain_1_provider, domain: "domain_1")
+      end
+
+      specify "The API MUST provide a function for retrieving the metadata field of the configured provider." do
+        expect(OpenFeature::SDK.provider.metadata.name).to eq("In-memory Provider")
+      end
+
+      specify "It's possible to access provider metadata using a domain." do
+        expect(OpenFeature::SDK.provider(domain: "domain_1").metadata.name).to eq("No-op Provider")
+      end
+
+      specify "If a provider has not be registered under the requested domain, the default provider metadata is returned." do
+        expect(OpenFeature::SDK.provider(domain: "not_here").metadata.name).to eq("In-memory Provider")
+      end
+    end
   end
 end

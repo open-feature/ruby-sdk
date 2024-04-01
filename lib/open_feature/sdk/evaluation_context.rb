@@ -12,6 +12,10 @@ module OpenFeature
       def targeting_key
         fields[TARGETING_KEY]
       end
+
+      def field(key)
+        fields[key]
+      end
     end
   end
 end

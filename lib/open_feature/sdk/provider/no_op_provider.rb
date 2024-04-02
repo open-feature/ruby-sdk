@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../metadata"
-
 # rubocop:disable Lint/UnusedMethodArgument
 module OpenFeature
   module SDK
@@ -31,7 +29,7 @@ module OpenFeature
         attr_reader :metadata
 
         def initialize
-          @metadata = Metadata.new(name: NAME).freeze
+          @metadata = ProviderMetadata.new(name: NAME).freeze
         end
 
         def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)

@@ -13,8 +13,6 @@ module OpenFeature
 
       attr_accessor :context, :hooks
 
-      def_delegator :provider, :metadata
-
       def initialize
         @hooks = []
         @providers = {}

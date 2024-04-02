@@ -8,7 +8,7 @@ module OpenFeature
         attr_reader :metadata
 
         def initialize(flags = {})
-          @metadata = Metadata.new(name: NAME).freeze
+          @metadata = ProviderMetadata.new(name: NAME).freeze
           @flags = flags
         end
 

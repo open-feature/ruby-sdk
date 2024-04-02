@@ -12,9 +12,9 @@ module OpenFeature
 
       attr_accessor :hooks
 
-      def initialize(provider:, client_options: nil, context: nil)
+      def initialize(provider:, domain: nil, context: nil)
         @provider = provider
-        @metadata = client_options
+        @metadata = ClientMetadata.new(domain:)
         @context = context
         @hooks = []
       end

@@ -115,5 +115,17 @@ RSpec.describe "Flag Evaluation API" do
         expect(client.instance_variable_get(:@provider).metadata.name).to eq("No-op Provider")
       end
     end
+
+    context "Requirement 1.1.7" do
+      specify "The client creation function MUST NOT throw, or otherwise abnormally terminate." do
+        expect_any_instance_of(OpenFeature::SDK::Configuration).to receive(:provider).and_raise(StandardError)
+
+        expect do
+          client = OpenFeature::SDK.build_client
+
+          expect(client.instance_variable_get(:@provider).metadata.name).to eq("No-op Provider")
+        end.not_to raise_error
+      end
+    end
   end
 end

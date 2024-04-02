@@ -7,7 +7,6 @@ GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.2)
-    concurrent-ruby (1.2.3)
     debug (1.9.2)
       irb (~> 1.10)
       reline (>= 0.3.8)
@@ -102,7 +101,6 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  concurrent-ruby
   debug
   markly
   openfeature-sdk!

@@ -93,5 +93,27 @@ RSpec.describe "Flag Evaluation API" do
         expect(OpenFeature::SDK.provider(domain: "not_here").metadata.name).to eq("In-memory Provider")
       end
     end
+
+    context "Requirement 1.1.6" do
+      before do
+        default_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider(default_provider)
+
+        domain_1_provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        OpenFeature::SDK.set_provider(domain_1_provider, domain: "domain_1")
+      end
+
+      specify "The API MUST provide a function for creating a client" do
+        client = OpenFeature::SDK.build_client
+
+        expect(client.instance_variable_get(:@provider).metadata.name).to eq("In-memory Provider")
+      end
+
+      specify "which accepts domain as an optional parameter." do
+        client = OpenFeature::SDK.build_client(domain: "domain_1")
+
+        expect(client.instance_variable_get(:@provider).metadata.name).to eq("No-op Provider")
+      end
+    end
   end
 end

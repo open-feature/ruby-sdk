@@ -5,6 +5,8 @@ module OpenFeature
       class InMemoryProvider
         NAME = "In-memory Provider"
 
+        attr_reader :metadata
+
         def initialize(flags = {})
           @metadata = Metadata.new(name: NAME).freeze
           @flags = flags

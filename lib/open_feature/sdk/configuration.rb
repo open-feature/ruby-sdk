@@ -23,7 +23,7 @@ module OpenFeature
       end
 
       def provider(domain: nil)
-        @providers[domain]
+        @providers[domain] || @providers[nil]
       end
 
       # When switching providers, there are a few lifecycle methods that need to be taken care of.

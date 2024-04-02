@@ -28,8 +28,8 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
     end
 
-    context "when name is given" do
-      it "binds the provider to that name" do
+    context "when domain is given" do
+      it "binds the provider to that domain" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         expect(provider).to receive(:init)
 

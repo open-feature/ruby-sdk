@@ -43,7 +43,7 @@ RSpec.describe "Flag Evaluation API" do
     end
 
     context "Requirement 1.1.3" do
-      specify "the API must provide a function to bind a given provider to one or more client names" do
+      specify "the API must provide a function to bind a given provider to one or more client domains" do
         first_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         second_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
 
@@ -54,7 +54,7 @@ RSpec.describe "Flag Evaluation API" do
         expect(OpenFeature::SDK.provider(domain: "second")).to be(second_provider)
       end
 
-      specify "if client name is already bound, it is overwritten" do
+      specify "if client domain is already bound, it is overwritten" do
         previous_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         new_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
 
@@ -63,6 +63,34 @@ RSpec.describe "Flag Evaluation API" do
 
         OpenFeature::SDK.set_provider(new_provider, domain: "testing")
         expect(OpenFeature::SDK.provider(domain: "testing")).to be(new_provider)
+      end
+    end
+
+    context "Requirement 1.1.4" do
+      pending "The API must provide a function to add hooks which accepts one or more API-conformant hooks, and appends them to the collection of any previously added hooks."
+
+      pending "When new hooks are added, previously added hooks are not removed."
+    end
+
+    context "Requirement 1.1.5" do
+      before do
+        default_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider(default_provider)
+
+        domain_1_provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        OpenFeature::SDK.set_provider(domain_1_provider, domain: "domain_1")
+      end
+
+      specify "The API MUST provide a function for retrieving the metadata field of the configured provider." do
+        expect(OpenFeature::SDK.provider.metadata.name).to eq("In-memory Provider")
+      end
+
+      specify "It's possible to access provider metadata using a domain." do
+        expect(OpenFeature::SDK.provider(domain: "domain_1").metadata.name).to eq("No-op Provider")
+      end
+
+      specify "If a provider has not be registered under the requested domain, the default provider metadata is returned." do
+        expect(OpenFeature::SDK.provider(domain: "not_here").metadata.name).to eq("In-memory Provider")
       end
     end
   end

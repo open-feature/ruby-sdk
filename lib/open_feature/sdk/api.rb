@@ -5,6 +5,7 @@ require "singleton"
 
 require_relative "configuration"
 require_relative "evaluation_context"
+require_relative "evaluation_context_builder"
 require_relative "evaluation_details"
 require_relative "client_metadata"
 require_relative "client"

@@ -5,10 +5,8 @@ module OpenFeature
 
       attr_reader :fields
 
-      def initialize(targeting_key: nil, **fields)
-        fields = fields.merge({TARGETING_KEY => targeting_key}).merge(fields) if targeting_key
-
-        @fields = fields
+      def initialize(**fields)
+        @fields = fields.transform_keys(&:to_s)
       end
 
       def targeting_key

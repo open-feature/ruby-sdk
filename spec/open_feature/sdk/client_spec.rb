@@ -5,9 +5,8 @@ require "spec_helper"
 # https://openfeature.dev/docs/specification/sections/flag-evaluation#12-client-usage
 
 RSpec.describe OpenFeature::SDK::Client do
-  subject(:client) { described_class.new(provider: provider, client_options: client_metadata) }
+  subject(:client) { described_class.new(provider: provider, domain:) }
   let(:provider) { OpenFeature::SDK::Provider::NoOpProvider.new }
-  let(:client_metadata) { OpenFeature::SDK::Metadata.new(name: name, domain: domain) }
   let(:domain) { "testing" }
   let(:name) { "my-openfeature-client" }
 
@@ -27,8 +26,6 @@ RSpec.describe OpenFeature::SDK::Client do
   context "Requirement 1.2.2" do
     it "MUST define a metadata member or accessor, containing an immutable name field or accessor of type string, which corresponds to the name value supplied during client creation." do
       expect(client).to respond_to(:metadata)
-      expect(client.metadata).to respond_to(:name)
-      expect(client.metadata.name).to eq(name)
       expect(client.metadata.domain).to eq(domain)
     end
   end

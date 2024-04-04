@@ -6,8 +6,8 @@ require "singleton"
 require_relative "configuration"
 require_relative "evaluation_context"
 require_relative "evaluation_details"
+require_relative "client_metadata"
 require_relative "client"
-require_relative "metadata"
 require_relative "provider"
 
 module OpenFeature
@@ -44,11 +44,11 @@ module OpenFeature
       end
 
       def build_client(name: nil, version: nil, domain: nil)
-        client_options = Metadata.new(name: name, version: version, domain: domain).freeze
-
         active_provider = provider(domain:).nil? ? Provider::NoOpProvider.new : provider(domain:)
 
-        Client.new(provider: active_provider, client_options:, context:)
+        Client.new(provider: active_provider, domain:, context:)
+      rescue
+        Client.new(provider: Provider::NoOpProvider.new)
       end
     end
   end

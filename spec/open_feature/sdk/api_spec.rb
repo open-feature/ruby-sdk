@@ -41,11 +41,11 @@ RSpec.describe OpenFeature::SDK::API do
     end
 
     it do
-      expect(api.provider.metadata).is_a?(OpenFeature::SDK::Metadata)
+      expect(api.provider.metadata).is_a?(OpenFeature::SDK::Provider::ProviderMetadata)
     end
 
     it do
-      expect(api.provider.metadata).to eq(OpenFeature::SDK::Metadata.new(name: OpenFeature::SDK::Provider::NoOpProvider::NAME))
+      expect(api.provider.metadata).to eq(OpenFeature::SDK::Provider::ProviderMetadata.new(name: OpenFeature::SDK::Provider::NoOpProvider::NAME))
     end
   end
 

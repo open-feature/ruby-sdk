@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "concurrent"
-
 require_relative "api"
 
 module OpenFeature
@@ -14,8 +12,6 @@ module OpenFeature
       extend Forwardable
 
       attr_accessor :context, :hooks
-
-      def_delegator :provider, :metadata
 
       def initialize
         @hooks = []

@@ -93,5 +93,63 @@ RSpec.describe "Flag Evaluation API" do
         expect(OpenFeature::SDK.provider(domain: "not_here").metadata.name).to eq("In-memory Provider")
       end
     end
+
+    context "Requirement 1.1.6" do
+      before do
+        default_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider(default_provider)
+
+        domain_1_provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        OpenFeature::SDK.set_provider(domain_1_provider, domain: "domain_1")
+      end
+
+      specify "The API MUST provide a function for creating a client" do
+        client = OpenFeature::SDK.build_client
+
+        expect(client.instance_variable_get(:@provider).metadata.name).to eq("In-memory Provider")
+      end
+
+      specify "which accepts domain as an optional parameter." do
+        client = OpenFeature::SDK.build_client(domain: "domain_1")
+
+        expect(client.instance_variable_get(:@provider).metadata.name).to eq("No-op Provider")
+      end
+    end
+
+    context "Requirement 1.1.7" do
+      specify "The client creation function MUST NOT throw, or otherwise abnormally terminate." do
+        expect_any_instance_of(OpenFeature::SDK::Configuration).to receive(:provider).and_raise(StandardError)
+
+        expect do
+          client = OpenFeature::SDK.build_client
+
+          expect(client.instance_variable_get(:@provider).metadata.name).to eq("No-op Provider")
+        end.not_to raise_error
+      end
+    end
+  end
+
+  context "1.2 - Client Usage" do
+    context "Requirement 1.2.1" do
+      pending "The client MUST provide a method to add hooks which accepts one or more API-conformant hooks, and appends them to the collection of any previously added hooks. When new hooks are added, previously added hooks are not removed."
+    end
+
+    context "Requirement 1.2.2" do
+      before do
+        default_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider(default_provider)
+
+        domain_1_provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        OpenFeature::SDK.set_provider(domain_1_provider, domain: "domain_1")
+      end
+
+      specify "The client interface MUST define a metadata member or accessor, containing an immutable domain field or accessor of type string, which corresponds to the domain value supplied during client creation." do
+        client = OpenFeature::SDK.build_client
+        expect(client.metadata.domain).to be_nil
+
+        client = OpenFeature::SDK.build_client(domain: "domain_1")
+        expect(client.metadata.domain).to eq("domain_1")
+      end
+    end
   end
 end

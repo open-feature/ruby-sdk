@@ -59,6 +59,12 @@ RSpec.describe "Evaluation Context" do
 
           expect(client.evaluation_context).to eq(evaluation_context)
         end
+
+        specify "The invocation MUST have a method for supplying evaluation context." do
+          client = OpenFeature::SDK.build_client
+
+          expect { client.fetch_boolean_value(flag_key: "testing", default_value: true, evaluation_context:) }.not_to raise_error
+        end
       end
     end
   end

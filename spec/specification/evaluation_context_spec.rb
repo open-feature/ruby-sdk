@@ -44,19 +44,21 @@ RSpec.describe "Evaluation Context" do
   context "3.2 Context Levels and Merging" do
     context "Condition 3.2.1 - The implementation uses the dynamic-context paradigm." do
       context "Conditional Requirement 3.2.1.1" do
-        let(:context) { OpenFeature::SDK::EvaluationContext.new(targeting_key: "testing") }
+        let(:evaluation_context) { OpenFeature::SDK::EvaluationContext.new(targeting_key: "testing") }
 
         specify "The API MUST have a method for supplying evaluation context." do
           OpenFeature::SDK.configure do |c|
-            c.evaluation_context = context
+            c.evaluation_context = evaluation_context
           end
 
-          expect(OpenFeature::SDK.evaluation_context).to eq(context)
+          expect(OpenFeature::SDK.evaluation_context).to eq(evaluation_context)
         end
 
-        specify "The Client MUST have a method for supplying evaluation context."
+        specify "The Client MUST have a method for supplying evaluation context." do
+          client = OpenFeature::SDK.build_client(evaluation_context: evaluation_context)
 
-        specify "The invocation MUST have a method for supplying evaluation context."
+          expect(client.evaluation_context).to eq(evaluation_context)
+        end
       end
     end
   end

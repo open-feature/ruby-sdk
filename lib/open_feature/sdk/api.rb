@@ -43,12 +43,12 @@ module OpenFeature
         block.call(configuration)
       end
 
-      def build_client(name: nil, version: nil, domain: nil)
+      def build_client(domain: nil, evaluation_context: nil)
         active_provider = provider(domain:).nil? ? Provider::NoOpProvider.new : provider(domain:)
 
-        Client.new(provider: active_provider, domain:, context: evaluation_context)
+        Client.new(provider: active_provider, domain:, evaluation_context:)
       rescue
-        Client.new(provider: Provider::NoOpProvider.new)
+        Client.new(provider: Provider::NoOpProvider.new, evaluation_context:)
       end
     end
   end

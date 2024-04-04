@@ -8,14 +8,14 @@ module OpenFeature
       RESULT_TYPE = %i[boolean string number object].freeze
       SUFFIXES = %i[value details].freeze
 
-      attr_reader :metadata
+      attr_reader :metadata, :evaluation_context
 
       attr_accessor :hooks
 
-      def initialize(provider:, domain: nil, context: nil)
+      def initialize(provider:, domain: nil, evaluation_context: nil)
         @provider = provider
         @metadata = ClientMetadata.new(domain:)
-        @context = context
+        @evaluation_context = evaluation_context
         @hooks = []
       end
 

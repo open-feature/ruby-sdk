@@ -18,7 +18,7 @@ RSpec.describe "Evaluation Context" do
 
     context "Requirement 3.1.2" do
       specify "The evaluation context MUST support the inclusion of custom fields, having keys of type string, and values of type boolean | string | number | datetime | structure." do
-        expect(context_with_custom_fields.fields).to eq({"favorite_fruit" => "banana", "favorite_music" => "maryland beach ska rock", "targeting_key" => nil})
+        expect(context_with_custom_fields.fields).to eq({"favorite_fruit" => "banana", "favorite_music" => "maryland beach ska rock"})
       end
     end
 
@@ -28,7 +28,7 @@ RSpec.describe "Evaluation Context" do
       end
 
       specify "and also fetching all key value pairs." do
-        expect(context_with_custom_fields.fields).to eq({"favorite_fruit" => "banana", "favorite_music" => "maryland beach ska rock", "targeting_key" => nil})
+        expect(context_with_custom_fields.fields).to eq({"favorite_fruit" => "banana", "favorite_music" => "maryland beach ska rock"})
       end
     end
 
@@ -36,7 +36,7 @@ RSpec.describe "Evaluation Context" do
       specify "The evaluation context fields MUST have an unique key." do
         context = OpenFeature::SDK::EvaluationContext.new("favorite_fruit" => "banana", "favorite_fruit" => "apple") # standard:disable Lint/DuplicateHashKey
 
-        expect(context.fields).to eq({"favorite_fruit" => "apple", "targeting_key" => nil})
+        expect(context.fields).to eq({"favorite_fruit" => "apple"})
       end
     end
   end

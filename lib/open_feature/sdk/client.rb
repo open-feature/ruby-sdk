@@ -26,7 +26,8 @@ module OpenFeature
             #   result = @provider.fetch_boolean_value(flag_key: flag_key, default_value: default_value, evaluation_context: evaluation_context)
             # end
             def fetch_#{result_type}_#{suffix}(flag_key:, default_value:, evaluation_context: nil)
-              resolution_details = @provider.fetch_#{result_type}_value(flag_key:, default_value:, evaluation_context:)
+              built_context = EvaluationContextBuilder.new.call(api_context: OpenFeature::SDK.evaluation_context, client_context: self.evaluation_context, invocation_context: evaluation_context)
+              resolution_details = @provider.fetch_#{result_type}_value(flag_key:, default_value:, evaluation_context: built_context)
               evaluation_details = EvaluationDetails.new(flag_key:, resolution_details:)
               #{"evaluation_details.value" if suffix == :value}
             end

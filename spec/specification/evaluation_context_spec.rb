@@ -67,5 +67,20 @@ RSpec.describe "Evaluation Context" do
         end
       end
     end
+
+    # TODO: We currently don't support transaction propogation and hooks
+    # We'll want to fully implement this requirement once those are supported
+    specify "Requirement 3.2.3 - Evaluation context MUST be merged in the order: API (global; lowest precedence) -> transaction -> client -> invocation -> before hooks (highest precedence), with duplicate values being overwritten." do
+      api_context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "api")
+      client_context = OpenFeature::SDK::EvaluationContext.new("targeting_key" => "client", "client-related" => "field")
+      invocation_context = OpenFeature::SDK::EvaluationContext.new("targeting_key" => "invocation", "invocation-related" => "field")
+
+      OpenFeature::SDK.configure { |c| c.evaluation_context = api_context }
+      client = OpenFeature::SDK.build_client(evaluation_context: client_context)
+
+      expect_any_instance_of(OpenFeature::SDK::EvaluationContextBuilder).to receive(:call).with(api_context:, client_context:, invocation_context:).and_call_original
+
+      client.fetch_boolean_value(flag_key: "testing", default_value: true, evaluation_context: invocation_context)
+    end
   end
 end

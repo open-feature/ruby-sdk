@@ -50,12 +50,18 @@ OpenFeature::SDK.configure do |config|
   ))
   # alternatively, you can bind multiple providers to different domains
   config.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new, domain: "legacy_flags")
+  # you can set a global evaluation context here
+  config.evaluation_context = OpenFeature::SDK::EvaluationContext.new("host" => "myhost.com")
 end
 
 # Create a client
 client = OpenFeature::SDK.build_client
 # Create a client for a different domain, this will use the provider assigned to that domain
 legacy_flag_client = OpenFeature::SDK.build_client(domain: "legacy_flags")
+# Evaluation context can be set on a client as well
+client_with_context = OpenFeature::SDK.build_client(
+  evaluation_context: OpenFeature::SDK::EvaluationContext.new("controller_name" => "admin")
+)
 
 # fetching boolean value feature flag
 bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value: false)
@@ -69,6 +75,15 @@ integer_value = client.fetch_number_value(flag_key: 'number_value', default_valu
 
 # get an object value
 object = client.fetch_object_value(flag_key: 'object_value', default_value: JSON.dump({ name: 'object'}))
+
+# Invocation evaluation context can also be passed in during flag evaluation.
+# During flag evaluation, invocation context takes precedence over client context
+# which takes precedence over API (aka global) context.
+bool_value = client.fetch_boolean_value(
+  flag_key: 'boolean_flag',
+  default_value: false,
+  evaluation_context: OpenFeature::SDK::EvaluationContext.new("is_friday" => true)
+)
 ```
 
 For complete documentation, visit: https://openfeature.dev/docs/category/concepts

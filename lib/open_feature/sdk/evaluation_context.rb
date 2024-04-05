@@ -5,8 +5,8 @@ module OpenFeature
 
       attr_reader :fields
 
-      def initialize(targeting_key: nil, **fields)
-        @fields = {TARGETING_KEY => targeting_key}.merge(fields)
+      def initialize(**fields)
+        @fields = fields.transform_keys(&:to_s)
       end
 
       def targeting_key
@@ -15,6 +15,17 @@ module OpenFeature
 
       def field(key)
         fields[key]
+      end
+
+      def merge(overriding_context)
+        EvaluationContext.new(
+          targeting_key: overriding_context.targeting_key || targeting_key,
+          **fields.merge(overriding_context.fields)
+        )
+      end
+
+      def ==(other)
+        fields == other.fields
       end
     end
   end

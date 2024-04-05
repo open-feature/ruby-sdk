@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0](https://github.com/open-feature/ruby-sdk/compare/v0.2.1...v0.3.0) (2024-04-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* Add `EvaluationContext` helpers and context merging to flag evaluation ([#119](https://github.com/open-feature/ruby-sdk/issues/119))
+* Separate `Client` and `Provider` metadata, add client creation tests ([#116](https://github.com/open-feature/ruby-sdk/issues/116))
+
+### Features
+
+* Add `EvaluationContext` helpers and context merging to flag evaluation ([#119](https://github.com/open-feature/ruby-sdk/issues/119)) ([34e4795](https://github.com/open-feature/ruby-sdk/commit/34e47956d66e0c6763f58c818461aa52f628bd21))
+* Add evaluation context based on requirement 3.1 ([#114](https://github.com/open-feature/ruby-sdk/issues/114)) ([f8e016f](https://github.com/open-feature/ruby-sdk/commit/f8e016f1cf7bf1ca7fddce7a41efdeb4d3d522c1))
+* Flag Evaluation Requirement 1.1.4 and 1.1.5 and Provider Requirement 2.1.1 ([#112](https://github.com/open-feature/ruby-sdk/issues/112)) ([aac74b1](https://github.com/open-feature/ruby-sdk/commit/aac74b1e80a4b3e69983e55cf5c75b9cee37b71b))
+
+
+### Code Refactoring
+
+* Separate `Client` and `Provider` metadata, add client creation tests ([#116](https://github.com/open-feature/ruby-sdk/issues/116)) ([f028c39](https://github.com/open-feature/ruby-sdk/commit/f028c398db3e2317847fe7e7bcbe6bbe96bb0b1c))
+
 ## [0.2.1](https://github.com/open-feature/ruby-sdk/compare/v0.2.0...v0.2.1) (2024-03-29)
 
 

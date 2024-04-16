@@ -44,6 +44,14 @@ module OpenFeature
           no_op(default_value)
         end
 
+        def fetch_integer_value(flag_key:, default_value:, evaluation_context: nil)
+          no_op(default_value)
+        end
+
+        def fetch_float_value(flag_key:, default_value:, evaluation_context: nil)
+          no_op(default_value)
+        end
+
         def fetch_object_value(flag_key:, default_value:, evaluation_context: nil)
           no_op(default_value)
         end

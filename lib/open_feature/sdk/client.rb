@@ -5,7 +5,7 @@ module OpenFeature
     # TODO: Write documentation
     #
     class Client
-      RESULT_TYPE = %i[boolean string number object].freeze
+      RESULT_TYPE = %i[boolean string number integer float object].freeze
       SUFFIXES = %i[value details].freeze
 
       attr_reader :metadata, :evaluation_context

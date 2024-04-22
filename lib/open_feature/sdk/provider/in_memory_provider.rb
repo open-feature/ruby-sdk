@@ -34,7 +34,15 @@ module OpenFeature
         end
 
         def fetch_number_value(flag_key:, default_value:, evaluation_context: nil)
-          fetch_value(allowed_classes: [Integer, Float], flag_key:, default_value:, evaluation_context:)
+          fetch_value(allowed_classes: [Numeric], flag_key:, default_value:, evaluation_context:)
+        end
+
+        def fetch_integer_value(flag_key:, default_value:, evaluation_context: nil)
+          fetch_value(allowed_classes: [Integer], flag_key:, default_value:, evaluation_context:)
+        end
+
+        def fetch_float_value(flag_key:, default_value:, evaluation_context: nil)
+          fetch_value(allowed_classes: [Float], flag_key:, default_value:, evaluation_context:)
         end
 
         def fetch_object_value(flag_key:, default_value:, evaluation_context: nil)
@@ -52,7 +60,7 @@ module OpenFeature
             return ResolutionDetails.new(value: default_value, error_code: ErrorCode::FLAG_NOT_FOUND, reason: Reason::ERROR)
           end
 
-          if allowed_classes.include?(value.class)
+          if allowed_classes.any? { |klass| value.is_a?(klass) }
             ResolutionDetails.new(value:, reason: Reason::STATIC)
           else
             ResolutionDetails.new(value: default_value, error_code: ErrorCode::TYPE_MISMATCH, reason: Reason::ERROR)

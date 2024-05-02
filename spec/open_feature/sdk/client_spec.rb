@@ -64,13 +64,21 @@ RSpec.describe OpenFeature::SDK::Client do
             expect(client).to respond_to(:fetch_number_value)
           end
 
-          context "Condition 1.3.2 - The implementation language differentiates between floating-point numbers and integers." do
+          it do
+            expect(client.fetch_number_value(flag_key: flag_key, default_value: 4)).is_a?(Integer)
+          end
+
+          it do
+            expect(client.fetch_number_value(flag_key: flag_key, default_value: 95.5)).is_a?(Float)
+          end
+
+          context "Condition 1.3.3 - The implementation language differentiates between floating-point numbers and integers." do
             it do
-              expect(client.fetch_number_value(flag_key: flag_key, default_value: 4)).is_a?(Integer)
+              expect(client.fetch_integer_value(flag_key: flag_key, default_value: 4)).is_a?(Integer)
             end
 
             it do
-              expect(client.fetch_number_value(flag_key: flag_key, default_value: 95.5)).is_a?(Float)
+              expect(client.fetch_float_value(flag_key: flag_key, default_value: 95.5)).is_a?(Float)
             end
           end
         end

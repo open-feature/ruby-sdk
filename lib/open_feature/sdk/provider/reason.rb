@@ -2,15 +2,15 @@ module OpenFeature
   module SDK
     module Provider
       module Reason
-        STATIC = "Static"
-        DEFAULT = "Default"
-        TARGETING_MATCH = "Targeting Match"
-        SPLIT = "Split"
-        CACHED = "Cached"
-        DISABLED = "Disabled"
-        UNKNOWN = "Unknown"
-        STALE = "Stale"
-        ERROR = "Error"
+        STATIC = "STATIC"
+        DEFAULT = "DEFAULT"
+        TARGETING_MATCH = "TARGETING_MATCH"
+        SPLIT = "SPLIT"
+        CACHED = "CACHED"
+        DISABLED = "DISABLED"
+        UNKNOWN = "UNKNOWN"
+        STALE = "STALE"
+        ERROR = "ERROR"
       end
     end
   end

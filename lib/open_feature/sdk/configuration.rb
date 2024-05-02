@@ -16,6 +16,7 @@ module OpenFeature
       def initialize
         @hooks = []
         @providers = {}
+        @provider_mutex = Mutex.new
       end
 
       def provider(domain: nil)
@@ -27,11 +28,13 @@ module OpenFeature
       #   2. On the new provider, call `init`.
       #   3. Finally, set the internal provider to the new provider
       def set_provider(provider, domain: nil)
-        @providers[domain].shutdown if @providers[domain].respond_to?(:shutdown)
-
-        provider.init if provider.respond_to?(:init)
-
-        @providers[domain] = provider
+        @provider_mutex.synchronize do
+          @providers[domain].shutdown if @providers[domain].respond_to?(:shutdown)
+          provider.init if provider.respond_to?(:init)
+          new_providers = @providers.dup
+          new_providers[domain] = provider
+          @providers = new_providers
+        end
       end
     end
   end

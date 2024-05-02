@@ -38,5 +38,21 @@ RSpec.describe OpenFeature::SDK::Configuration do
         expect(configuration.provider(domain: "testing")).to be(provider)
       end
     end
+
+    context "when the provider is set concurrently" do
+      let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
+      it "does not not call shutdown hooks multiple times if multithreaded" do
+        providers = (0..2).map { OpenFeature::SDK::Provider::NoOpProvider.new }
+        providers.each { |provider| expect(provider).to receive(:init) }
+        providers[0, 2].each { |provider| expect(provider).to receive(:shutdown) }
+        configuration.set_provider(providers[0])
+
+        allow(providers[0]).to receive(:shutdown).once { sleep 0.5 }
+        background { configuration.set_provider(providers[1]) }
+        background { configuration.set_provider(providers[2]) }
+        yield_to_background
+        expect(configuration.provider).to be(providers[2])
+      end
+    end
   end
 end

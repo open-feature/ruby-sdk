@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/open-feature/ruby-sdk/compare/v0.3.0...v0.3.1) (2024-04-22)
+
+
+### Features
+
+* add integer and float specific resolver methods ([#124](https://github.com/open-feature/ruby-sdk/issues/124)) ([eea9d17](https://github.com/open-feature/ruby-sdk/commit/eea9d17e5892064cec9d81bb0ef452e7e1761764))
+
 ## [0.3.0](https://github.com/open-feature/ruby-sdk/compare/v0.2.1...v0.3.0) (2024-04-05)
 
 

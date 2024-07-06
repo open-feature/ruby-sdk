@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.0](https://github.com/open-feature/ruby-sdk/compare/v0.3.1...v0.4.0) (2024-06-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* Use strings from spec for error and reason enums ([#131](https://github.com/open-feature/ruby-sdk/issues/131))
+
+### Features
+
+* add hook hints ([#135](https://github.com/open-feature/ruby-sdk/issues/135)) ([51155a7](https://github.com/open-feature/ruby-sdk/commit/51155a7d9cd2c28b38accb9d9b49018bd4868040))
+* Use strings from spec for error and reason enums ([#131](https://github.com/open-feature/ruby-sdk/issues/131)) ([cb2a4cd](https://github.com/open-feature/ruby-sdk/commit/cb2a4cd54059ffe7ed3484be6705ca2a9d590c1a))
+
+
+### Bug Fixes
+
+* synchronize provider registration ([#136](https://github.com/open-feature/ruby-sdk/issues/136)) ([1ff6fd0](https://github.com/open-feature/ruby-sdk/commit/1ff6fd0c3732e9e074c8b30cbe4164a67286b0a4))
+
 ## [0.3.1](https://github.com/open-feature/ruby-sdk/compare/v0.3.0...v0.3.1) (2024-04-22)
 
 

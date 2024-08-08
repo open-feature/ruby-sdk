@@ -80,6 +80,10 @@ client = OpenFeature::SDK.build_client
 # fetching boolean value feature flag
 bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value: false)
 
+# a details method is also available for more information about the flag evaluation
+# see `ResolutionDetails` for more info
+bool_details = client.fetch_boolean_details(flag_key: 'boolean_flag', default_value: false) ==
+
 # fetching string value feature flag
 string_value = client.fetch_string_value(flag_key: 'string_flag', default_value: false)
 

@@ -158,7 +158,7 @@ bool_value = client.fetch_boolean_value(
 
 ### Hooks
 
-Coming Soon!
+Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/52) to be worked on.
 
 <!-- [Hooks](https://openfeature.dev/docs/reference/concepts/hooks) allow for custom logic to be added at well-defined points of the flag evaluation life-cycle.
 Look [here](https://openfeature.dev/ecosystem/?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Hook&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Ruby) for a complete list of available hooks.
@@ -170,7 +170,7 @@ Once you've added a hook as a dependency, it can be registered at the global, cl
 
 ### Logging
 
-Coming Soon!
+Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/148) to work on.
 
 <!-- TODO: talk about logging config and include a code example -->
 
@@ -190,7 +190,7 @@ legacy_flag_client = OpenFeature::SDK.build_client(domain: "legacy_flags")
 
 ### Eventing
 
-Coming Soon!
+Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/51) to be worked on.
 
 <!-- Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
 Initialization events (`PROVIDER_READY` on success, `PROVIDER_ERROR` on failure) are dispatched for every provider.
@@ -202,7 +202,7 @@ Please refer to the documentation of the provider you're using to see what event
 
 ### Shutdown
 
-Coming Soon!
+Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/149) to be worked on.
 
 <!-- TODO The OpenFeature API provides a close function to perform a cleanup of all registered providers.
 This should only be called when your application is in the process of shutting down.
@@ -218,7 +218,7 @@ end
 
 ### Transaction Context Propagation
 
-Coming Soon!
+Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/150) to be worked on.
 
 <!-- Transaction context is a container for transaction-specific evaluation context (e.g. user id, user agent, IP).
 Transaction context can be set where specific data is available (e.g. an auth service or request handler) and by using the transaction context propagator it will automatically be applied to all flag evaluations within a transaction (e.g. a request or thread). -->
@@ -277,7 +277,7 @@ end
 
 ### Develop a hook
 
-Coming Soon!
+Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/52) to be worked on.
 
 <!-- To develop a hook, you need to create a new project and include the OpenFeature SDK as a dependency.
 This can be a new repository or included in [the existing contrib repository](https://github.com/open-feature/ruby-sdk-contrib) available under the OpenFeature organization.

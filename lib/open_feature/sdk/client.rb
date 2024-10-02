@@ -5,9 +5,6 @@ module OpenFeature
     # TODO: Write documentation
     #
     class Client
-      RESULT_TYPE = %i[boolean string number integer float object].freeze
-      SUFFIXES = %i[value details].freeze
-
       attr_reader :metadata, :evaluation_context
 
       attr_accessor :hooks
@@ -19,20 +16,63 @@ module OpenFeature
         @hooks = []
       end
 
-      RESULT_TYPE.each do |result_type|
-        SUFFIXES.each do |suffix|
-          class_eval <<-RUBY, __FILE__, __LINE__ + 1
-            # def fetch_boolean_details(flag_key:, default_value:, evaluation_context: nil)
-            #   result = @provider.fetch_boolean_value(flag_key: flag_key, default_value: default_value, evaluation_context: evaluation_context)
-            # end
-            def fetch_#{result_type}_#{suffix}(flag_key:, default_value:, evaluation_context: nil)
-              built_context = EvaluationContextBuilder.new.call(api_context: OpenFeature::SDK.evaluation_context, client_context: self.evaluation_context, invocation_context: evaluation_context)
-              resolution_details = @provider.fetch_#{result_type}_value(flag_key:, default_value:, evaluation_context: built_context)
-              evaluation_details = EvaluationDetails.new(flag_key:, resolution_details:)
-              #{"evaluation_details.value" if suffix == :value}
-            end
-          RUBY
-        end
+      def fetch_boolean_details(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :boolean, flag_key:, default_value:, evaluation_context:)
+      end
+
+      def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :boolean, flag_key:, default_value:, evaluation_context:).value
+      end
+
+      def fetch_string_details(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :string, flag_key:, default_value:, evaluation_context:)
+      end
+
+      def fetch_string_value(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :string, flag_key:, default_value:, evaluation_context:).value
+      end
+
+      def fetch_number_details(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :number, flag_key:, default_value:, evaluation_context:)
+      end
+
+      def fetch_number_value(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :number, flag_key:, default_value:, evaluation_context:).value
+      end
+
+      def fetch_integer_details(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :integer, flag_key:, default_value:, evaluation_context:)
+      end
+
+      def fetch_integer_value(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :integer, flag_key:, default_value:, evaluation_context:).value
+      end
+
+      def fetch_float_details(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :float, flag_key:, default_value:, evaluation_context:)
+      end
+
+      def fetch_float_value(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :float, flag_key:, default_value:, evaluation_context:).value
+      end
+
+      def fetch_object_details(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :object, flag_key:, default_value:, evaluation_context:)
+      end
+
+      def fetch_object_value(flag_key:, default_value:, evaluation_context: nil)
+        fetch_details(type: :object, flag_key:, default_value:, evaluation_context:).value
+      end
+
+      private
+
+      def fetch_details(type:, flag_key:, default_value:, evaluation_context: nil)
+        built_context = EvaluationContextBuilder.new.call(api_context: OpenFeature::SDK.evaluation_context, client_context: self.evaluation_context, invocation_context: evaluation_context)
+
+        EvaluationDetails.new(
+          flag_key:,
+          resolution_details: @provider.send(:"fetch_#{type}_value", flag_key:, default_value:, evaluation_context: built_context)
+        )
       end
     end
   end

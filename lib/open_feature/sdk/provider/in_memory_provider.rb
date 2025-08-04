@@ -26,45 +26,41 @@ module OpenFeature
         end
 
         def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
-          fetch_value(allowed_classes: [TrueClass, FalseClass], flag_key:, default_value:, evaluation_context:)
+          fetch_value(flag_key:, default_value:, evaluation_context:)
         end
 
         def fetch_string_value(flag_key:, default_value:, evaluation_context: nil)
-          fetch_value(allowed_classes: [String], flag_key:, default_value:, evaluation_context:)
+          fetch_value(flag_key:, default_value:, evaluation_context:)
         end
 
         def fetch_number_value(flag_key:, default_value:, evaluation_context: nil)
-          fetch_value(allowed_classes: [Numeric], flag_key:, default_value:, evaluation_context:)
+          fetch_value(flag_key:, default_value:, evaluation_context:)
         end
 
         def fetch_integer_value(flag_key:, default_value:, evaluation_context: nil)
-          fetch_value(allowed_classes: [Integer], flag_key:, default_value:, evaluation_context:)
+          fetch_value(flag_key:, default_value:, evaluation_context:)
         end
 
         def fetch_float_value(flag_key:, default_value:, evaluation_context: nil)
-          fetch_value(allowed_classes: [Float], flag_key:, default_value:, evaluation_context:)
+          fetch_value(flag_key:, default_value:, evaluation_context:)
         end
 
         def fetch_object_value(flag_key:, default_value:, evaluation_context: nil)
-          fetch_value(allowed_classes: [Array, Hash], flag_key:, default_value:, evaluation_context:)
+          fetch_value(flag_key:, default_value:, evaluation_context:)
         end
 
         private
 
         attr_reader :flags
 
-        def fetch_value(allowed_classes:, flag_key:, default_value:, evaluation_context:)
+        def fetch_value(flag_key:, default_value:, evaluation_context:)
           value = flags[flag_key]
 
           if value.nil?
             return ResolutionDetails.new(value: default_value, error_code: ErrorCode::FLAG_NOT_FOUND, reason: Reason::ERROR)
           end
 
-          if allowed_classes.any? { |klass| value.is_a?(klass) }
-            ResolutionDetails.new(value:, reason: Reason::STATIC)
-          else
-            ResolutionDetails.new(value: default_value, error_code: ErrorCode::TYPE_MISMATCH, reason: Reason::ERROR)
-          end
+          ResolutionDetails.new(value:, reason: Reason::STATIC)
         end
       end
     end

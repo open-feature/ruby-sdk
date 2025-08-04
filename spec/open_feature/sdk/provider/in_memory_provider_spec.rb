@@ -37,23 +37,11 @@ RSpec.describe OpenFeature::SDK::Provider::InMemoryProvider do
 
   describe "#fetch_boolean_value" do
     context "when flag is found" do
-      context "when type matches" do
-        it "returns value as static" do
-          fetched = provider.fetch_boolean_value(flag_key: "bool", default_value: false)
+      it "returns value as static" do
+        fetched = provider.fetch_boolean_value(flag_key: "bool", default_value: false)
 
-          expect(fetched.value).to eq(true)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
-        end
-      end
-
-      context "when type does not match" do
-        it "returns default as type mismatch" do
-          fetched = provider.fetch_boolean_value(flag_key: "str", default_value: false)
-
-          expect(fetched.value).to eq(false)
-          expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
-        end
+        expect(fetched.value).to eq(true)
+        expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
       end
     end
 
@@ -70,23 +58,11 @@ RSpec.describe OpenFeature::SDK::Provider::InMemoryProvider do
 
   describe "#fetch_string_value" do
     context "when flag is found" do
-      context "when type matches" do
-        it "returns value as static" do
-          fetched = provider.fetch_string_value(flag_key: "str", default_value: "fallback")
+      it "returns value as static" do
+        fetched = provider.fetch_string_value(flag_key: "str", default_value: "fallback")
 
-          expect(fetched.value).to eq("testing")
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
-        end
-      end
-
-      context "when type does not match" do
-        it "returns default as type mismatch" do
-          fetched = provider.fetch_string_value(flag_key: "bool", default_value: "fallback")
-
-          expect(fetched.value).to eq("fallback")
-          expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
-        end
+        expect(fetched.value).to eq("testing")
+        expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
       end
     end
 
@@ -103,29 +79,17 @@ RSpec.describe OpenFeature::SDK::Provider::InMemoryProvider do
 
   describe "#fetch_number_value" do
     context "when flag is found" do
-      context "when type matches" do
-        it "returns int as static" do
-          fetched = provider.fetch_number_value(flag_key: "int", default_value: 0)
+      it "returns int as static" do
+        fetched = provider.fetch_number_value(flag_key: "int", default_value: 0)
 
-          expect(fetched.value).to eq(1)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
-        end
-        it "returns float as static" do
-          fetched = provider.fetch_number_value(flag_key: "float", default_value: 0.0)
-
-          expect(fetched.value).to eq(1.0)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
-        end
+        expect(fetched.value).to eq(1)
+        expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
       end
+      it "returns float as static" do
+        fetched = provider.fetch_number_value(flag_key: "float", default_value: 0.0)
 
-      context "when type does not match" do
-        it "returns default as type mismatch" do
-          fetched = provider.fetch_number_value(flag_key: "str", default_value: 0)
-
-          expect(fetched.value).to eq(0)
-          expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
-        end
+        expect(fetched.value).to eq(1.0)
+        expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
       end
     end
 
@@ -142,29 +106,17 @@ RSpec.describe OpenFeature::SDK::Provider::InMemoryProvider do
 
   describe "#fetch_integer_value" do
     context "when flag is found" do
-      context "when type matches" do
-        it "returns value as static" do
-          fetched = provider.fetch_integer_value(flag_key: "int", default_value: 0)
+      it "returns value as static" do
+        fetched = provider.fetch_integer_value(flag_key: "int", default_value: 0)
 
-          expect(fetched.value).to eq(1)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
-        end
-      end
-
-      context "when type does not match" do
-        it "returns default as type mismatch" do
-          fetched = provider.fetch_integer_value(flag_key: "float", default_value: 0)
-
-          expect(fetched.value).to eq(0)
-          expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
-        end
+        expect(fetched.value).to eq(1)
+        expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
       end
     end
 
     context "when flag is not found" do
       it "returns default as flag not found" do
-        fetched = provider.fetch_number_value(flag_key: "not here", default_value: 0)
+        fetched = provider.fetch_integer_value(flag_key: "not here", default_value: 0)
 
         expect(fetched.value).to eq(0)
         expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
@@ -173,31 +125,19 @@ RSpec.describe OpenFeature::SDK::Provider::InMemoryProvider do
     end
   end
 
-  describe "#fetch_integer_value" do
+  describe "#fetch_float_value" do
     context "when flag is found" do
-      context "when type matches" do
-        it "returns value as static" do
-          fetched = provider.fetch_float_value(flag_key: "float", default_value: 0.0)
+      it "returns value as static" do
+        fetched = provider.fetch_float_value(flag_key: "float", default_value: 0.0)
 
-          expect(fetched.value).to eq(1.0)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
-        end
-      end
-
-      context "when type does not match" do
-        it "returns default as type mismatch" do
-          fetched = provider.fetch_float_value(flag_key: "int", default_value: 0.0)
-
-          expect(fetched.value).to eq(0)
-          expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
-        end
+        expect(fetched.value).to eq(1.0)
+        expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
       end
     end
 
     context "when flag is not found" do
       it "returns default as flag not found" do
-        fetched = provider.fetch_number_value(flag_key: "not here", default_value: 0)
+        fetched = provider.fetch_float_value(flag_key: "not here", default_value: 0)
 
         expect(fetched.value).to eq(0)
         expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
@@ -208,23 +148,11 @@ RSpec.describe OpenFeature::SDK::Provider::InMemoryProvider do
 
   describe "#fetch_object_value" do
     context "when flag is found" do
-      context "when type matches" do
-        it "returns value as static" do
-          fetched = provider.fetch_object_value(flag_key: "struct", default_value: {})
+      it "returns value as static" do
+        fetched = provider.fetch_object_value(flag_key: "struct", default_value: {})
 
-          expect(fetched.value).to eq({"more" => "config"})
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
-        end
-      end
-
-      context "when type does not match" do
-        it "returns default as type mismatch" do
-          fetched = provider.fetch_object_value(flag_key: "int", default_value: {})
-
-          expect(fetched.value).to eq({})
-          expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
-          expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
-        end
+        expect(fetched.value).to eq({"more" => "config"})
+        expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
       end
     end
 

@@ -24,7 +24,7 @@ jobs:
       BUNDLE_GEMFILE: Gemfile
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
@@ -33,7 +33,7 @@ jobs:
         run: bundle exec rspec
       - name: Upload coverage to Codecov
         if: ${{ strategy.job-index == 0 }} # only run codecov on first run
-        uses: codecov/codecov-action@v5.4.3
+        uses: codecov/codecov-action@v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
@@ -43,7 +43,7 @@ jobs:
     name: Standard
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.2

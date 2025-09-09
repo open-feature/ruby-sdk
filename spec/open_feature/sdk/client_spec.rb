@@ -110,13 +110,13 @@ RSpec.describe OpenFeature::SDK::Client do
               "num" => true,
               "int" => "one",
               "float" => "1.23",
-              "obj" => "{}",
+              "obj" => "{}"
             }
           )
         end
 
         context "boolean value" do
-          let(:flag_key) { "bool"}
+          let(:flag_key) { "bool" }
           let(:default_value) { false }
 
           it "returns default as type mismatch" do

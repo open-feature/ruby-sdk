@@ -47,7 +47,7 @@ module OpenFeature
         built_context = EvaluationContextBuilder.new.call(api_context: OpenFeature::SDK.evaluation_context, client_context: self.evaluation_context, invocation_context: evaluation_context)
 
         resolution_details = @provider.send(:"fetch_#{type}_value", flag_key:, default_value:, evaluation_context: built_context)
-        
+
         if TYPE_CLASS_MAP[type].none? { |klass| resolution_details.value.is_a?(klass) }
           resolution_details.value = default_value
           resolution_details.error_code = Provider::ErrorCode::TYPE_MISMATCH

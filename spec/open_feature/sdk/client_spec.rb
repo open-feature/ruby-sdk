@@ -100,6 +100,101 @@ RSpec.describe OpenFeature::SDK::Client do
       pending
     end
 
+    context "Requirement 1.3.4" do
+      context "Guarantee the returned value of any typed flag evaluation method is of the expected type. If the value returned by the underlying provider implementation does not match the expected type, it's to be considered abnormal execution, and the supplied default value should be returned." do
+        let(:provider) do
+          OpenFeature::SDK::Provider::InMemoryProvider.new(
+            {
+              "bool" => "no",
+              "str" => 123,
+              "num" => true,
+              "int" => "one",
+              "float" => "1.23",
+              "obj" => "{}"
+            }
+          )
+        end
+
+        context "boolean value" do
+          let(:flag_key) { "bool" }
+          let(:default_value) { false }
+
+          it "returns default as type mismatch" do
+            fetched = client.fetch_boolean_details(flag_key:, default_value:)
+
+            expect(fetched.value).to be(default_value)
+            expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
+            expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+          end
+        end
+
+        context "string value" do
+          let(:flag_key) { "str" }
+          let(:default_value) { "default" }
+
+          it "returns default as type mismatch" do
+            fetched = client.fetch_string_details(flag_key:, default_value:)
+
+            expect(fetched.value).to be(default_value)
+            expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
+            expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+          end
+        end
+
+        context "number value" do
+          let(:flag_key) { "num" }
+          let(:default_value) { 4 }
+
+          it "returns default as type mismatch" do
+            fetched = client.fetch_number_details(flag_key:, default_value:)
+
+            expect(fetched.value).to be(default_value)
+            expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
+            expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+          end
+        end
+
+        context "integer value" do
+          let(:flag_key) { "int" }
+          let(:default_value) { 4 }
+
+          it "returns default as type mismatch" do
+            fetched = client.fetch_integer_details(flag_key:, default_value:)
+
+            expect(fetched.value).to be(default_value)
+            expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
+            expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+          end
+        end
+
+        context "float value" do
+          let(:flag_key) { "float" }
+          let(:default_value) { 1.23 }
+
+          it "returns default as type mismatch" do
+            fetched = client.fetch_float_details(flag_key:, default_value:)
+
+            expect(fetched.value).to be(default_value)
+            expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
+            expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+          end
+        end
+
+        context "object value" do
+          let(:flag_key) { "obj" }
+          let(:default_value) { {} }
+
+          it "returns default as type mismatch" do
+            fetched = client.fetch_object_details(flag_key:, default_value:)
+
+            expect(fetched.value).to be(default_value)
+            expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
+            expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+          end
+        end
+      end
+    end
+
     context "Detailed Feature Evaluation" do
       let(:flag_key) { "my-awesome-feature-flag-key" }
 

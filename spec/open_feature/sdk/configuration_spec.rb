@@ -61,7 +61,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
       let(:provider1) { OpenFeature::SDK::Provider::InMemoryProvider.new }
       let(:provider2) { OpenFeature::SDK::Provider::InMemoryProvider.new }
 
-      it "calls shutdown on all providers" do
+      it "calls shutdown on all providers and clears them" do
         configuration.set_provider(provider1)
         configuration.set_provider(provider2, domain: "testing")
 
@@ -69,15 +69,22 @@ RSpec.describe OpenFeature::SDK::Configuration do
         expect(provider2).to receive(:shutdown)
 
         configuration.shutdown
+
+        # Verify providers are cleared
+        expect(configuration.provider).to be_nil
+        expect(configuration.provider(domain: "testing")).to be_nil
       end
     end
 
     context "when providers do not have shutdown methods" do
-      it "does not raise errors for providers without shutdown" do
+      it "does not raise errors for providers without shutdown and clears them" do
         provider_without_shutdown = OpenFeature::SDK::Provider::NoOpProvider.new
         configuration.set_provider(provider_without_shutdown)
 
         expect { configuration.shutdown }.not_to raise_error
+
+        # Verify providers are cleared
+        expect(configuration.provider).to be_nil
       end
     end
 

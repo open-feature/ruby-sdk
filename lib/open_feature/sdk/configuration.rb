@@ -37,12 +37,13 @@ module OpenFeature
         end
       end
 
-      # Shutdown all registered providers
+      # Shutdown all registered providers and clear the configuration
       def shutdown
         @provider_mutex.synchronize do
           @providers.each_value do |provider|
             provider.shutdown if provider.respond_to?(:shutdown)
           end
+          @providers.clear
         end
       end
     end

@@ -140,6 +140,10 @@ RSpec.describe "Flag Evaluation API" do
         expect(provider2).to receive(:shutdown)
 
         expect { OpenFeature::SDK.shutdown }.not_to raise_error
+
+        # Verify providers are cleared after shutdown
+        expect(OpenFeature::SDK.provider).to be_nil
+        expect(OpenFeature::SDK.provider(domain: "testing")).to be_nil
       end
 
       specify "Shutdown does not raise errors when providers don't have shutdown methods" do
@@ -147,6 +151,9 @@ RSpec.describe "Flag Evaluation API" do
         OpenFeature::SDK.set_provider(provider_without_shutdown)
 
         expect { OpenFeature::SDK.shutdown }.not_to raise_error
+
+        # Verify providers are cleared after shutdown
+        expect(OpenFeature::SDK.provider).to be_nil
       end
     end
   end

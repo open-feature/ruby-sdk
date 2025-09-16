@@ -223,7 +223,13 @@ end
 OpenFeature::SDK.shutdown
 ```
 
-When you call `OpenFeature::SDK.shutdown`, it will automatically call the `shutdown` method on all registered providers that support it. If a provider doesn't have a `shutdown` method, it will be safely ignored.
+When you call `OpenFeature::SDK.shutdown`, it will:
+
+1. Call the `shutdown` method on all registered providers that support it
+2. Clear all registered providers from the configuration 
+3. Reset the SDK to its initial state
+
+After shutdown, no providers will be available and the SDK will need to be reconfigured if you want to continue using it.
 
 To implement shutdown in your custom provider:
 

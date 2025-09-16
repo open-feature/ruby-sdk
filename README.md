@@ -82,17 +82,17 @@ bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value:
 
 # a details method is also available for more information about the flag evaluation
 # see `ResolutionDetails` for more info
-bool_details = client.fetch_boolean_details(flag_key: 'boolean_flag', default_value: false) ==
+bool_details = client.fetch_boolean_details(flag_key: 'boolean_flag', default_value: false)
 
 # fetching string value feature flag
-string_value = client.fetch_string_value(flag_key: 'string_flag', default_value: false)
+string_value = client.fetch_string_value(flag_key: 'string_flag', default_value: 'default')
 
 # fetching number value feature flag
 float_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1.0)
 integer_value = client.fetch_number_value(flag_key: 'number_value', default_value: 1)
 
 # get an object value
-object = client.fetch_object_value(flag_key: 'object_value', default_value: JSON.dump({ name: 'object'}))
+object = client.fetch_object_value(flag_key: 'object_value', default_value: { name: 'object'})
 ```
 
 ## 🌟 Features

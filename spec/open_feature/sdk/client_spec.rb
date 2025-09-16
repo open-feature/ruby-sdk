@@ -353,5 +353,83 @@ RSpec.describe OpenFeature::SDK::Client do
         pending
       end
     end
+
+    context "Default Value Type Validation" do
+      let(:flag_key) { "test-flag" }
+
+      context "Valid default value types" do
+        it "accepts boolean values for fetch_boolean_value" do
+          expect { client.fetch_boolean_value(flag_key:, default_value: true) }.not_to raise_error
+          expect { client.fetch_boolean_value(flag_key:, default_value: false) }.not_to raise_error
+        end
+
+        it "accepts string values for fetch_string_value" do
+          expect { client.fetch_string_value(flag_key:, default_value: "test") }.not_to raise_error
+          expect { client.fetch_string_value(flag_key:, default_value: "") }.not_to raise_error
+        end
+
+        it "accepts numeric values for fetch_number_value" do
+          expect { client.fetch_number_value(flag_key:, default_value: 42) }.not_to raise_error
+          expect { client.fetch_number_value(flag_key:, default_value: 3.14) }.not_to raise_error
+        end
+
+        it "accepts integer values for fetch_integer_value" do
+          expect { client.fetch_integer_value(flag_key:, default_value: 42) }.not_to raise_error
+        end
+
+        it "accepts float values for fetch_float_value" do
+          expect { client.fetch_float_value(flag_key:, default_value: 3.14) }.not_to raise_error
+        end
+
+        it "accepts array and hash values for fetch_object_value" do
+          expect { client.fetch_object_value(flag_key:, default_value: {}) }.not_to raise_error
+          expect { client.fetch_object_value(flag_key:, default_value: []) }.not_to raise_error
+        end
+      end
+
+      context "Invalid default value types" do
+        it "raises ArgumentError for invalid boolean default values" do
+          expect { client.fetch_boolean_value(flag_key:, default_value: "not boolean") }
+            .to raise_error(ArgumentError, /Default value for boolean must be TrueClass or FalseClass, got String/)
+          expect { client.fetch_boolean_value(flag_key:, default_value: 1) }
+            .to raise_error(ArgumentError, /Default value for boolean must be TrueClass or FalseClass, got Integer/)
+        end
+
+        it "raises ArgumentError for invalid string default values" do
+          expect { client.fetch_string_value(flag_key:, default_value: true) }
+            .to raise_error(ArgumentError, /Default value for string must be String, got TrueClass/)
+          expect { client.fetch_string_value(flag_key:, default_value: 42) }
+            .to raise_error(ArgumentError, /Default value for string must be String, got Integer/)
+        end
+
+        it "raises ArgumentError for invalid number default values" do
+          expect { client.fetch_number_value(flag_key:, default_value: "42") }
+            .to raise_error(ArgumentError, /Default value for number must be Numeric, got String/)
+          expect { client.fetch_number_value(flag_key:, default_value: true) }
+            .to raise_error(ArgumentError, /Default value for number must be Numeric, got TrueClass/)
+        end
+
+        it "raises ArgumentError for invalid integer default values" do
+          expect { client.fetch_integer_value(flag_key:, default_value: 3.14) }
+            .to raise_error(ArgumentError, /Default value for integer must be Integer, got Float/)
+          expect { client.fetch_integer_value(flag_key:, default_value: "42") }
+            .to raise_error(ArgumentError, /Default value for integer must be Integer, got String/)
+        end
+
+        it "raises ArgumentError for invalid float default values" do
+          expect { client.fetch_float_value(flag_key:, default_value: 42) }
+            .to raise_error(ArgumentError, /Default value for float must be Float, got Integer/)
+          expect { client.fetch_float_value(flag_key:, default_value: "3.14") }
+            .to raise_error(ArgumentError, /Default value for float must be Float, got String/)
+        end
+
+        it "raises ArgumentError for invalid object default values" do
+          expect { client.fetch_object_value(flag_key:, default_value: "not object") }
+            .to raise_error(ArgumentError, /Default value for object must be Array or Hash, got String/)
+          expect { client.fetch_object_value(flag_key:, default_value: 42) }
+            .to raise_error(ArgumentError, /Default value for object must be Array or Hash, got Integer/)
+        end
+      end
+    end
   end
 end

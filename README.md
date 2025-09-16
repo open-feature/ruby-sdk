@@ -105,7 +105,7 @@ object = client.fetch_object_value(flag_key: 'object_value', default_value: JSON
 | ❌      | [Logging](#logging)                                                 | Integrate with popular logging packages.                                                                                                                     |
 | ✅      | [Domains](#domains)                                                 | Logically bind clients with providers.                                                                                                                       |
 | ❌      | [Eventing](#eventing)                                               | React to state changes in the provider or flag management system.                                                                                            |
-| ⚠️      | [Shutdown](#shutdown)                                               | Gracefully clean up a provider during application shutdown.                                                                                                  |
+| ✅      | [Shutdown](#shutdown)                                               | Gracefully clean up a provider during application shutdown.                                                                                                  |
 | ❌      | [Transaction Context Propagation](#transaction-context-propagation) | Set a specific [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context) for a transaction (e.g. an HTTP request or a thread) |
 | ⚠️      | [Extending](#extending)                                             | Extend OpenFeature with custom providers and hooks.                                                                                                          |
 
@@ -206,10 +206,26 @@ Please refer to the documentation of the provider you're using to see what event
 
 ### Shutdown
 
-Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/149) to be worked on.
-
-<!-- TODO The OpenFeature API provides a close function to perform a cleanup of all registered providers.
+The OpenFeature API provides a shutdown function to perform a cleanup of all registered providers.
 This should only be called when your application is in the process of shutting down.
+
+```ruby
+# Configure providers
+OpenFeature::SDK.configure do |config|
+  config.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new(
+    {
+      "v2_enabled" => true,
+    }
+  ))
+end
+
+# During application shutdown
+OpenFeature::SDK.shutdown
+```
+
+When you call `OpenFeature::SDK.shutdown`, it will automatically call the `shutdown` method on all registered providers that support it. If a provider doesn't have a `shutdown` method, it will be safely ignored.
+
+To implement shutdown in your custom provider:
 
 ```ruby
 class MyProvider
@@ -218,7 +234,7 @@ class MyProvider
     # Return value is ignored
   end
 end
-``` -->
+```
 
 ### Transaction Context Propagation
 

@@ -36,6 +36,15 @@ module OpenFeature
           @providers = new_providers
         end
       end
+
+      # Shutdown all registered providers
+      def shutdown
+        @provider_mutex.synchronize do
+          @providers.each_value do |provider|
+            provider.shutdown if provider.respond_to?(:shutdown)
+          end
+        end
+      end
     end
   end
 end

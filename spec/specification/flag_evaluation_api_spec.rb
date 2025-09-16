@@ -127,6 +127,28 @@ RSpec.describe "Flag Evaluation API" do
         end.not_to raise_error
       end
     end
+
+    context "Shutdown functionality" do
+      specify "The API must provide a shutdown function to gracefully clean up all providers" do
+        provider1 = OpenFeature::SDK::Provider::InMemoryProvider.new
+        provider2 = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+        OpenFeature::SDK.set_provider(provider1)
+        OpenFeature::SDK.set_provider(provider2, domain: "testing")
+
+        expect(provider1).to receive(:shutdown)
+        expect(provider2).to receive(:shutdown)
+
+        expect { OpenFeature::SDK.shutdown }.not_to raise_error
+      end
+
+      specify "Shutdown does not raise errors when providers don't have shutdown methods" do
+        provider_without_shutdown = OpenFeature::SDK::Provider::NoOpProvider.new
+        OpenFeature::SDK.set_provider(provider_without_shutdown)
+
+        expect { OpenFeature::SDK.shutdown }.not_to raise_error
+      end
+    end
   end
 
   context "1.2 - Client Usage" do

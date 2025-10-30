@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require 'forwardable'
-require 'singleton'
+require "forwardable"
+require "singleton"
 
-require_relative 'configuration'
-require_relative 'evaluation_context'
-require_relative 'evaluation_context_builder'
-require_relative 'evaluation_details'
-require_relative 'client_metadata'
-require_relative 'client'
-require_relative 'provider'
+require_relative "configuration"
+require_relative "evaluation_context"
+require_relative "evaluation_context_builder"
+require_relative "evaluation_details"
+require_relative "client_metadata"
+require_relative "client"
+require_relative "provider"
 
 module OpenFeature
   module SDK
@@ -48,7 +48,7 @@ module OpenFeature
         active_provider = provider(domain:).nil? ? Provider::NoOpProvider.new : provider(domain:)
 
         Client.new(provider: active_provider, domain:, evaluation_context:)
-      rescue StandardError
+      rescue
         Client.new(provider: Provider::NoOpProvider.new, evaluation_context:)
       end
     end

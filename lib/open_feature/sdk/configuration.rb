@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'timeout'
-require_relative 'api'
-require_relative 'provider_initialization_error'
+require "timeout"
+require_relative "api"
+require_relative "provider_initialization_error"
 
 module OpenFeature
   module SDK
@@ -53,7 +53,7 @@ module OpenFeature
           # Shutdown old provider (ignore errors)
           begin
             old_provider.shutdown if old_provider.respond_to?(:shutdown)
-          rescue StandardError
+          rescue
             # Ignore shutdown errors and continue with provider initialization
           end
 
@@ -75,7 +75,7 @@ module OpenFeature
               provider:,
               original_error: e
             )
-          rescue StandardError => e
+          rescue => e
             raise ProviderInitializationError.new(
               "Provider initialization failed: #{e.message}",
               provider:,

@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
+require "spec_helper"
 
 RSpec.describe OpenFeature::SDK::Configuration do
   subject(:configuration) { described_class.new }
 
-  describe '#set_provider' do
-    context 'when provider has an init method' do
+  describe "#set_provider" do
+    context "when provider has an init method" do
       let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
 
-      it 'inits and sets the provider' do
+      it "inits and sets the provider" do
         expect(provider).to receive(:init)
 
         configuration.set_provider(provider)
@@ -18,8 +18,8 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
     end
 
-    context 'when provider does not have an init method' do
-      it 'sets the default provider' do
+    context "when provider does not have an init method" do
+      it "sets the default provider" do
         provider = OpenFeature::SDK::Provider::NoOpProvider.new
 
         configuration.set_provider(provider)
@@ -28,20 +28,20 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
     end
 
-    context 'when domain is given' do
-      it 'binds the provider to that domain' do
+    context "when domain is given" do
+      it "binds the provider to that domain" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         expect(provider).to receive(:init)
 
-        configuration.set_provider(provider, domain: 'testing')
+        configuration.set_provider(provider, domain: "testing")
 
-        expect(configuration.provider(domain: 'testing')).to be(provider)
+        expect(configuration.provider(domain: "testing")).to be(provider)
       end
     end
 
-    context 'when the provider is set concurrently' do
+    context "when the provider is set concurrently" do
       let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
-      it 'does not not call shutdown hooks multiple times if multithreaded' do
+      it "does not not call shutdown hooks multiple times if multithreaded" do
         providers = (0..2).map { OpenFeature::SDK::Provider::NoOpProvider.new }
         providers.each { |provider| expect(provider).to receive(:init) }
         providers[0, 2].each { |provider| expect(provider).to receive(:shutdown) }
@@ -56,11 +56,11 @@ RSpec.describe OpenFeature::SDK::Configuration do
     end
   end
 
-  describe '#set_provider_and_wait' do
-    context 'when provider has a successful init method' do
+  describe "#set_provider_and_wait" do
+    context "when provider has a successful init method" do
       let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
 
-      it 'waits for init to complete and sets the provider' do
+      it "waits for init to complete and sets the provider" do
         expect(provider).to receive(:init).once
 
         configuration.set_provider_and_wait(provider)
@@ -68,7 +68,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         expect(configuration.provider).to be(provider)
       end
 
-      it 'supports custom timeout' do
+      it "supports custom timeout" do
         expect(provider).to receive(:init).once
 
         configuration.set_provider_and_wait(provider, timeout: 60)
@@ -77,8 +77,8 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
     end
 
-    context 'when provider does not have an init method' do
-      it 'sets the provider without waiting' do
+    context "when provider does not have an init method" do
+      it "sets the provider without waiting" do
         provider = OpenFeature::SDK::Provider::NoOpProvider.new
 
         configuration.set_provider_and_wait(provider)
@@ -87,30 +87,30 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
     end
 
-    context 'when domain is given' do
-      it 'binds the provider to that domain' do
+    context "when domain is given" do
+      it "binds the provider to that domain" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         expect(provider).to receive(:init).once
 
-        configuration.set_provider_and_wait(provider, domain: 'testing')
+        configuration.set_provider_and_wait(provider, domain: "testing")
 
-        expect(configuration.provider(domain: 'testing')).to be(provider)
+        expect(configuration.provider(domain: "testing")).to be(provider)
       end
     end
 
-    context 'when provider init raises an exception' do
+    context "when provider init raises an exception" do
       let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
-      let(:error_message) { 'Database connection failed' }
+      let(:error_message) { "Database connection failed" }
 
       before do
         allow(provider).to receive(:init).and_raise(StandardError.new(error_message))
       end
 
-      it 'raises ProviderInitializationError' do
+      it "raises ProviderInitializationError" do
         expect do
           configuration.set_provider_and_wait(provider)
         end.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
-          expect(error.message).to include('Provider initialization failed')
+          expect(error.message).to include("Provider initialization failed")
           expect(error.message).to include(error_message)
           expect(error.provider).to be(provider)
           expect(error.original_error).to be_a(StandardError)
@@ -118,7 +118,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         end
       end
 
-      it 'does not set the provider when init fails' do
+      it "does not set the provider when init fails" do
         old_provider = configuration.provider
 
         expect do
@@ -129,7 +129,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
     end
 
-    context 'when provider init times out' do
+    context "when provider init times out" do
       let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
 
       before do
@@ -138,17 +138,17 @@ RSpec.describe OpenFeature::SDK::Configuration do
         end
       end
 
-      it 'raises ProviderInitializationError after timeout' do
+      it "raises ProviderInitializationError after timeout" do
         expect do
           configuration.set_provider_and_wait(provider, timeout: 0.1)
         end.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
-          expect(error.message).to include('Provider initialization timed out after 0.1 seconds')
+          expect(error.message).to include("Provider initialization timed out after 0.1 seconds")
           expect(error.provider).to be(provider)
           expect(error.original_error).to be_a(Timeout::Error)
         end
       end
 
-      it 'does not set the provider when init times out' do
+      it "does not set the provider when init times out" do
         old_provider = configuration.provider
 
         expect do
@@ -159,18 +159,18 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
     end
 
-    context 'when shutting down the old provider fails' do
+    context "when shutting down the old provider fails" do
       let(:old_provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
       let(:new_provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
 
       before do
         # Set up initial provider
         configuration.set_provider(old_provider)
-        allow(old_provider).to receive(:shutdown).and_raise(StandardError.new('Shutdown failed'))
+        allow(old_provider).to receive(:shutdown).and_raise(StandardError.new("Shutdown failed"))
         allow(new_provider).to receive(:init)
       end
 
-      it 'continues with setting the new provider' do
+      it "continues with setting the new provider" do
         # Should not raise an exception even if shutdown fails
         configuration.set_provider_and_wait(new_provider)
 
@@ -178,10 +178,10 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
     end
 
-    context 'when the provider is set concurrently' do
+    context "when the provider is set concurrently" do
       let(:providers) { (0..2).map { OpenFeature::SDK::Provider::InMemoryProvider.new } }
 
-      it 'handles concurrent calls safely' do
+      it "handles concurrent calls safely" do
         providers.each { |provider| expect(provider).to receive(:init).once }
         # First two providers should be shut down
         expect(providers[0]).to receive(:shutdown).once
@@ -201,10 +201,10 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
     end
 
-    context 'when handling complex initialization scenarios' do
+    context "when handling complex initialization scenarios" do
       let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
 
-      it 'handles provider that responds_to init but init is nil' do
+      it "handles provider that responds_to init but init is nil" do
         allow(provider).to receive(:respond_to?).with(:init).and_return(true)
         allow(provider).to receive(:init).and_return(nil)
 

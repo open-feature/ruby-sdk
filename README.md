@@ -130,6 +130,42 @@ OpenFeature::SDK.configure do |config|
 end
 ```
 
+#### Blocking Provider Registration
+
+If you need to ensure that a provider is fully initialized before continuing, you can use `set_provider_and_wait`:
+
+```ruby
+# Using the SDK directly
+begin
+  OpenFeature::SDK.set_provider_and_wait(my_provider)
+  puts "Provider is ready!"
+rescue OpenFeature::SDK::ProviderInitializationError => e
+  puts "Provider failed to initialize: #{e.message}"
+  puts "Original error: #{e.original_error}"
+end
+
+# With custom timeout (default is 30 seconds)
+OpenFeature::SDK.set_provider_and_wait(my_provider, timeout: 60)
+
+# Domain-specific provider
+OpenFeature::SDK.set_provider_and_wait(my_provider, domain: "feature-flags")
+
+# Via configuration block
+OpenFeature::SDK.configure do |config|
+  begin
+    config.set_provider_and_wait(my_provider)
+  rescue OpenFeature::SDK::ProviderInitializationError => e
+    # Handle initialization failure
+  end
+end
+```
+
+The `set_provider_and_wait` method:
+- Waits for the provider's `init` method to complete successfully
+- Raises `ProviderInitializationError` if initialization fails or times out
+- Provides access to the original error and provider instance for debugging
+- Uses the same thread-safe provider switching as `set_provider`
+
 In some situations, it may be beneficial to register multiple providers in the same application.
 This is possible using [domains](#domains), which is covered in more detail below.
 

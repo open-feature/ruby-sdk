@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require "forwardable"
-require "singleton"
+require 'forwardable'
+require 'singleton'
 
-require_relative "configuration"
-require_relative "evaluation_context"
-require_relative "evaluation_context_builder"
-require_relative "evaluation_details"
-require_relative "client_metadata"
-require_relative "client"
-require_relative "provider"
+require_relative 'configuration'
+require_relative 'evaluation_context'
+require_relative 'evaluation_context_builder'
+require_relative 'evaluation_details'
+require_relative 'client_metadata'
+require_relative 'client'
+require_relative 'provider'
 
 module OpenFeature
   module SDK
@@ -32,7 +32,7 @@ module OpenFeature
       include Singleton # Satisfies Flag Evaluation API Requirement 1.1.1
       extend Forwardable
 
-      def_delegators :configuration, :provider, :set_provider, :hooks, :evaluation_context
+      def_delegators :configuration, :provider, :set_provider, :set_provider_and_wait, :hooks, :evaluation_context
 
       def configuration
         @configuration ||= Configuration.new
@@ -48,7 +48,7 @@ module OpenFeature
         active_provider = provider(domain:).nil? ? Provider::NoOpProvider.new : provider(domain:)
 
         Client.new(provider: active_provider, domain:, evaluation_context:)
-      rescue
+      rescue StandardError
         Client.new(provider: Provider::NoOpProvider.new, evaluation_context:)
       end
     end

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/open-feature/ruby-sdk/compare/v0.4.0...v0.5.0) (2025-10-31)
+
+
+### Features
+
+* Add runtime type validation for default values in flag evaluation methods ([#194](https://github.com/open-feature/ruby-sdk/issues/194)) ([dc56c76](https://github.com/open-feature/ruby-sdk/commit/dc56c76f987c16b22a284513b7d0f383d38a0198))
+* Add setProviderAndWait method for blocking provider initialization ([#200](https://github.com/open-feature/ruby-sdk/issues/200)) ([d92eabc](https://github.com/open-feature/ruby-sdk/commit/d92eabcb54335e21522cea0d6b10be3e842ce8e2))
+
 ## [0.4.0](https://github.com/open-feature/ruby-sdk/compare/v0.3.1...v0.4.0) (2024-06-13)
 
 

@@ -115,6 +115,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
           expect(error.provider).to be(provider)
           expect(error.original_error).to be_a(StandardError)
           expect(error.original_error.message).to eq(error_message)
+          expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
         end
       end
 
@@ -145,6 +146,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
           expect(error.message).to include("Provider initialization timed out after 0.1 seconds")
           expect(error.provider).to be(provider)
           expect(error.original_error).to be_a(Timeout::Error)
+          expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
         end
       end
 

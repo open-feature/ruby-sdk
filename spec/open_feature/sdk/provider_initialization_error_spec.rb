@@ -28,6 +28,10 @@ RSpec.describe OpenFeature::SDK::ProviderInitializationError do
       it "inherits from StandardError" do
         expect(error).to be_a(StandardError)
       end
+
+      it "sets the error code to PROVIDER_FATAL by default" do
+        expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
+      end
     end
 
     context "with minimal parameters" do
@@ -43,6 +47,10 @@ RSpec.describe OpenFeature::SDK::ProviderInitializationError do
 
       it "has nil original_error" do
         expect(error.original_error).to be_nil
+      end
+
+      it "sets the error code to PROVIDER_FATAL by default" do
+        expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
       end
     end
 
@@ -67,6 +75,16 @@ RSpec.describe OpenFeature::SDK::ProviderInitializationError do
 
       it "sets the original_error" do
         expect(error.original_error).to be(original_error)
+      end
+    end
+
+    context "with custom error code" do
+      subject(:error) do
+        described_class.new(message, provider:, original_error:, error_code: "CUSTOM_ERROR")
+      end
+
+      it "sets the custom error code" do
+        expect(error.error_code).to eq("CUSTOM_ERROR")
       end
     end
   end

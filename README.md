@@ -141,6 +141,7 @@ begin
   puts "Provider is ready!"
 rescue OpenFeature::SDK::ProviderInitializationError => e
   puts "Provider failed to initialize: #{e.message}"
+  puts "Error code: #{e.error_code}"
   puts "Original error: #{e.original_error}"
 end
 
@@ -162,8 +163,8 @@ end
 
 The `set_provider_and_wait` method:
 - Waits for the provider's `init` method to complete successfully
-- Raises `ProviderInitializationError` if initialization fails or times out
-- Provides access to the original error and provider instance for debugging
+- Raises `ProviderInitializationError` with `PROVIDER_FATAL` error code if initialization fails or times out
+- Provides access to the original error, provider instance, and error code for debugging
 - Uses the same thread-safe provider switching as `set_provider`
 
 In some situations, it may be beneficial to register multiple providers in the same application.

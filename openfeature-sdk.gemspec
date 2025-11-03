@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary = "OpenFeature SDK for Ruby"
   spec.description = "Ruby SDK for an the specifications for the open standard of feature flag management"
   spec.homepage = "https://github.com/open-feature/openfeature-ruby"
-  spec.license = "Apache-2.0'"
+  spec.license = "Apache-2.0"
   spec.required_ruby_version = ">= 3.1"
 
   spec.metadata["homepage_uri"] = spec.homepage

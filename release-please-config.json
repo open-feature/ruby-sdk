@@ -1,6 +1,7 @@
 {
   "bootstrap-sha": "9bcc2bcbbcbce2d750ef1e0f67081fff4bb9ff79",
   "release-type": "ruby",
+  "signoff": "OpenFeature Bot <109696520+openfeaturebot@users.noreply.github.com>",
   "packages": {
     ".": {
       "monorepo-tags": false,

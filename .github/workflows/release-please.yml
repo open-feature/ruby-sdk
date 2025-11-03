@@ -13,11 +13,10 @@ jobs:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
-          release-type: ruby
-          package-name: openfeature-sdk
-          bump-minor-pre-major: true
-          bump-patch-for-minor-pre-major: true
-          version-file: "lib/open_feature/sdk/version.rb"
+
+          token: ${{ secrets.RELEASE_PLEASE_ACTION_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       release_tag_name: ${{ steps.release.outputs.tag_name }}

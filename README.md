@@ -17,8 +17,8 @@
   </a>
   <!-- x-release-please-start-version -->
 
-  <a href="https://github.com/open-feature/ruby-sdk/releases/tag/v0.4.0">
-    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v0.4.0&color=blue&style=for-the-badge" />
+  <a href="https://github.com/open-feature/ruby-sdk/releases/tag/v0.4.1">
+    <img alt="Release" src="https://img.shields.io/static/v1?label=release&message=v0.4.1&color=blue&style=for-the-badge" />
   </a>
 
   <!-- x-release-please-end -->

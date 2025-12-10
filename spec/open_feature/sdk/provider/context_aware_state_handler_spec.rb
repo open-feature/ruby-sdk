@@ -31,7 +31,7 @@ RSpec.describe OpenFeature::SDK::Provider::ContextAwareStateHandler do
     end
     
     it 'responds to init_with_timeout' do
-      expect(provider).to respond_to(:init_with_timeout).with_keywords(:timeout)
+      expect(provider).to respond_to(:init_with_timeout).with(1).argument.and_keywords(:timeout)
     end
     
     it 'responds to shutdown_with_timeout' do

@@ -8,8 +8,6 @@ module OpenFeature
       # EventHandler allows providers to emit lifecycle events.
       # FeatureProviders can opt in for this behavior by including this module.
       #
-      # Adapted for Ruby's callback pattern.
-      #
       # Example:
       #   class MyProvider
       #     include OpenFeature::SDK::Provider::EventHandler

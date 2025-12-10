@@ -9,8 +9,6 @@ module OpenFeature
       # ContextAwareStateHandler extends StateHandler with timeout support
       # for providers that need bounded initialization and shutdown times.
       #
-      # Adapted for Ruby's timeout patterns.
-      #
       # Use this interface when your provider needs to:
       # - Respect initialization/shutdown timeouts (e.g., network calls, database connections)
       # - Support graceful cancellation during setup and teardown

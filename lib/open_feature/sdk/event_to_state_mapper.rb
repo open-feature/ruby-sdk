@@ -7,7 +7,6 @@ module OpenFeature
   module SDK
     # Maps provider events to provider states
     #
-    # Based on Go SDK statesMap pattern from openfeature_api.go lines 283-294
     class EventToStateMapper
       # Event details structure for error events
       class EventDetails
@@ -20,13 +19,12 @@ module OpenFeature
       end
 
       # Mapping from event types to states
-      # Matches Go SDK statesMap logic
       STATE_MAPPING = {
         ProviderEvent::PROVIDER_READY => ProviderState::READY,
         ProviderEvent::PROVIDER_CONFIGURATION_CHANGED => ProviderState::READY,
         ProviderEvent::PROVIDER_STALE => ProviderState::STALE,
         ProviderEvent::PROVIDER_ERROR => lambda do |event_details|
-          # Check if it's a fatal error (matches Go SDK logic)
+          # Check if it's a fatal error
           if event_details&.error_code == 'PROVIDER_FATAL'
             ProviderState::FATAL
           else
@@ -77,7 +75,7 @@ module OpenFeature
 
       private
 
-      # Determine if an error is fatal (matches Go SDK logic)
+      # Determine if an error is fatal
       def self.fatal_error?(error)
         # You can customize this logic based on your error types
         error.is_a?(SystemExit) ||

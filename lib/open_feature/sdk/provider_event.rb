@@ -8,7 +8,6 @@ module OpenFeature
     # These events correspond to the OpenFeature specification events:
     # https://openfeature.dev/specification/sections/events/
     #
-    # Based on Go SDK provider.go lines 33-36
     module ProviderEvent
       # Emitted when provider initialization completes successfully
       PROVIDER_READY = 'PROVIDER_READY'

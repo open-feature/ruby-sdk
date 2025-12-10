@@ -6,8 +6,7 @@ module OpenFeature
   module SDK
     # Event Emitter for Provider Lifecycle Events
     #
-    # Implements a pub-sub model for provider events, based on the Go SDK's
-    # event executor pattern from event_executor.go
+    # Implements a pub-sub model for provider events
     class EventEmitter
       def initialize
         @handlers = {}
@@ -16,7 +15,6 @@ module OpenFeature
       end
 
       # Add a handler for a specific event type
-      # Based on Go SDK AddHandler pattern (event_executor.go lines 69-81)
       #
       # @param event_type [String] the event type to listen for
       # @param handler [Proc] the handler to call when event is triggered
@@ -30,7 +28,6 @@ module OpenFeature
       end
 
       # Remove a specific handler for an event type
-      # Based on Go SDK RemoveHandler pattern (event_executor.go lines 84-97)
       #
       # @param event_type [String] the event type
       # @param handler [Proc] the specific handler to remove
@@ -54,7 +51,6 @@ module OpenFeature
       end
 
       # Trigger an event with event details
-      # Based on Go SDK triggerEvent pattern
       #
       # @param event_type [String] the event type to trigger
       # @param event_details [Hash] details about the event

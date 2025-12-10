@@ -7,7 +7,6 @@ module OpenFeature
     # Defines the standard states that providers can be in during their lifecycle.
     # These states correspond to the OpenFeature specification provider states.
     #
-    # Based on Go SDK provider.go lines 27-31
     module ProviderState
       # Provider is not ready to serve flag evaluations
       NOT_READY = 'NOT_READY'

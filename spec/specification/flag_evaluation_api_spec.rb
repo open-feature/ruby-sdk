@@ -26,6 +26,9 @@ RSpec.describe "Flag Evaluation API" do
         expect(provider).to receive(:init)
 
         OpenFeature::SDK.set_provider(provider)
+        
+        # Wait for async initialization
+        sleep(0.1)
       end
     end
 
@@ -39,6 +42,40 @@ RSpec.describe "Flag Evaluation API" do
 
         OpenFeature::SDK.set_provider(previous_provider)
         OpenFeature::SDK.set_provider(new_provider)
+      end
+    end
+
+    context "Requirement 1.1.2.4" do
+      specify "The API SHOULD provide functions to set a provider and wait for the initialize function to complete or abnormally terminate" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        
+        # set_provider_and_wait should exist
+        expect(OpenFeature::SDK).to respond_to(:set_provider_and_wait)
+        
+        # It should block until initialization completes
+        allow(provider).to receive(:init) do
+          sleep(0.1)  # Simulate initialization time
+        end
+        
+        start_time = Time.now
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        elapsed = Time.now - start_time
+        
+        expect(elapsed).to be >= 0.1
+        expect(OpenFeature::SDK.provider).to be(provider)
+      end
+      
+      specify "set_provider_and_wait must handle initialization errors" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        error_message = "Initialization failed"
+        
+        allow(provider).to receive(:init).and_raise(StandardError.new(error_message))
+        
+        expect {
+          OpenFeature::SDK.set_provider_and_wait(provider)
+        }.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
+          expect(error.message).to include(error_message)
+        end
       end
     end
 

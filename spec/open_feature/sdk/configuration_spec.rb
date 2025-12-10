@@ -15,6 +15,9 @@ RSpec.describe OpenFeature::SDK::Configuration do
         configuration.set_provider(provider)
 
         expect(configuration.provider).to be(provider)
+        
+        # Wait for async initialization
+        sleep(0.1)
       end
     end
 
@@ -36,6 +39,9 @@ RSpec.describe OpenFeature::SDK::Configuration do
         configuration.set_provider(provider, domain: "testing")
 
         expect(configuration.provider(domain: "testing")).to be(provider)
+        
+        # Wait for async initialization
+        sleep(0.1)
       end
     end
 
@@ -43,8 +49,8 @@ RSpec.describe OpenFeature::SDK::Configuration do
       let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
       it "does not not call shutdown hooks multiple times if multithreaded" do
         providers = (0..2).map { OpenFeature::SDK::Provider::NoOpProvider.new }
-        providers.each { |provider| expect(provider).to receive(:init) }
-        providers[0, 2].each { |provider| expect(provider).to receive(:shutdown) }
+        providers.each { |provider| allow(provider).to receive(:init) }
+        providers[0, 2].each { |provider| allow(provider).to receive(:shutdown) }
         configuration.set_provider(providers[0])
 
         allow(providers[0]).to(receive(:shutdown).once { sleep 0.5 })

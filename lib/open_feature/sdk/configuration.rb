@@ -89,7 +89,8 @@ module OpenFeature
             rescue StandardError => e
               dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR, 
                                     error_code: Provider::ErrorCode::PROVIDER_FATAL,
-                                    message: e.message)
+                                    message: e.message,
+                                    error: e)
             end
           end
         end
@@ -111,7 +112,8 @@ module OpenFeature
             completion_queue << { 
               status: :error, 
               message: event_details[:message] || "Provider initialization failed",
-              error_code: event_details[:error_code]
+              error_code: event_details[:error_code],
+              error: event_details[:error]
             }
           end
         end
@@ -131,11 +133,12 @@ module OpenFeature
               
               error_code = result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL
               message = result[:message]
+              original_error = result[:error] || ProviderInitializationFailure.new(message, error_code)
               raise ProviderInitializationError.new(
                 "Provider #{provider.class.name} initialization failed: #{message}",
                 provider: provider,
                 error_code: error_code,
-                original_error: ProviderInitializationFailure.new(message, error_code)
+                original_error: original_error
               )
             end
           end

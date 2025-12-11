@@ -51,8 +51,6 @@ module OpenFeature
       end
 
       def set_provider(provider, domain: nil)
-        old_provider = nil
-        
         @provider_mutex.synchronize do
           old_provider = @providers[domain]
           
@@ -99,8 +97,6 @@ module OpenFeature
             end
           end
         end
-        
-        old_provider
       end
 
       def set_provider_and_wait(provider, domain: nil, timeout: 30)
@@ -127,15 +123,12 @@ module OpenFeature
         add_handler(ProviderEvent::PROVIDER_ERROR, error_handler)
         
         begin
-          # set_provider now returns the old provider atomically
-          old_provider = set_provider(provider, domain: domain)
+          set_provider(provider, domain: domain)
           
           Timeout.timeout(timeout) do
             result = completion_queue.pop
             
             if result[:status] == :error
-              revert_provider_if_current(domain, provider, old_provider)
-              
               error_code = result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL
               message = result[:message]
               original_error = result[:error]
@@ -148,8 +141,6 @@ module OpenFeature
             end
           end
         rescue Timeout::Error => e
-          revert_provider_if_current(domain, provider, old_provider)
-          
           raise ProviderInitializationError.new(
             "Provider #{provider.class.name} initialization timed out after #{timeout} seconds",
             provider: provider,
@@ -163,21 +154,6 @@ module OpenFeature
 
       private
 
-      def revert_provider_if_current(domain, provider, old_provider)
-        @provider_mutex.synchronize do
-          if @providers[domain] == provider
-            # Remove provider state (failed initialization) to prevent memory leaks
-            @provider_state_registry.remove_provider(provider)
-            
-            new_providers = @providers.dup
-            new_providers[domain] = old_provider
-            @providers = new_providers
-            
-            # Restore old provider state if it exists
-            @provider_state_registry.set_initial_state(old_provider) if old_provider
-          end
-        end
-      end
 
       def dispatch_provider_event(provider, event_type, details = {})
         @provider_state_registry.update_state_from_event(provider, event_type, details)

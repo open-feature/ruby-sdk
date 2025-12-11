@@ -125,14 +125,14 @@ RSpec.describe OpenFeature::SDK::Configuration do
         end
       end
 
-      it "does not set the provider when init fails" do
+      it "leaves the failed provider in place when init fails" do
         old_provider = configuration.provider
 
         expect do
           configuration.set_provider_and_wait(provider)
         end.to raise_error(OpenFeature::SDK::ProviderInitializationError)
 
-        expect(configuration.provider).to be(old_provider)
+        expect(configuration.provider).to be(provider)
       end
     end
 
@@ -156,14 +156,14 @@ RSpec.describe OpenFeature::SDK::Configuration do
         end
       end
 
-      it "does not set the provider when init times out" do
+      it "leaves the failed provider in place when init times out" do
         old_provider = configuration.provider
 
         expect do
           configuration.set_provider_and_wait(provider, timeout: 0.1)
         end.to raise_error(OpenFeature::SDK::ProviderInitializationError)
 
-        expect(configuration.provider).to be(old_provider)
+        expect(configuration.provider).to be(provider)
       end
     end
 

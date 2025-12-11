@@ -64,8 +64,8 @@ RSpec.describe "Provider" do
           OpenFeature::SDK.set_provider_and_wait(failing_provider)
         }.to raise_error(OpenFeature::SDK::ProviderInitializationError)
         
-        # The old provider should still be in place
-        expect(OpenFeature::SDK.provider).to eq(old_provider)
+        # The failing provider should remain in place (with error state)
+        expect(OpenFeature::SDK.provider).to eq(failing_provider)
       end
     end
   end

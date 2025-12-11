@@ -35,20 +35,20 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
       end
 
       it 'returns ERROR state for non-fatal error' do
-        event_details = described_class::EventDetails.new(
+        event_details = {
           message: 'Connection failed',
           error_code: 'CONNECTION_ERROR'
-        )
+        }
         
         state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, event_details)
         expect(state).to eq(OpenFeature::SDK::ProviderState::ERROR)
       end
 
       it 'returns FATAL state for fatal error' do
-        event_details = described_class::EventDetails.new(
+        event_details = {
           message: 'Provider cannot recover',
           error_code: 'PROVIDER_FATAL'
-        )
+        }
         
         state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, event_details)
         expect(state).to eq(OpenFeature::SDK::ProviderState::FATAL)
@@ -64,15 +64,6 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
         expect(state).to eq(OpenFeature::SDK::ProviderState::FATAL)
       end
 
-      it 'handles Hash with string keys' do
-        event_details_hash = {
-          'message' => 'Provider cannot recover',
-          'error_code' => 'PROVIDER_FATAL'
-        }
-        
-        state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, event_details_hash)
-        expect(state).to eq(OpenFeature::SDK::ProviderState::FATAL)
-      end
 
       it 'handles nil event details gracefully' do
         state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, nil)
@@ -89,26 +80,6 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
   end
 
 
-  describe 'EventDetails' do
-    describe '#initialize' do
-      it 'initializes with message and error_code' do
-        details = described_class::EventDetails.new(
-          message: 'Test message',
-          error_code: 'TEST_ERROR'
-        )
-        
-        expect(details.message).to eq('Test message')
-        expect(details.error_code).to eq('TEST_ERROR')
-      end
-
-      it 'initializes with nil values when not provided' do
-        details = described_class::EventDetails.new
-        
-        expect(details.message).to be_nil
-        expect(details.error_code).to be_nil
-      end
-    end
-  end
 
   describe 'STATE_MAPPING constant' do
     it 'is frozen to prevent modification' do
@@ -143,8 +114,8 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
 
       # Test callable mappings (PROVIDER_ERROR)
       error_mapper = described_class::STATE_MAPPING[OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR]
-      fatal_state = error_mapper.call(described_class::EventDetails.new(error_code: 'PROVIDER_FATAL'))
-      error_state = error_mapper.call(described_class::EventDetails.new(error_code: 'SOME_ERROR'))
+      fatal_state = error_mapper.call({ error_code: 'PROVIDER_FATAL' })
+      error_state = error_mapper.call({ error_code: 'SOME_ERROR' })
       
       expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(fatal_state)
       expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(error_state)

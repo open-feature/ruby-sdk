@@ -75,16 +75,11 @@ module OpenFeature
           Thread.new do
             begin
               if provider.respond_to?(:init)
-                begin
+                init_method = provider.method(:init)
+                if init_method.parameters.empty?
+                  provider.init
+                else
                   provider.init(@evaluation_context)
-                rescue ArgumentError => e
-                  # Only fallback to no-args if it's specifically a "wrong number" error for 0-arity methods
-                  if e.message =~ /wrong number of arguments.*given 1, expected 0/
-                    provider.init
-                  else
-                    # For any other ArgumentError (wrong types, too many params, etc), re-raise
-                    raise e
-                  end
                 end
               end
               

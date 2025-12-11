@@ -75,10 +75,16 @@ module OpenFeature
           Thread.new do
             begin
               if provider.respond_to?(:init)
-                if provider.method(:init).arity == 1
+                begin
                   provider.init(@evaluation_context)
-                else
-                  provider.init
+                rescue ArgumentError => e
+                  # Only fallback to no-args if it's specifically a "wrong number" error for 0-arity methods
+                  if e.message =~ /wrong number of arguments.*given 1, expected 0/
+                    provider.init
+                  else
+                    # For any other ArgumentError (wrong types, too many params, etc), re-raise
+                    raise e
+                  end
                 end
               end
               
@@ -131,7 +137,7 @@ module OpenFeature
               error_code = result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL
               message = result[:message]
               raise ProviderInitializationError.new(
-                "Provider initialization failed: #{message}",
+                "Provider #{provider.class.name} initialization failed: #{message}",
                 provider: provider,
                 error_code: error_code,
                 original_error: ProviderInitializationFailure.new(message, error_code)
@@ -142,7 +148,7 @@ module OpenFeature
           revert_provider_if_current(domain, provider, old_provider)
           
           raise ProviderInitializationError.new(
-            "Provider initialization timed out after #{timeout} seconds",
+            "Provider #{provider.class.name} initialization timed out after #{timeout} seconds",
             provider: provider,
             original_error: e
           )

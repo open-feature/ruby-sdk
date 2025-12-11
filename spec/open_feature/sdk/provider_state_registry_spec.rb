@@ -93,6 +93,30 @@ RSpec.describe OpenFeature::SDK::ProviderStateRegistry do
     end
   end
   
+  describe 'nil provider handling' do
+    it 'set_initial_state handles nil provider gracefully' do
+      expect { registry.set_initial_state(nil) }.not_to raise_error
+    end
+    
+    it 'update_state_from_event handles nil provider gracefully' do
+      result = registry.update_state_from_event(nil, OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+      expect(result).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+    end
+    
+    it 'get_state handles nil provider gracefully' do
+      state = registry.get_state(nil)
+      expect(state).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+    end
+    
+    it 'ready? handles nil provider gracefully' do
+      expect(registry.ready?(nil)).to be false
+    end
+    
+    it 'error? handles nil provider gracefully' do
+      expect(registry.error?(nil)).to be false
+    end
+  end
+  
   describe '#ready?' do
     it 'returns true when provider is READY' do
       registry.set_initial_state(provider, OpenFeature::SDK::ProviderState::READY)

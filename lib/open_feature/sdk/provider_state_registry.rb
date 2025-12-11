@@ -14,12 +14,16 @@ module OpenFeature
       end
 
       def set_initial_state(provider, state = ProviderState::NOT_READY)
+        return unless provider
+
         @mutex.synchronize do
           @states[provider.object_id] = state
         end
       end
 
       def update_state_from_event(provider, event_type, event_details = nil)
+        return ProviderState::NOT_READY unless provider
+
         new_state = EventToStateMapper.state_from_event(event_type, event_details)
         
         @mutex.synchronize do
@@ -30,6 +34,8 @@ module OpenFeature
       end
 
       def get_state(provider)
+        return ProviderState::NOT_READY unless provider
+
         @mutex.synchronize do
           @states[provider.object_id] || ProviderState::NOT_READY
         end

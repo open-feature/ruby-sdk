@@ -54,7 +54,7 @@ module OpenFeature
             handler.call(event_details)
           rescue StandardError => e
             if @logger
-              @logger.warn "Event handler failed for #{event_type}: #{e.message}"
+              @logger.warn "Event handler failed for #{event_type}: #{e.message}\n#{e.backtrace.join("\n")}"
             end
           end
         end

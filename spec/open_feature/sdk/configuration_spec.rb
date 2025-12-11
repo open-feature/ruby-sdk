@@ -119,8 +119,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
           expect(error.message).to include("Provider initialization failed")
           expect(error.message).to include(error_message)
           expect(error.provider).to be(provider)
-          expect(error.original_error).to be_a(StandardError)
-          expect(error.original_error.message).to eq(error_message)
+          expect(error.original_error).to be_nil  # Provider init errors come through events, so no original exception
           expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
         end
       end

@@ -199,18 +199,14 @@ RSpec.describe OpenFeature::SDK::Configuration do
         provider = create_slow_provider(init_time: 0.05)
         
         # Get initial handler count
-        initial_ready_count = configuration.instance_variable_get(:@event_emitter)
-                                         .instance_variable_get(:@handlers)[OpenFeature::SDK::ProviderEvent::PROVIDER_READY].size
-        initial_error_count = configuration.instance_variable_get(:@event_emitter)
-                                         .instance_variable_get(:@handlers)[OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR].size
+        initial_ready_count = configuration.send(:handler_count, OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        initial_error_count = configuration.send(:handler_count, OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR)
         
         configuration.set_provider_and_wait(provider, timeout: 1)
         
         # Handler counts should be back to initial
-        final_ready_count = configuration.instance_variable_get(:@event_emitter)
-                                       .instance_variable_get(:@handlers)[OpenFeature::SDK::ProviderEvent::PROVIDER_READY].size
-        final_error_count = configuration.instance_variable_get(:@event_emitter)
-                                       .instance_variable_get(:@handlers)[OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR].size
+        final_ready_count = configuration.send(:handler_count, OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        final_error_count = configuration.send(:handler_count, OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR)
         
         expect(final_ready_count).to eq(initial_ready_count)
         expect(final_error_count).to eq(initial_error_count)
@@ -220,16 +216,14 @@ RSpec.describe OpenFeature::SDK::Configuration do
         provider = create_failing_provider
         
         # Get initial handler count
-        initial_count = configuration.instance_variable_get(:@event_emitter)
-                                   .instance_variable_get(:@handlers).values.sum(&:size)
+        initial_count = configuration.send(:total_handler_count)
         
         expect {
           configuration.set_provider_and_wait(provider, timeout: 1)
         }.to raise_error(OpenFeature::SDK::ProviderInitializationError)
         
         # Handler count should be back to initial
-        final_count = configuration.instance_variable_get(:@event_emitter)
-                                 .instance_variable_get(:@handlers).values.sum(&:size)
+        final_count = configuration.send(:total_handler_count)
         
         expect(final_count).to eq(initial_count)
       end
@@ -239,26 +233,24 @@ RSpec.describe OpenFeature::SDK::Configuration do
   describe "provider state tracking" do
     it "tracks provider state transitions" do
       provider = create_slow_provider(init_time: 0.05)
-      state_registry = configuration.instance_variable_get(:@provider_state_registry)
       
       # Initially NOT_READY
       configuration.set_provider(provider)
-      expect(state_registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+      expect(configuration.send(:provider_state, provider)).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
       
       # Wait for initialization
       sleep(0.1)
-      expect(state_registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+      expect(configuration.send(:provider_state, provider)).to eq(OpenFeature::SDK::ProviderState::READY)
     end
     
     it "tracks error states" do
       provider = create_failing_provider
-      state_registry = configuration.instance_variable_get(:@provider_state_registry)
       
       configuration.set_provider(provider)
       
       # Wait for initialization
       sleep(0.1)
-      expect(state_registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::FATAL)
+      expect(configuration.send(:provider_state, provider)).to eq(OpenFeature::SDK::ProviderState::FATAL)
     end
   end
   

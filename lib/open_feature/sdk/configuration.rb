@@ -92,8 +92,7 @@ module OpenFeature
             rescue StandardError => e
               dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR, 
                                     error_code: Provider::ErrorCode::PROVIDER_FATAL,
-                                    message: e.message,
-                                    error: e)
+                                    message: e.message)
             end
           end
         end
@@ -113,8 +112,7 @@ module OpenFeature
             completion_queue << { 
               status: :error, 
               message: event_details[:message] || "Provider initialization failed",
-              error_code: event_details[:error_code],
-              error: event_details[:error]
+              error_code: event_details[:error_code]
             }
           end
         end
@@ -131,12 +129,11 @@ module OpenFeature
             if result[:status] == :error
               error_code = result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL
               message = result[:message]
-              original_error = result[:error]
               raise ProviderInitializationError.new(
                 "Provider #{provider.class.name} initialization failed: #{message}",
                 provider: provider,
                 error_code: error_code,
-                original_error: original_error
+                original_error: nil  # Exceptions not included in events
               )
             end
           end
@@ -154,7 +151,6 @@ module OpenFeature
 
       private
 
-
       def dispatch_provider_event(provider, event_type, details = {})
         @provider_state_registry.update_state_from_event(provider, event_type, details)
         
@@ -167,7 +163,18 @@ module OpenFeature
         @event_emitter.trigger_event(event_type, event_details)
       end
 
-      # Private inner class for dispatching provider events
+      def handler_count(event_type)
+        @event_emitter.handler_count(event_type)
+      end
+
+      def total_handler_count
+        ProviderEvent::ALL_EVENTS.sum { |event_type| handler_count(event_type) }
+      end
+
+      def provider_state(provider)
+        @provider_state_registry.get_state(provider)
+      end
+
       class ProviderEventDispatcher
         def initialize(config)
           @config = config

@@ -60,7 +60,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         Thread.new do
           sleep(0.05)
           emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, 
-                    error_code: 'PROVIDER_FATAL',
+                    error_code: OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL,
                     message: error_message)
         end
       end

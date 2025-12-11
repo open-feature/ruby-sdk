@@ -51,7 +51,7 @@ RSpec.describe OpenFeature::SDK::ProviderStateRegistry do
       new_state = registry.update_state_from_event(
         provider,
         OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR,
-        { error_code: 'PROVIDER_FATAL' }
+        { error_code: OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL }
       )
       
       expect(new_state).to eq(OpenFeature::SDK::ProviderState::FATAL)

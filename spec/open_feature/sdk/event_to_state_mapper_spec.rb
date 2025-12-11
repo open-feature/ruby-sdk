@@ -47,7 +47,7 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
       it 'returns FATAL state for fatal error' do
         event_details = {
           message: 'Provider cannot recover',
-          error_code: 'PROVIDER_FATAL'
+          error_code: OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL
         }
         
         state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, event_details)
@@ -57,7 +57,7 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
       it 'handles Hash event details' do
         event_details_hash = {
           message: 'Provider cannot recover',
-          error_code: 'PROVIDER_FATAL'
+          error_code: OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL
         }
         
         state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, event_details_hash)

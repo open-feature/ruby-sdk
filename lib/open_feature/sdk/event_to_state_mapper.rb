@@ -2,6 +2,7 @@
 
 require_relative 'provider_event'
 require_relative 'provider_state'
+require_relative 'provider/error_code'
 
 module OpenFeature
   module SDK
@@ -13,7 +14,7 @@ module OpenFeature
         ProviderEvent::PROVIDER_STALE => ProviderState::STALE,
         ProviderEvent::PROVIDER_ERROR => lambda do |event_details|
           error_code = event_details&.dig(:error_code)
-          if error_code == 'PROVIDER_FATAL'
+          if error_code == Provider::ErrorCode::PROVIDER_FATAL
             ProviderState::FATAL
           else
             ProviderState::ERROR

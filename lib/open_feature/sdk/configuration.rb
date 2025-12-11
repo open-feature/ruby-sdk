@@ -63,12 +63,7 @@ module OpenFeature
           @provider_state_registry.set_initial_state(provider)
           
           if provider.is_a?(Provider::EventHandler)
-            config = self
-            dispatcher = Object.new
-            dispatcher.define_singleton_method(:dispatch_event) do |prov, event_type, details|
-              config.send(:dispatch_provider_event, prov, event_type, details)
-            end
-            provider.attach(dispatcher)
+            provider.attach(ProviderEventDispatcher.new(self))
           end
           
           Thread.new do
@@ -171,6 +166,17 @@ module OpenFeature
         }.merge(details)
         
         @event_emitter.trigger_event(event_type, event_details)
+      end
+
+      # Private inner class for dispatching provider events
+      class ProviderEventDispatcher
+        def initialize(config)
+          @config = config
+        end
+
+        def dispatch_event(provider, event_type, details)
+          @config.send(:dispatch_provider_event, provider, event_type, details)
+        end
       end
     end
   end

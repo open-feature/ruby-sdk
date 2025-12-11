@@ -10,7 +10,6 @@ require_relative "provider/event_handler"
 # Provider implementations
 require_relative "provider/no_op_provider"
 require_relative "provider/in_memory_provider"
-require_relative "provider/event_aware_no_op_provider"
 
 # Event system components
 require_relative "provider_event"

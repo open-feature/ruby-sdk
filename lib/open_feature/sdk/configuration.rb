@@ -122,11 +122,13 @@ module OpenFeature
             if result[:status] == :error
               revert_provider_if_current(domain, provider, old_provider)
               
+              error_code = result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL
+              message = result[:message]
               raise ProviderInitializationError.new(
-                "Provider initialization failed: #{result[:message]}",
+                "Provider initialization failed: #{message}",
                 provider: provider,
-                error_code: result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL,
-                original_error: ProviderInitializationFailure.new(result[:message], result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL)
+                error_code: error_code,
+                original_error: ProviderInitializationFailure.new(message, error_code)
               )
             end
           end

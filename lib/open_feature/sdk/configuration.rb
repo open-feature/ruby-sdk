@@ -35,7 +35,7 @@ module OpenFeature
 
       def logger=(new_logger)
         @logger = new_logger
-        @event_emitter.instance_variable_set(:@logger, new_logger) if @event_emitter
+        @event_emitter.logger = new_logger if @event_emitter
       end
 
       def add_handler(event_type, handler)
@@ -52,7 +52,8 @@ module OpenFeature
           
           begin
             old_provider.shutdown if old_provider.respond_to?(:shutdown)
-          rescue StandardError
+          rescue StandardError => e
+            @logger&.warn("Error shutting down previous provider #{old_provider.class.name}: #{e.message}")
           end
           
           new_providers = @providers.dup
@@ -124,11 +125,7 @@ module OpenFeature
             result = completion_queue.pop
             
             if result[:status] == :error
-              @provider_mutex.synchronize do
-                new_providers = @providers.dup
-                new_providers[domain] = old_provider
-                @providers = new_providers
-              end
+              revert_provider_if_current(domain, provider, old_provider)
               
               raise ProviderInitializationError.new(
                 "Provider initialization failed: #{result[:message]}",
@@ -139,11 +136,7 @@ module OpenFeature
             end
           end
         rescue Timeout::Error => e
-          @provider_mutex.synchronize do
-            new_providers = @providers.dup
-            new_providers[domain] = old_provider
-            @providers = new_providers
-          end
+          revert_provider_if_current(domain, provider, old_provider)
           
           raise ProviderInitializationError.new(
             "Provider initialization timed out after #{timeout} seconds",
@@ -157,6 +150,16 @@ module OpenFeature
       end
 
       private
+
+      def revert_provider_if_current(domain, provider, old_provider)
+        @provider_mutex.synchronize do
+          if @providers[domain] == provider
+            new_providers = @providers.dup
+            new_providers[domain] = old_provider
+            @providers = new_providers
+          end
+        end
+      end
 
       def dispatch_provider_event(provider, event_type, details = {})
         @provider_state_registry.update_state_from_event(provider, event_type, details)

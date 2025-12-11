@@ -6,6 +6,8 @@ module OpenFeature
   module SDK
     # Thread-safe pub-sub for provider events
     class EventEmitter
+      attr_writer :logger
+
       def initialize(logger = nil)
         @handlers = {}
         @mutex = Mutex.new

@@ -62,6 +62,9 @@ module OpenFeature
             @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || 'unknown'}: #{e.message}")
           end
           
+          # Remove old provider state to prevent memory leaks
+          @provider_state_registry.remove_provider(old_provider)
+          
           new_providers = @providers.dup
           new_providers[domain] = provider
           @providers = new_providers
@@ -161,9 +164,15 @@ module OpenFeature
       def revert_provider_if_current(domain, provider, old_provider)
         @provider_mutex.synchronize do
           if @providers[domain] == provider
+            # Remove provider state (failed initialization) to prevent memory leaks
+            @provider_state_registry.remove_provider(provider)
+            
             new_providers = @providers.dup
             new_providers[domain] = old_provider
             @providers = new_providers
+            
+            # Restore old provider state if it exists
+            @provider_state_registry.set_initial_state(old_provider) if old_provider
           end
         end
       end

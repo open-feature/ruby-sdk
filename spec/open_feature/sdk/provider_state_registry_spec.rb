@@ -87,6 +87,10 @@ RSpec.describe OpenFeature::SDK::ProviderStateRegistry do
       
       expect(registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
     end
+    
+    it 'handles nil provider gracefully' do
+      expect { registry.remove_provider(nil) }.not_to raise_error
+    end
   end
   
   describe '#ready?' do

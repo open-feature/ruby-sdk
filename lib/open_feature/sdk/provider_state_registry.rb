@@ -36,6 +36,8 @@ module OpenFeature
       end
 
       def remove_provider(provider)
+        return unless provider
+
         @mutex.synchronize do
           @states.delete(provider.object_id)
         end

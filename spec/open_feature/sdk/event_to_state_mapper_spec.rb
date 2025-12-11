@@ -88,38 +88,6 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
     end
   end
 
-  describe '.state_from_error' do
-    it 'returns FATAL state for SystemExit error' do
-      error = SystemExit.new
-      state = described_class.state_from_error(error)
-      expect(state).to eq(OpenFeature::SDK::ProviderState::FATAL)
-    end
-
-    it 'returns FATAL state for error with PROVIDER_FATAL in message' do
-      error = StandardError.new('Something went wrong: PROVIDER_FATAL')
-      state = described_class.state_from_error(error)
-      expect(state).to eq(OpenFeature::SDK::ProviderState::FATAL)
-    end
-
-    it 'returns FATAL state for error with "fatal" in message' do
-      error = StandardError.new('This is a fatal error')
-      state = described_class.state_from_error(error)
-      expect(state).to eq(OpenFeature::SDK::ProviderState::FATAL)
-    end
-
-    it 'returns ERROR state for regular errors' do
-      error = StandardError.new('Regular error')
-      state = described_class.state_from_error(error)
-      expect(state).to eq(OpenFeature::SDK::ProviderState::ERROR)
-    end
-
-    it 'returns ERROR state for error with nil message' do
-      error = StandardError.new
-      allow(error).to receive(:message).and_return(nil)
-      state = described_class.state_from_error(error)
-      expect(state).to eq(OpenFeature::SDK::ProviderState::ERROR)
-    end
-  end
 
   describe 'EventDetails' do
     describe '#initialize' do

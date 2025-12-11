@@ -6,7 +6,6 @@ require_relative "provider/provider_metadata"
 # Provider interfaces
 require_relative "provider/state_handler"
 require_relative "provider/event_handler"
-require_relative "provider/context_aware_state_handler"
 
 # Provider implementations
 require_relative "provider/no_op_provider"

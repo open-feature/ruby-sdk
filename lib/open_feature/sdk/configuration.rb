@@ -47,6 +47,8 @@ module OpenFeature
       end
 
       def set_provider(provider, domain: nil)
+        old_provider = nil
+        
         @provider_mutex.synchronize do
           old_provider = @providers[domain]
           
@@ -86,12 +88,11 @@ module OpenFeature
             end
           end
         end
+        
+        old_provider
       end
 
       def set_provider_and_wait(provider, domain: nil, timeout: 30)
-        old_provider = nil
-        @provider_mutex.synchronize { old_provider = @providers[domain] }
-        
         completion_queue = Queue.new
         
         ready_handler = lambda do |event_details|
@@ -114,7 +115,8 @@ module OpenFeature
         add_handler(ProviderEvent::PROVIDER_ERROR, error_handler)
         
         begin
-          set_provider(provider, domain: domain)
+          # set_provider now returns the old provider atomically
+          old_provider = set_provider(provider, domain: domain)
           
           Timeout.timeout(timeout) do
             result = completion_queue.pop

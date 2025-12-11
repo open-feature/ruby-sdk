@@ -16,13 +16,14 @@ module OpenFeature
         end
 
         def emit_event(event_type, details = {})
-          return unless @event_dispatcher
+          dispatcher = @event_dispatcher
+          return unless dispatcher
 
           unless ::OpenFeature::SDK::ProviderEvent::ALL_EVENTS.include?(event_type)
             raise ArgumentError, "Invalid event type: #{event_type}"
           end
 
-          @event_dispatcher.dispatch_event(self, event_type, details)
+          dispatcher.dispatch_event(self, event_type, details)
         end
 
         def event_dispatcher_attached?

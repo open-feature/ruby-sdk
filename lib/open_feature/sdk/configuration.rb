@@ -75,6 +75,8 @@ module OpenFeature
             provider.attach(ProviderEventDispatcher.new(self))
           end
           
+          # Capture evaluation context to prevent race condition
+          context_for_init = @evaluation_context
           Thread.new do
             begin
               if provider.respond_to?(:init)
@@ -82,7 +84,7 @@ module OpenFeature
                 if init_method.parameters.empty?
                   provider.init
                 else
-                  provider.init(@evaluation_context)
+                  provider.init(context_for_init)
                 end
               end
               

@@ -228,5 +228,42 @@ RSpec.describe OpenFeature::SDK::Configuration do
         expect(configuration.provider(domain: "new-domain")).to be(provider)
       end
     end
+    
+    context "when evaluation context changes during async initialization" do
+      let(:initial_context) { OpenFeature::SDK::EvaluationContext.new(targeting_key: "initial") }
+      let(:changed_context) { OpenFeature::SDK::EvaluationContext.new(targeting_key: "changed") }
+      let(:context_capturing_provider) do
+        Class.new do
+          attr_reader :received_context
+          
+          def init(context = nil)
+            @received_context = context
+            # Simulate slow initialization
+            sleep(0.1)
+          end
+          
+          def metadata
+            OpenFeature::SDK::Provider::ProviderMetadata.new(name: "ContextCapturingProvider")
+          end
+        end.new
+      end
+      
+      it "uses the evaluation context that was set when set_provider was called" do
+        configuration.evaluation_context = initial_context
+        
+        # Start provider initialization (async)
+        configuration.set_provider(context_capturing_provider)
+        
+        # Change global context immediately after
+        configuration.evaluation_context = changed_context
+        
+        # Wait for initialization to complete
+        sleep(0.2)
+        
+        # Provider should have received the initial context, not the changed one
+        expect(context_capturing_provider.received_context).to eq(initial_context)
+        expect(context_capturing_provider.received_context).not_to eq(changed_context)
+      end
+    end
   end
 end

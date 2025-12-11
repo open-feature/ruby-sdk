@@ -50,7 +50,7 @@ module OpenFeature
         handlers_to_call.each do |handler|
           begin
             handler.call(event_details)
-          rescue => e
+          rescue StandardError => e
             if @logger
               @logger.warn "Event handler failed for #{event_type}: #{e.message}"
             end

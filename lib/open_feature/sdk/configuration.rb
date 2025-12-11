@@ -83,7 +83,7 @@ module OpenFeature
               unless provider.is_a?(Provider::EventHandler)
                 dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
               end
-            rescue => e
+            rescue StandardError => e
               dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR, 
                                     error_code: Provider::ErrorCode::PROVIDER_FATAL,
                                     message: e.message)

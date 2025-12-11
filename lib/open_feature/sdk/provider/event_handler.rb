@@ -22,9 +22,7 @@ module OpenFeature
             raise ArgumentError, "Invalid event type: #{event_type}"
           end
 
-          event_details = details.merge(provider: self)
-          
-          @event_dispatcher.dispatch_event(self, event_type, event_details)
+          @event_dispatcher.dispatch_event(self, event_type, details)
         end
 
         def event_dispatcher_attached?

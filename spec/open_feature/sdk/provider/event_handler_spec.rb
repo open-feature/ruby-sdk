@@ -60,7 +60,7 @@ RSpec.describe OpenFeature::SDK::Provider::EventHandler do
       expect(event_dispatcher).to receive(:dispatch_event).with(
         provider,
         OpenFeature::SDK::ProviderEvent::PROVIDER_READY,
-        hash_including(provider: provider)
+        {}
       )
       
       provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
@@ -72,7 +72,7 @@ RSpec.describe OpenFeature::SDK::Provider::EventHandler do
       expect(event_dispatcher).to receive(:dispatch_event).with(
         provider,
         OpenFeature::SDK::ProviderEvent::PROVIDER_READY,
-        hash_including(provider: provider, message: 'Provider is ready', custom_field: 'value')
+        { message: 'Provider is ready', custom_field: 'value' }
       )
       
       provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, custom_details)
@@ -95,7 +95,7 @@ RSpec.describe OpenFeature::SDK::Provider::EventHandler do
         expect(event_dispatcher).to receive(:dispatch_event).with(
           provider,
           event_type,
-          hash_including(provider: provider)
+          {}
         )
       end
       

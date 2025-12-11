@@ -24,7 +24,7 @@ module OpenFeature
           # NoOp provider initializes instantly
           # In a real provider, this might connect to a service
           emit_event(ProviderEvent::PROVIDER_READY, message: "NoOp provider initialized")
-        rescue => e
+        rescue StandardError => e
           emit_event(ProviderEvent::PROVIDER_ERROR, 
                     message: "Failed to initialize: #{e.message}",
                     error_code: 'INITIALIZATION_ERROR')

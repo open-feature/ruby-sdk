@@ -18,17 +18,24 @@ module OpenFeature
       extend Forwardable
 
       attr_accessor :evaluation_context, :hooks
+      attr_reader :logger
 
       def initialize
         @hooks = []
         @providers = {}
         @provider_mutex = Mutex.new
-        @event_emitter = EventEmitter.new
+        @logger = nil  # Users can set a logger if needed
+        @event_emitter = EventEmitter.new(@logger)
         @provider_state_registry = ProviderStateRegistry.new
       end
 
       def provider(domain: nil)
         @providers[domain] || @providers[nil]
+      end
+
+      def logger=(new_logger)
+        @logger = new_logger
+        @event_emitter.instance_variable_set(:@logger, new_logger) if @event_emitter
       end
 
       def add_handler(event_type, handler)
@@ -45,7 +52,7 @@ module OpenFeature
           
           begin
             old_provider.shutdown if old_provider.respond_to?(:shutdown)
-          rescue
+          rescue StandardError
           end
           
           new_providers = @providers.dup
@@ -127,7 +134,7 @@ module OpenFeature
                 "Provider initialization failed: #{result[:message]}",
                 provider: provider,
                 error_code: result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL,
-                original_error: StandardError.new(result[:message])
+                original_error: ProviderInitializationFailure.new(result[:message], result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL)
               )
             end
           end

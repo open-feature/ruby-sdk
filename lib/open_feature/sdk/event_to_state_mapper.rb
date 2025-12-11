@@ -50,21 +50,6 @@ module OpenFeature
         end
       end
 
-      def self.state_from_error(error)
-        if fatal_error?(error)
-          ProviderState::FATAL
-        else
-          ProviderState::ERROR
-        end
-      end
-
-      private
-
-      def self.fatal_error?(error)
-        error.is_a?(SystemExit) ||
-          error.message&.include?('PROVIDER_FATAL') ||
-          error.message&.include?('fatal')
-      end
     end
   end
 end

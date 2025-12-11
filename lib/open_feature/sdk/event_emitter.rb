@@ -6,9 +6,10 @@ module OpenFeature
   module SDK
     # Thread-safe pub-sub for provider events
     class EventEmitter
-      def initialize
+      def initialize(logger = nil)
         @handlers = {}
         @mutex = Mutex.new
+        @logger = logger
         ProviderEvent::ALL_EVENTS.each { |event| @handlers[event] = [] }
       end
 
@@ -50,8 +51,9 @@ module OpenFeature
           begin
             handler.call(event_details)
           rescue => e
-            # Log error but don't let one handler failure stop others
-            warn "Event handler failed for #{event_type}: #{e.message}"
+            if @logger
+              @logger.warn "Event handler failed for #{event_type}: #{e.message}"
+            end
           end
         end
       end

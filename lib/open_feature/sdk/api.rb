@@ -32,7 +32,7 @@ module OpenFeature
       include Singleton # Satisfies Flag Evaluation API Requirement 1.1.1
       extend Forwardable
 
-      def_delegators :configuration, :provider, :set_provider, :set_provider_and_wait, :hooks, :evaluation_context, :add_handler, :remove_handler, :logger, :logger=
+      def_delegators :configuration, :provider, :set_provider, :set_provider_and_wait, :hooks, :evaluation_context
 
       def configuration
         @configuration ||= Configuration.new
@@ -50,6 +50,29 @@ module OpenFeature
         Client.new(provider: active_provider, domain:, evaluation_context:)
       rescue
         Client.new(provider: Provider::NoOpProvider.new, evaluation_context:)
+      end
+
+      # Event handling methods
+      def add_handler(event_type, handler)
+        configuration.add_handler(event_type, handler)
+      end
+
+      def remove_handler(event_type, handler)
+        configuration.remove_handler(event_type, handler)
+      end
+
+      # Configuration methods
+      def logger
+        configuration.logger
+      end
+
+      def logger=(new_logger)
+        configuration.logger = new_logger
+      end
+
+      # Internal utility for testing - not part of OpenFeature spec
+      def clear_all_handlers
+        configuration.clear_all_handlers
       end
     end
   end

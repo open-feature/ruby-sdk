@@ -220,6 +220,13 @@ RSpec.describe OpenFeature::SDK::Configuration do
 
         expect(configuration.provider).to be(provider)
       end
+      
+      it "handles setting provider to a domain with no previous provider" do
+        # This should not raise any errors even though old_provider will be nil
+        expect { configuration.set_provider_and_wait(provider, domain: "new-domain") }.not_to raise_error
+        
+        expect(configuration.provider(domain: "new-domain")).to be(provider)
+      end
     end
   end
 end

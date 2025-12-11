@@ -46,6 +46,10 @@ module OpenFeature
         @event_emitter.remove_handler(event_type, handler)
       end
 
+      def clear_all_handlers
+        @event_emitter.clear_all_handlers
+      end
+
       def set_provider(provider, domain: nil)
         old_provider = nil
         
@@ -53,9 +57,9 @@ module OpenFeature
           old_provider = @providers[domain]
           
           begin
-            old_provider.shutdown if old_provider.respond_to?(:shutdown)
+            old_provider.shutdown if old_provider&.respond_to?(:shutdown)
           rescue StandardError => e
-            @logger&.warn("Error shutting down previous provider #{old_provider.class.name}: #{e.message}")
+            @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || 'unknown'}: #{e.message}")
           end
           
           new_providers = @providers.dup

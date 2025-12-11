@@ -10,20 +10,7 @@ RSpec.describe "OpenFeature Specification: Events" do
   # Remove all handlers after each test to avoid test pollution
   after(:each) do
     # Clean up any remaining handlers
-    [
-      OpenFeature::SDK::ProviderEvent::PROVIDER_READY,
-      OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR,
-      OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED,
-      OpenFeature::SDK::ProviderEvent::PROVIDER_STALE
-    ].each do |event|
-      begin
-        # This is a bit hacky but we need to clean up
-        emitter = OpenFeature::SDK::API.instance.configuration.instance_variable_get(:@event_emitter)
-        emitter.instance_variable_get(:@handlers)[event].clear
-      rescue
-        # Ignore errors
-      end
-    end
+    OpenFeature::SDK::API.instance.clear_all_handlers
   end
 
   context "Requirement 5.1.1" do

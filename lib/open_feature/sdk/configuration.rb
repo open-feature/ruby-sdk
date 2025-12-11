@@ -138,7 +138,7 @@ module OpenFeature
               
               error_code = result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL
               message = result[:message]
-              original_error = result[:error] || ProviderInitializationFailure.new(message, error_code)
+              original_error = result[:error]
               raise ProviderInitializationError.new(
                 "Provider #{provider.class.name} initialization failed: #{message}",
                 provider: provider,

@@ -104,7 +104,7 @@ object = client.fetch_object_value(flag_key: 'object_value', default_value: { na
 | ⚠️      | [Hooks](#hooks)                                                     | Add functionality to various stages of the flag evaluation life-cycle.                                                                                       |
 | ❌      | [Logging](#logging)                                                 | Integrate with popular logging packages.                                                                                                                     |
 | ✅      | [Domains](#domains)                                                 | Logically bind clients with providers.                                                                                                                       |
-| ❌      | [Eventing](#eventing)                                               | React to state changes in the provider or flag management system.                                                                                            |
+| ✅      | [Eventing](#eventing)                                               | React to state changes in the provider or flag management system.                                                                                            |
 | ⚠️      | [Shutdown](#shutdown)                                               | Gracefully clean up a provider during application shutdown.                                                                                                  |
 | ❌      | [Transaction Context Propagation](#transaction-context-propagation) | Set a specific [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context) for a transaction (e.g. an HTTP request or a thread) |
 | ⚠️      | [Extending](#extending)                                             | Extend OpenFeature with custom providers and hooks.                                                                                                          |
@@ -142,7 +142,7 @@ begin
 rescue OpenFeature::SDK::ProviderInitializationError => e
   puts "Provider failed to initialize: #{e.message}"
   puts "Error code: #{e.error_code}"
-  # Note: original_error may be nil for errors from provider events
+  # Note: original_error is only present for timeout errors, nil for provider event errors
   puts "Original error: #{e.original_error}" if e.original_error
 end
 
@@ -166,7 +166,7 @@ The `set_provider_and_wait` method:
 - Waits for the provider's `init` method to complete successfully
 - Raises `ProviderInitializationError` with `PROVIDER_FATAL` error code if initialization fails or times out
 - Provides access to the provider instance and error code for debugging
-- The `original_error` field contains the underlying exception for timeout errors, but may be `nil` for errors that occur through the provider event system (aligning with other OpenFeature SDKs)
+- The `original_error` field only contains the underlying exception for timeout errors; it is `nil` for errors that occur through the provider event system
 - Uses the same thread-safe provider switching as `set_provider`
 
 In some situations, it may be beneficial to register multiple providers in the same application.
@@ -233,15 +233,33 @@ legacy_flag_client = OpenFeature::SDK.build_client(domain: "legacy_flags")
 
 ### Eventing
 
-Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/51) to be worked on.
-
-<!-- Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
+Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
 Initialization events (`PROVIDER_READY` on success, `PROVIDER_ERROR` on failure) are dispatched for every provider.
 Some providers support additional events, such as `PROVIDER_CONFIGURATION_CHANGED`.
 
-Please refer to the documentation of the provider you're using to see what events are supported. -->
+Please refer to the documentation of the provider you're using to see what events are supported.
 
-<!-- TODO: code example of a PROVIDER_CONFIGURATION_CHANGED event for the client and a PROVIDER_STALE event for the API -->
+```ruby
+# Register event handlers at the API (global) level
+ready_handler = ->(event_details) do
+  puts "Provider #{event_details[:provider].metadata.name} is ready!"
+end
+
+OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ready_handler)
+
+# Providers can emit events using the EventHandler mixin
+class MyEventAwareProvider
+  include OpenFeature::SDK::Provider::EventHandler
+
+  def init(evaluation_context)
+    # During initialization, emit PROVIDER_READY when ready
+    emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+  end
+end
+
+# Remove specific handlers when no longer needed
+OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ready_handler)
+```
 
 ### Shutdown
 

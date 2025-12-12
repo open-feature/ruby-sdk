@@ -9,11 +9,11 @@ module OpenFeature
     # https://openfeature.dev/specification/types#provider-status
     #
     module ProviderState
-      NOT_READY = 'NOT_READY'
-      READY = 'READY'
-      ERROR = 'ERROR'
-      STALE = 'STALE'
-      FATAL = 'FATAL'
+      NOT_READY = "NOT_READY"
+      READY = "READY"
+      ERROR = "ERROR"
+      STALE = "STALE"
+      FATAL = "FATAL"
 
       ALL_STATES = [
         NOT_READY,

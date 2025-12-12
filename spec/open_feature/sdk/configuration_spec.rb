@@ -15,7 +15,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         configuration.set_provider(provider)
 
         expect(configuration.provider).to be(provider)
-        
+
         # Wait for async initialization
         sleep(0.1)
       end
@@ -39,7 +39,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         configuration.set_provider(provider, domain: "testing")
 
         expect(configuration.provider(domain: "testing")).to be(provider)
-        
+
         # Wait for async initialization
         sleep(0.1)
       end
@@ -119,13 +119,13 @@ RSpec.describe OpenFeature::SDK::Configuration do
           expect(error.message).to include("Provider initialization failed")
           expect(error.message).to include(error_message)
           expect(error.provider).to be(provider)
-          expect(error.original_error).to be_nil  # Provider init errors come through events, so no original exception
+          expect(error.original_error).to be_nil # Provider init errors come through events, so no original exception
           expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
         end
       end
 
       it "leaves the failed provider in place when init fails" do
-        old_provider = configuration.provider
+        configuration.provider
 
         expect do
           configuration.set_provider_and_wait(provider)
@@ -156,7 +156,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
 
       it "leaves the failed provider in place when init times out" do
-        old_provider = configuration.provider
+        configuration.provider
 
         expect do
           configuration.set_provider_and_wait(provider, timeout: 0.1)
@@ -219,46 +219,46 @@ RSpec.describe OpenFeature::SDK::Configuration do
 
         expect(configuration.provider).to be(provider)
       end
-      
+
       it "handles setting provider to a domain with no previous provider" do
         # This should not raise any errors even though old_provider will be nil
         expect { configuration.set_provider_and_wait(provider, domain: "new-domain") }.not_to raise_error
-        
+
         expect(configuration.provider(domain: "new-domain")).to be(provider)
       end
     end
-    
+
     context "when evaluation context changes during async initialization" do
       let(:initial_context) { OpenFeature::SDK::EvaluationContext.new(targeting_key: "initial") }
       let(:changed_context) { OpenFeature::SDK::EvaluationContext.new(targeting_key: "changed") }
       let(:context_capturing_provider) do
         Class.new do
           attr_reader :received_context
-          
+
           def init(context = nil)
             @received_context = context
             # Simulate slow initialization
             sleep(0.1)
           end
-          
+
           def metadata
             OpenFeature::SDK::Provider::ProviderMetadata.new(name: "ContextCapturingProvider")
           end
         end.new
       end
-      
+
       it "uses the evaluation context that was set when set_provider was called" do
         configuration.evaluation_context = initial_context
-        
+
         # Start provider initialization (async)
         configuration.set_provider(context_capturing_provider)
-        
+
         # Change global context immediately after
         configuration.evaluation_context = changed_context
-        
+
         # Wait for initialization to complete
         sleep(0.2)
-        
+
         # Provider should have received the initial context, not the changed one
         expect(context_capturing_provider.received_context).to eq(initial_context)
         expect(context_capturing_provider.received_context).not_to eq(changed_context)
@@ -269,11 +269,11 @@ RSpec.describe OpenFeature::SDK::Configuration do
   describe "logger" do
     it "sets logger and propagates to event emitter" do
       logger = double("Logger")
-      
+
       expect do
         configuration.logger = logger
       end.not_to raise_error
-      
+
       expect(configuration.logger).to eq(logger)
       expect(configuration.instance_variable_get(:@event_emitter).instance_variable_get(:@logger)).to eq(logger)
     end
@@ -283,20 +283,20 @@ RSpec.describe OpenFeature::SDK::Configuration do
     it "calls init without parameters when init method has no parameters" do
       provider = Class.new do
         attr_accessor :init_called
-        
+
         def init
           @init_called = true
         end
-        
+
         def metadata
           OpenFeature::SDK::Provider::ProviderMetadata.new(name: "TestProvider")
         end
       end.new
-      
+
       configuration.set_provider(provider)
-      
+
       sleep(0.1)
-      
+
       expect(provider.init_called).to be true
     end
   end
@@ -305,16 +305,16 @@ RSpec.describe OpenFeature::SDK::Configuration do
     it "logs error when event handler fails and logger is present" do
       logger = double("Logger")
       configuration.logger = logger
-      
-      failing_handler = proc { |_| raise StandardError.new("Handler failed") }
-      
+
+      failing_handler = proc { |_| raise StandardError, "Handler failed" }
+
       configuration.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, failing_handler)
-      
+
       expect(logger).to receive(:warn).with(/Event handler failed for/)
-      
-      configuration.send(:dispatch_provider_event, 
-                        OpenFeature::SDK::Provider::NoOpProvider.new,
-                        OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+
+      configuration.send(:dispatch_provider_event,
+        OpenFeature::SDK::Provider::NoOpProvider.new,
+        OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
     end
   end
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'provider_event'
+require_relative "provider_event"
 
 module OpenFeature
   module SDK
@@ -50,13 +50,9 @@ module OpenFeature
 
         # Call handlers outside of mutex to avoid deadlocks
         handlers_to_call.each do |handler|
-          begin
-            handler.call(event_details)
-          rescue StandardError => e
-            if @logger
-              @logger.warn "Event handler failed for #{event_type}: #{e.message}\n#{e.backtrace.join("\n")}"
-            end
-          end
+          handler.call(event_details)
+        rescue => e
+          @logger&.warn "Event handler failed for #{event_type}: #{e.message}\n#{e.backtrace.join("\n")}"
         end
       end
 

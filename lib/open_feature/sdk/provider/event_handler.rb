@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../provider_event'
+require_relative "../provider_event"
 
 module OpenFeature
   module SDK

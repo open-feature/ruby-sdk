@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative 'provider_state'
-require_relative 'provider_event'
-require_relative 'event_to_state_mapper'
+require_relative "provider_state"
+require_relative "provider_event"
+require_relative "event_to_state_mapper"
 
 module OpenFeature
   module SDK
@@ -25,11 +25,11 @@ module OpenFeature
         return ProviderState::NOT_READY unless provider
 
         new_state = EventToStateMapper.state_from_event(event_type, event_details)
-        
+
         @mutex.synchronize do
           @states[provider.object_id] = new_state
         end
-        
+
         new_state
       end
 
@@ -55,7 +55,7 @@ module OpenFeature
 
       def error?(provider)
         state = get_state(provider)
-        state == ProviderState::ERROR || state == ProviderState::FATAL
+        [ProviderState::ERROR, ProviderState::FATAL].include?(state)
       end
 
       def clear

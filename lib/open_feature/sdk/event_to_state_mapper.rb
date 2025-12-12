@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative 'provider_event'
-require_relative 'provider_state'
-require_relative 'provider/error_code'
+require_relative "provider_event"
+require_relative "provider_state"
+require_relative "provider/error_code"
 
 module OpenFeature
   module SDK
@@ -21,8 +21,6 @@ module OpenFeature
         end
       end
 
-      private
-
       def self.state_from_error_event(event_details)
         error_code = event_details&.dig(:error_code)
         if error_code == Provider::ErrorCode::PROVIDER_FATAL
@@ -31,7 +29,6 @@ module OpenFeature
           ProviderState::ERROR
         end
       end
-
     end
   end
 end

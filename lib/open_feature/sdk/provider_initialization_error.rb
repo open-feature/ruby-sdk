@@ -4,7 +4,6 @@ require_relative "provider/error_code"
 
 module OpenFeature
   module SDK
-
     # Exception raised when a provider fails to initialize during setProviderAndWait
     #
     # This exception provides access to both the original error that caused the

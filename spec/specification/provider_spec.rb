@@ -19,20 +19,20 @@ RSpec.describe "Provider" do
         # Create a provider that cannot initialize properly
         failing_provider_class = Class.new do
           include OpenFeature::SDK::Provider::EventHandler
-          
+
           def metadata
             OpenFeature::SDK::Provider::ProviderMetadata.new(name: "Failing Provider")
           end
-          
-          def init(evaluation_context)
+
+          def init(_evaluation_context)
             # Simulate inability to connect to flag service
-            raise StandardError.new("Cannot connect to flag service")
+            raise StandardError, "Cannot connect to flag service"
           end
-          
+
           def shutdown
             # no-op
           end
-          
+
           def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
             OpenFeature::SDK::Provider::ResolutionDetails.new(
               value: default_value,
@@ -40,30 +40,30 @@ RSpec.describe "Provider" do
             )
           end
         end
-        
+
         provider = failing_provider_class.new
-        
+
         # Using set_provider_and_wait should raise an error when init fails
-        expect {
+        expect do
           OpenFeature::SDK.set_provider_and_wait(provider)
-        }.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
+        end.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
           expect(error.message).to include("Cannot connect to flag service")
         end
       end
-      
+
       specify "Provider initialization errors should prevent the provider from being used" do
         # Store the old provider
-        old_provider = OpenFeature::SDK.provider
-        
+        OpenFeature::SDK.provider
+
         # Create a provider that fails initialization
         failing_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         allow(failing_provider).to receive(:init).and_raise("Init failed")
-        
+
         # Try to set the failing provider
-        expect {
+        expect do
           OpenFeature::SDK.set_provider_and_wait(failing_provider)
-        }.to raise_error(OpenFeature::SDK::ProviderInitializationError)
-        
+        end.to raise_error(OpenFeature::SDK::ProviderInitializationError)
+
         # The failing provider should remain in place (with error state)
         expect(OpenFeature::SDK.provider).to eq(failing_provider)
       end

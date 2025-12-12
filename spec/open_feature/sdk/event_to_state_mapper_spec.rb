@@ -81,44 +81,28 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
 
 
 
-  describe 'STATE_MAPPING constant' do
-    it 'is frozen to prevent modification' do
-      expect(described_class::STATE_MAPPING).to be_frozen
-    end
-
-    it 'contains mappings for all provider events' do
-      expected_events = [
-        OpenFeature::SDK::ProviderEvent::PROVIDER_READY,
-        OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED,
-        OpenFeature::SDK::ProviderEvent::PROVIDER_STALE,
-        OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR
-      ]
-      
-      expect(described_class::STATE_MAPPING.keys).to contain_exactly(*expected_events)
-    end
-  end
-
   describe 'integration with ProviderEvent and ProviderState constants' do
-    it 'uses valid provider events' do
-      described_class::STATE_MAPPING.keys.each do |event_type|
-        expect(OpenFeature::SDK::ProviderEvent::ALL_EVENTS).to include(event_type)
+    it 'handles all valid provider events' do
+      OpenFeature::SDK::ProviderEvent::ALL_EVENTS.each do |event_type|
+        expect do
+          described_class.state_from_event(event_type)
+        end.not_to raise_error
       end
     end
 
     it 'maps to valid provider states' do
-      # Test non-callable mappings
-      non_callable_mappings = described_class::STATE_MAPPING.reject { |k, v| v.respond_to?(:call) }
-      non_callable_mappings.values.each do |state|
-        expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(state)
-      end
-
-      # Test callable mappings (PROVIDER_ERROR)
-      error_mapper = described_class::STATE_MAPPING[OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR]
-      fatal_state = error_mapper.call({ error_code: 'PROVIDER_FATAL' })
-      error_state = error_mapper.call({ error_code: 'SOME_ERROR' })
+      # Test all known events return valid states
+      ready_state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+      config_state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED)
+      stale_state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+      error_state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR)
+      fatal_state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, { error_code: OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL })
       
-      expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(fatal_state)
+      expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(ready_state)
+      expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(config_state)
+      expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(stale_state)
       expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(error_state)
+      expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(fatal_state)
     end
   end
 end

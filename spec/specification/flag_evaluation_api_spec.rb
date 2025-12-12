@@ -189,4 +189,20 @@ RSpec.describe "Flag Evaluation API" do
       end
     end
   end
+
+  context "Logger Methods" do
+    specify "delegates logger getter to configuration" do
+      logger = double("Logger")
+      allow(OpenFeature::SDK::API.instance.configuration).to receive(:logger).and_return(logger)
+      
+      expect(OpenFeature::SDK::API.instance.logger).to eq(logger)
+    end
+
+    specify "delegates logger setter to configuration" do
+      logger = double("Logger")
+      expect(OpenFeature::SDK::API.instance.configuration).to receive(:logger=).with(logger)
+      
+      OpenFeature::SDK::API.instance.logger = logger
+    end
+  end
 end

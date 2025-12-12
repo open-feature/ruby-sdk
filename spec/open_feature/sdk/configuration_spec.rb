@@ -265,4 +265,56 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end
     end
   end
+
+  describe "logger" do
+    it "sets logger and propagates to event emitter" do
+      logger = double("Logger")
+      
+      expect do
+        configuration.logger = logger
+      end.not_to raise_error
+      
+      expect(configuration.logger).to eq(logger)
+      expect(configuration.instance_variable_get(:@event_emitter).instance_variable_get(:@logger)).to eq(logger)
+    end
+  end
+
+  describe "provider initialization with different init signatures" do
+    it "calls init without parameters when init method has no parameters" do
+      provider = Class.new do
+        attr_accessor :init_called
+        
+        def init
+          @init_called = true
+        end
+        
+        def metadata
+          OpenFeature::SDK::Provider::ProviderMetadata.new(name: "TestProvider")
+        end
+      end.new
+      
+      configuration.set_provider(provider)
+      
+      sleep(0.1)
+      
+      expect(provider.init_called).to be true
+    end
+  end
+
+  describe "event handler error logging" do
+    it "logs error when event handler fails and logger is present" do
+      logger = double("Logger")
+      configuration.logger = logger
+      
+      failing_handler = proc { |_| raise StandardError.new("Handler failed") }
+      
+      configuration.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, failing_handler)
+      
+      expect(logger).to receive(:warn).with(/Event handler failed for/)
+      
+      configuration.send(:dispatch_provider_event, 
+                        OpenFeature::SDK::Provider::NoOpProvider.new,
+                        OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+    end
+  end
 end

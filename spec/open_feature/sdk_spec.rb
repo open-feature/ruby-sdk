@@ -52,4 +52,12 @@ RSpec.describe OpenFeature::SDK do
       OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
     end
   end
+
+  describe "method_missing delegation" do
+    it "raises NoMethodError for non-existent methods" do
+      expect do
+        OpenFeature::SDK.some_non_existent_method
+      end.to raise_error(NoMethodError)
+    end
+  end
 end

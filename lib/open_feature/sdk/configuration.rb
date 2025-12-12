@@ -69,7 +69,7 @@ module OpenFeature
           if event_details[:provider] == provider
             completion_queue << { 
               status: :error, 
-              message: event_details[:message] || "Provider initialization failed",
+              message: event_details[:message] || "an unspecified error occurred",
               error_code: event_details[:error_code]
             }
           end

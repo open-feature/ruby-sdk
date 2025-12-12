@@ -24,8 +24,7 @@ module OpenFeature
         @hooks = []
         @providers = {}
         @provider_mutex = Mutex.new
-        @provider_wait_mutex = Mutex.new
-        @logger = nil  # Users can set a logger if needed
+        @logger = nil
         @event_emitter = EventEmitter.new(@logger)
         @provider_state_registry = ProviderStateRegistry.new
       end
@@ -53,54 +52,12 @@ module OpenFeature
 
       def set_provider(provider, domain: nil)
         @provider_mutex.synchronize do
-          old_provider = @providers[domain]
-          
-          begin
-            old_provider.shutdown if old_provider&.respond_to?(:shutdown)
-          rescue StandardError => e
-            @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || 'unknown'}: #{e.message}")
-          end
-          
-          # Remove old provider state to prevent memory leaks
-          @provider_state_registry.remove_provider(old_provider)
-          
-          new_providers = @providers.dup
-          new_providers[domain] = provider
-          @providers = new_providers
-          
-          @provider_state_registry.set_initial_state(provider)
-          
-          if provider.is_a?(Provider::EventHandler)
-            provider.attach(ProviderEventDispatcher.new(self))
-          end
-          
-          # Capture evaluation context to prevent race condition
-          context_for_init = @evaluation_context
-          Thread.new do
-            begin
-              if provider.respond_to?(:init)
-                init_method = provider.method(:init)
-                if init_method.parameters.empty?
-                  provider.init
-                else
-                  provider.init(context_for_init)
-                end
-              end
-              
-              unless provider.is_a?(Provider::EventHandler)
-                dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
-              end
-            rescue StandardError => e
-              dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR, 
-                                    error_code: Provider::ErrorCode::PROVIDER_FATAL,
-                                    message: e.message)
-            end
-          end
+          set_provider_internal(provider, domain: domain)
         end
       end
 
       def set_provider_and_wait(provider, domain: nil, timeout: 30)
-        @provider_wait_mutex.synchronize do
+        @provider_mutex.synchronize do
           completion_queue = Queue.new
           
           ready_handler = lambda do |event_details|
@@ -123,8 +80,10 @@ module OpenFeature
           add_handler(ProviderEvent::PROVIDER_ERROR, error_handler)
           
           begin
-            set_provider(provider, domain: domain)
+            # Start provider initialization in a separate thread
+            set_provider_internal(provider, domain: domain)
             
+            # Wait for initialization to complete
             Timeout.timeout(timeout) do
               result = completion_queue.pop
               
@@ -153,6 +112,53 @@ module OpenFeature
       end
 
       private
+
+      def set_provider_internal(provider, domain: nil)
+        old_provider = @providers[domain]
+        
+        begin
+          old_provider.shutdown if old_provider&.respond_to?(:shutdown)
+        rescue StandardError => e
+          @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || 'unknown'}: #{e.message}")
+        end
+        
+        # Remove old provider state to prevent memory leaks
+        @provider_state_registry.remove_provider(old_provider)
+        
+        new_providers = @providers.dup
+        new_providers[domain] = provider
+        @providers = new_providers
+        
+        @provider_state_registry.set_initial_state(provider)
+        
+        if provider.is_a?(Provider::EventHandler)
+          provider.attach(ProviderEventDispatcher.new(self))
+        end
+        
+        # Capture evaluation context to prevent race condition
+        context_for_init = @evaluation_context
+        
+        Thread.new do
+          begin
+            if provider.respond_to?(:init)
+              init_method = provider.method(:init)
+              if init_method.parameters.empty?
+                provider.init
+              else
+                provider.init(context_for_init)
+              end
+            end
+            
+            unless provider.is_a?(Provider::EventHandler)
+              dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
+            end
+          rescue StandardError => e
+            dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR, 
+                                  error_code: Provider::ErrorCode::PROVIDER_FATAL,
+                                  message: e.message)
+          end
+        end
+      end
 
       def dispatch_provider_event(provider, event_type, details = {})
         @provider_state_registry.update_state_from_event(provider, event_type, details)

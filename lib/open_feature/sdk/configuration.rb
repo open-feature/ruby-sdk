@@ -24,6 +24,7 @@ module OpenFeature
         @hooks = []
         @providers = {}
         @provider_mutex = Mutex.new
+        @provider_wait_mutex = Mutex.new
         @logger = nil  # Users can set a logger if needed
         @event_emitter = EventEmitter.new(@logger)
         @provider_state_registry = ProviderStateRegistry.new
@@ -99,53 +100,55 @@ module OpenFeature
       end
 
       def set_provider_and_wait(provider, domain: nil, timeout: 30)
-        completion_queue = Queue.new
-        
-        ready_handler = lambda do |event_details|
-          if event_details[:provider] == provider
-            completion_queue << { status: :ready }
-          end
-        end
-        
-        error_handler = lambda do |event_details|
-          if event_details[:provider] == provider
-            completion_queue << { 
-              status: :error, 
-              message: event_details[:message] || "Provider initialization failed",
-              error_code: event_details[:error_code]
-            }
-          end
-        end
-        
-        add_handler(ProviderEvent::PROVIDER_READY, ready_handler)
-        add_handler(ProviderEvent::PROVIDER_ERROR, error_handler)
-        
-        begin
-          set_provider(provider, domain: domain)
+        @provider_wait_mutex.synchronize do
+          completion_queue = Queue.new
           
-          Timeout.timeout(timeout) do
-            result = completion_queue.pop
-            
-            if result[:status] == :error
-              error_code = result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL
-              message = result[:message]
-              raise ProviderInitializationError.new(
-                "Provider #{provider.class.name} initialization failed: #{message}",
-                provider: provider,
-                error_code: error_code,
-                original_error: nil  # Exceptions not included in events
-              )
+          ready_handler = lambda do |event_details|
+            if event_details[:provider] == provider
+              completion_queue << { status: :ready }
             end
           end
-        rescue Timeout::Error => e
-          raise ProviderInitializationError.new(
-            "Provider #{provider.class.name} initialization timed out after #{timeout} seconds",
-            provider: provider,
-            original_error: e
-          )
-        ensure
-          remove_handler(ProviderEvent::PROVIDER_READY, ready_handler)
-          remove_handler(ProviderEvent::PROVIDER_ERROR, error_handler)
+          
+          error_handler = lambda do |event_details|
+            if event_details[:provider] == provider
+              completion_queue << { 
+                status: :error, 
+                message: event_details[:message] || "Provider initialization failed",
+                error_code: event_details[:error_code]
+              }
+            end
+          end
+          
+          add_handler(ProviderEvent::PROVIDER_READY, ready_handler)
+          add_handler(ProviderEvent::PROVIDER_ERROR, error_handler)
+          
+          begin
+            set_provider(provider, domain: domain)
+            
+            Timeout.timeout(timeout) do
+              result = completion_queue.pop
+              
+              if result[:status] == :error
+                error_code = result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL
+                message = result[:message]
+                raise ProviderInitializationError.new(
+                  "Provider #{provider.class.name} initialization failed: #{message}",
+                  provider: provider,
+                  error_code: error_code,
+                  original_error: nil  # Exceptions not included in events
+                )
+              end
+            end
+          rescue Timeout::Error => e
+            raise ProviderInitializationError.new(
+              "Provider #{provider.class.name} initialization timed out after #{timeout} seconds",
+              provider: provider,
+              original_error: e
+            )
+          ensure
+            remove_handler(ProviderEvent::PROVIDER_READY, ready_handler)
+            remove_handler(ProviderEvent::PROVIDER_ERROR, error_handler)
+          end
         end
       end
 

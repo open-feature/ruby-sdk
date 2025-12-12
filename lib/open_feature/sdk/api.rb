@@ -52,7 +52,6 @@ module OpenFeature
         Client.new(provider: Provider::NoOpProvider.new, evaluation_context:)
       end
 
-      # Event handling methods
       def add_handler(event_type, handler)
         configuration.add_handler(event_type, handler)
       end
@@ -61,7 +60,6 @@ module OpenFeature
         configuration.remove_handler(event_type, handler)
       end
 
-      # Configuration methods
       def logger
         configuration.logger
       end

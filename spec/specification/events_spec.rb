@@ -12,7 +12,7 @@ RSpec.describe "OpenFeature Specification: Events" do
   # Remove all handlers after each test to avoid test pollution
   after(:each) do
     # Clean up any remaining handlers
-    OpenFeature::SDK::API.instance.clear_all_handlers
+    OpenFeature::SDK::API.instance.send(:clear_all_handlers)
   end
 
   context "Requirement 5.1.1" do

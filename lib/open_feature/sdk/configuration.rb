@@ -168,16 +168,18 @@ module OpenFeature
         @event_emitter.trigger_event(event_type, event_details)
       end
 
+      def provider_state(provider)
+        @provider_state_registry.get_state(provider)
+      end
+
+      private
+
       def handler_count(event_type)
         @event_emitter.handler_count(event_type)
       end
 
       def total_handler_count
         ProviderEvent::ALL_EVENTS.sum { |event_type| handler_count(event_type) }
-      end
-
-      def provider_state(provider)
-        @provider_state_registry.get_state(provider)
       end
 
       class ProviderEventDispatcher

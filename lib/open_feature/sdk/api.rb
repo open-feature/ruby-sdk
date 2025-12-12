@@ -68,7 +68,8 @@ module OpenFeature
         configuration.logger = new_logger
       end
 
-      # Internal utility for testing - not part of OpenFeature spec
+      private
+
       def clear_all_handlers
         configuration.clear_all_handlers
       end

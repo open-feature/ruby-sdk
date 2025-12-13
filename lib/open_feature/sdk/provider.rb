@@ -4,7 +4,6 @@ require_relative "provider/resolution_details"
 require_relative "provider/provider_metadata"
 
 # Provider interfaces
-require_relative "provider/state_handler"
 require_relative "provider/event_handler"
 
 # Provider implementations

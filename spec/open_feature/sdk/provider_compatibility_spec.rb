@@ -70,7 +70,7 @@ RSpec.describe "Provider Interface Detection" do
     end.new
   end
 
-  it "can check if provider implements StateHandler" do
+  it "can check if provider implements lifecycle methods using duck typing" do
     noop_provider = OpenFeature::SDK::Provider::NoOpProvider.new
     inmemory_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
 

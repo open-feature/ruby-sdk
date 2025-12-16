@@ -252,8 +252,21 @@ class MyEventAwareProvider
   include OpenFeature::SDK::Provider::EventHandler
 
   def init(evaluation_context)
-    # During initialization, emit PROVIDER_READY when ready
-    emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+    # Start background process to monitor for configuration changes
+    # Note: SDK automatically emits PROVIDER_READY when init completes successfully
+    start_background_process
+  end
+
+  def start_background_process
+    Thread.new do
+      # Monitor for configuration changes and emit events when they occur
+      if configuration_changed?
+        emit_event(
+          OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED,
+          message: "Flag configuration updated"
+        )
+      end
+    end
   end
 end
 

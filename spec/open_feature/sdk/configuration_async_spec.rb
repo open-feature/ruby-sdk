@@ -33,11 +33,9 @@ RSpec.describe OpenFeature::SDK::Configuration do
       include OpenFeature::SDK::Provider::EventHandler
 
       define_method :init do |_evaluation_context|
-        Thread.new do
-          sleep(init_time)
-          on_init&.call
-          emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
-        end
+        sleep(init_time)
+        on_init&.call
+        emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
       end
 
       def shutdown
@@ -59,12 +57,8 @@ RSpec.describe OpenFeature::SDK::Configuration do
       include OpenFeature::SDK::Provider::EventHandler
 
       define_method :init do |_evaluation_context|
-        Thread.new do
-          sleep(0.05)
-          emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR,
-            error_code: OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL,
-            message: error_message)
-        end
+        sleep(0.05) # Simulate some initialization time
+        raise StandardError, error_message
       end
 
       def shutdown
@@ -159,7 +153,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         provider = create_slow_provider(init_time: 0.1) { initialized = true }
 
         expect(initialized).to be false
-        configuration.set_provider_and_wait(provider, timeout: 1)
+        configuration.set_provider_and_wait(provider)
         expect(initialized).to be true
       end
 
@@ -167,7 +161,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         provider = create_event_aware_provider(init_time: 0.1)
 
         start_time = Time.now
-        configuration.set_provider_and_wait(provider, timeout: 1)
+        configuration.set_provider_and_wait(provider)
         elapsed = Time.now - start_time
 
         expect(elapsed).to be >= 0.1 # Should wait at least as long as init time
@@ -179,55 +173,10 @@ RSpec.describe OpenFeature::SDK::Configuration do
         provider = create_failing_provider("Custom error")
 
         expect do
-          configuration.set_provider_and_wait(provider, timeout: 1)
+          configuration.set_provider_and_wait(provider)
         end.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
           expect(error.message).to include("Custom error")
         end
-      end
-
-      it "raises ProviderInitializationError on timeout" do
-        provider = create_slow_provider(init_time: 2.0) # 2 seconds
-
-        expect do
-          configuration.set_provider_and_wait(provider, timeout: 0.5)
-        end.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
-          expect(error.message).to include("timed out after 0.5 seconds")
-        end
-      end
-    end
-
-    context "event handler cleanup" do
-      it "removes event handlers after completion" do
-        provider = create_slow_provider(init_time: 0.05)
-
-        # Get initial handler count
-        initial_ready_count = configuration.send(:handler_count, OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
-        initial_error_count = configuration.send(:handler_count, OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR)
-
-        configuration.set_provider_and_wait(provider, timeout: 1)
-
-        # Handler counts should be back to initial
-        final_ready_count = configuration.send(:handler_count, OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
-        final_error_count = configuration.send(:handler_count, OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR)
-
-        expect(final_ready_count).to eq(initial_ready_count)
-        expect(final_error_count).to eq(initial_error_count)
-      end
-
-      it "removes event handlers even on error" do
-        provider = create_failing_provider
-
-        # Get initial handler count
-        initial_count = configuration.send(:total_handler_count)
-
-        expect do
-          configuration.set_provider_and_wait(provider, timeout: 1)
-        end.to raise_error(OpenFeature::SDK::ProviderInitializationError)
-
-        # Handler count should be back to initial
-        final_count = configuration.send(:total_handler_count)
-
-        expect(final_count).to eq(initial_count)
       end
     end
   end
@@ -261,7 +210,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
       provider = OpenFeature::SDK::Provider::NoOpProvider.new
 
       expect do
-        configuration.set_provider_and_wait(provider, timeout: 1)
+        configuration.set_provider_and_wait(provider)
       end.not_to raise_error
 
       expect(configuration.provider).to eq(provider)

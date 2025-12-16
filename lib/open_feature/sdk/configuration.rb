@@ -52,68 +52,19 @@ module OpenFeature
 
       def set_provider(provider, domain: nil)
         @provider_mutex.synchronize do
-          set_provider_internal(provider, domain:)
+          set_provider_internal(provider, domain: domain, wait_for_init: false)
         end
       end
 
-      def set_provider_and_wait(provider, domain: nil, timeout: 30)
-        completion_queue = Queue.new
-
-        ready_handler = lambda do |event_details|
-          if event_details[:provider] == provider
-            completion_queue << {status: :ready}
-          end
-        end
-
-        error_handler = lambda do |event_details|
-          if event_details[:provider] == provider
-            completion_queue << {
-              status: :error,
-              message: event_details[:message] || "an unspecified error occurred",
-              error_code: event_details[:error_code]
-            }
-          end
-        end
-
-        add_handler(ProviderEvent::PROVIDER_READY, ready_handler)
-        add_handler(ProviderEvent::PROVIDER_ERROR, error_handler)
-
-        # Lock only while mutating shared state
+      def set_provider_and_wait(provider, domain: nil)
         @provider_mutex.synchronize do
-          set_provider_internal(provider, domain:)
-        end
-
-        begin
-          # Wait for initialization to complete, outside the main provider mutex
-          Timeout.timeout(timeout) do
-            result = completion_queue.pop
-
-            if result[:status] == :error
-              error_code = result[:error_code] || Provider::ErrorCode::PROVIDER_FATAL
-              message = result[:message]
-              raise ProviderInitializationError.new(
-                "Provider #{provider.class.name} initialization failed: #{message}",
-                provider:,
-                error_code:,
-                original_error: nil  # Exceptions not included in events
-              )
-            end
-          end
-        rescue Timeout::Error => e
-          raise ProviderInitializationError.new(
-            "Provider #{provider.class.name} initialization timed out after #{timeout} seconds",
-            provider:,
-            original_error: e
-          )
-        ensure
-          remove_handler(ProviderEvent::PROVIDER_READY, ready_handler)
-          remove_handler(ProviderEvent::PROVIDER_ERROR, error_handler)
+          set_provider_internal(provider, domain: domain, wait_for_init: true)
         end
       end
 
       private
 
-      def set_provider_internal(provider, domain: nil)
+      def set_provider_internal(provider, domain:, wait_for_init:)
         old_provider = @providers[domain]
 
         begin
@@ -136,23 +87,41 @@ module OpenFeature
         # Capture evaluation context to prevent race condition
         context_for_init = @evaluation_context
 
-        Thread.new do
-          if provider.respond_to?(:init)
-            init_method = provider.method(:init)
-            if init_method.parameters.empty?
-              provider.init
-            else
-              provider.init(context_for_init)
-            end
+        if wait_for_init
+          init_provider(provider, context_for_init, raise_on_error: true)
+        else
+          Thread.new do
+            init_provider(provider, context_for_init, raise_on_error: false)
           end
+        end
+      end
 
-          unless provider.is_a?(Provider::EventHandler)
-            dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
+      def init_provider(provider, context, raise_on_error: false)
+        if provider.respond_to?(:init)
+          init_method = provider.method(:init)
+          if init_method.parameters.empty?
+            provider.init
+          else
+            provider.init(context)
           end
-        rescue => e
-          dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
+        end
+
+        unless provider.is_a?(Provider::EventHandler)
+          dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
+        end
+      rescue => e
+        dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
+          error_code: Provider::ErrorCode::PROVIDER_FATAL,
+          message: e.message)
+
+        if raise_on_error
+          # Re-raise as ProviderInitializationError for synchronous callers
+          raise ProviderInitializationError.new(
+            "Provider #{provider.class.name} initialization failed: #{e.message}",
+            provider:,
             error_code: Provider::ErrorCode::PROVIDER_FATAL,
-            message: e.message)
+            original_error: e
+          )
         end
       end
 
@@ -173,14 +142,6 @@ module OpenFeature
       end
 
       private
-
-      def handler_count(event_type)
-        @event_emitter.handler_count(event_type)
-      end
-
-      def total_handler_count
-        ProviderEvent::ALL_EVENTS.sum { |event_type| handler_count(event_type) }
-      end
 
       class ProviderEventDispatcher
         def initialize(config)

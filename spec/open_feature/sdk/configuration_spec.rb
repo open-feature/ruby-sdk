@@ -74,10 +74,10 @@ RSpec.describe OpenFeature::SDK::Configuration do
         expect(configuration.provider).to be(provider)
       end
 
-      it "supports custom timeout" do
+      it "initializes the provider synchronously" do
         expect(provider).to receive(:init).once
 
-        configuration.set_provider_and_wait(provider, timeout: 60)
+        configuration.set_provider_and_wait(provider)
 
         expect(configuration.provider).to be(provider)
       end
@@ -119,7 +119,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
           expect(error.message).to include("Provider initialization failed")
           expect(error.message).to include(error_message)
           expect(error.provider).to be(provider)
-          expect(error.original_error).to be_nil # Provider init errors come through events, so no original exception
+          expect(error.original_error).to be_a(StandardError) # Synchronous init preserves original exception
           expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
         end
       end
@@ -129,37 +129,6 @@ RSpec.describe OpenFeature::SDK::Configuration do
 
         expect do
           configuration.set_provider_and_wait(provider)
-        end.to raise_error(OpenFeature::SDK::ProviderInitializationError)
-
-        expect(configuration.provider).to be(provider)
-      end
-    end
-
-    context "when provider init times out" do
-      let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
-
-      before do
-        allow(provider).to receive(:init) do
-          sleep 2 # Simulate slow initialization
-        end
-      end
-
-      it "raises ProviderInitializationError after timeout" do
-        expect do
-          configuration.set_provider_and_wait(provider, timeout: 0.1)
-        end.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
-          expect(error.message).to include("Provider initialization timed out after 0.1 seconds")
-          expect(error.provider).to be(provider)
-          expect(error.original_error).to be_a(Timeout::Error)
-          expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
-        end
-      end
-
-      it "leaves the failed provider in place when init times out" do
-        configuration.provider
-
-        expect do
-          configuration.set_provider_and_wait(provider, timeout: 0.1)
         end.to raise_error(OpenFeature::SDK::ProviderInitializationError)
 
         expect(configuration.provider).to be(provider)

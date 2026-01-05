@@ -5,7 +5,6 @@ require_relative "../../lib/open_feature/sdk"
 
 RSpec.describe "OpenFeature Specification: Events" do
   before(:each) do
-    # Reset to default provider
     OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
   end
 
@@ -220,14 +219,16 @@ RSpec.describe "OpenFeature Specification: Events" do
       OpenFeature::SDK.set_provider(provider1)
       sleep(0.1)
 
-      expect(handler_call_count).to eq(1)
+      # Should be 2: 1 immediate (NoOpProvider is READY by set_provider in before(:each)) + 1 from InMemoryProvider
+      expect(handler_call_count).to eq(2)
 
       # Set second provider - handler should still be active
       provider2 = OpenFeature::SDK::Provider::NoOpProvider.new
       OpenFeature::SDK.set_provider(provider2)
       sleep(0.1)
 
-      expect(handler_call_count).to eq(2)
+      # Should be 3: 1 immediate + 2 from provider changes
+      expect(handler_call_count).to eq(3)
 
       # Cleanup
       OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
@@ -256,22 +257,40 @@ RSpec.describe "OpenFeature Specification: Events" do
   end
 
   context "Requirement 5.3.3" do
-    specify "Handlers attached after the provider is already in the associated state, MUST run immediately" do
-      events_received = []
+    describe "Handlers attached after the provider is already in the associated state, MUST run immediately" do
+      context "API-level handlers" do
+        specify "PROVIDER_READY handler runs immediately when provider is already READY" do
+          events_received = []
 
-      # Set up provider and get it into READY state first
-      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
-      OpenFeature::SDK.set_provider_and_wait(provider, domain: "immediate_test")
+          provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+          OpenFeature::SDK.set_provider_and_wait(provider)
 
-      # Now create client and add handler - should run immediately since provider is READY
-      client = OpenFeature::SDK.build_client(domain: "immediate_test")
-      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) do |event|
-        events_received << event
+          handler = ->(event) { events_received << event }
+          OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
+
+          expect(events_received).to have_attributes(size: 1)
+          expect(events_received[0][:provider_name]).to eq("In-memory Provider")
+
+          OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
+        end
       end
 
-      # Handler should have executed immediately, no additional events needed
-      expect(events_received).to have_attributes(size: 1)
-      expect(events_received[0][:provider_name]).to eq("In-memory Provider")
+      context "Client-level handlers" do
+        specify "PROVIDER_READY handler runs immediately when provider is already READY" do
+          events_received = []
+
+          provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+          OpenFeature::SDK.set_provider_and_wait(provider, domain: "immediate_test")
+
+          client = OpenFeature::SDK.build_client(domain: "immediate_test")
+          client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) do |event|
+            events_received << event
+          end
+
+          expect(events_received).to have_attributes(size: 1)
+          expect(events_received[0][:provider_name]).to eq("In-memory Provider")
+        end
+      end
     end
   end
 end

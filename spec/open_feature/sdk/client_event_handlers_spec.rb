@@ -21,6 +21,10 @@ RSpec.describe "Client Event Handlers" do
   end
 
   it "allows clients to add event handlers scoped to their domain" do
+    # Clear providers to ensure clean state - no default provider should exist
+    OpenFeature::SDK.configuration.instance_variable_set(:@providers, {})
+    OpenFeature::SDK.configuration.instance_variable_get(:@provider_state_registry).instance_variable_set(:@states, {})
+
     events_received = []
 
     # Create client with specific domain
@@ -42,6 +46,10 @@ RSpec.describe "Client Event Handlers" do
   end
 
   it "does not trigger handlers for other domains" do
+    # Clear providers to ensure clean state - no default provider should exist
+    OpenFeature::SDK.configuration.instance_variable_set(:@providers, {})
+    OpenFeature::SDK.configuration.instance_variable_get(:@provider_state_registry).instance_variable_set(:@states, {})
+
     events_received = []
 
     # Create client with specific domain
@@ -60,6 +68,10 @@ RSpec.describe "Client Event Handlers" do
   end
 
   it "allows removal of client event handlers" do
+    # Clear providers to ensure clean state - no default provider should exist
+    OpenFeature::SDK.configuration.instance_variable_set(:@providers, {})
+    OpenFeature::SDK.configuration.instance_variable_get(:@provider_state_registry).instance_variable_set(:@states, {})
+
     events_received = []
 
     client = OpenFeature::SDK.build_client(domain: "test_domain")
@@ -79,6 +91,10 @@ RSpec.describe "Client Event Handlers" do
   end
 
   it "supports block syntax for handlers" do
+    # Clear providers to ensure clean state - no default provider should exist
+    OpenFeature::SDK.configuration.instance_variable_set(:@providers, {})
+    OpenFeature::SDK.configuration.instance_variable_get(:@provider_state_registry).instance_variable_set(:@states, {})
+
     events_received = []
 
     client = OpenFeature::SDK.build_client(domain: "test_domain")
@@ -113,7 +129,7 @@ RSpec.describe "Client Event Handlers" do
 
   private
 
-  def test_provider(name = "TestProvider")
+  def test_provider(name)
     Class.new do
       include OpenFeature::SDK::Provider::EventHandler
 

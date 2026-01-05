@@ -42,6 +42,7 @@ module OpenFeature
 
       def add_handler(event_type, handler)
         @event_emitter.add_handler(event_type, handler)
+        run_immediate_handler(event_type, handler, nil)
       end
 
       def remove_handler(event_type, handler)
@@ -61,7 +62,7 @@ module OpenFeature
           @client_handlers[client][event_type] << handler
         end
 
-        run_immediate_handler(client, event_type, handler)
+        run_immediate_handler(event_type, handler, client)
       end
 
       def remove_client_handler(client, event_type, handler)
@@ -191,7 +192,7 @@ module OpenFeature
         end
       end
 
-      def run_immediate_handler(client, event_type, handler)
+      def run_immediate_handler(event_type, handler, client)
         status_to_event = {
           ProviderState::READY => ProviderEvent::PROVIDER_READY,
           ProviderState::ERROR => ProviderEvent::PROVIDER_ERROR,
@@ -199,22 +200,40 @@ module OpenFeature
           ProviderState::STALE => ProviderEvent::PROVIDER_STALE
         }
 
-        # Get provider for specific domain, but don't fall back to default unless domain is nil
-        client_provider = @providers[client.metadata.domain]
-        client_provider ||= @providers[nil] if client.metadata.domain.nil?
-        return unless client_provider
+        if client.nil?
+          # API-level handler: check all providers
+          @providers.each do |domain, provider|
+            next unless provider
 
-        provider_state = @provider_state_registry.get_state(client_provider)
+            provider_state = @provider_state_registry.get_state(provider)
 
-        # Only run if the event type matches the current provider status
-        if event_type == status_to_event[provider_state]
-          provider_name = extract_provider_name(client_provider)
-          event_details = {provider_name: provider_name}
+            if event_type == status_to_event[provider_state]
+              provider_name = extract_provider_name(provider)
+              event_details = {provider_name: provider_name}
 
-          begin
-            handler.call(event_details)
-          rescue => e
-            @logger&.error("Immediate client event handler failed: #{e.message}")
+              begin
+                handler.call(event_details)
+              rescue => e
+                @logger&.error("Immediate API event handler failed: #{e.message}")
+              end
+            end
+          end
+        else
+          # Client-level handler: check specific provider only
+          client_provider = provider(domain: client.metadata.domain)
+          return unless client_provider
+
+          provider_state = @provider_state_registry.get_state(client_provider)
+
+          if event_type == status_to_event[provider_state]
+            provider_name = extract_provider_name(client_provider)
+            event_details = {provider_name: provider_name}
+
+            begin
+              handler.call(event_details)
+            rescue => e
+              @logger&.error("Immediate client event handler failed: #{e.message}")
+            end
           end
         end
       end

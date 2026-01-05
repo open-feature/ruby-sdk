@@ -182,6 +182,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
 
       it "handles provider that responds_to init but init is nil" do
         allow(provider).to receive(:respond_to?).with(:init).and_return(true)
+        allow(provider).to receive(:respond_to?).with(:metadata).and_call_original
         allow(provider).to receive(:init).and_return(nil)
 
         configuration.set_provider_and_wait(provider)

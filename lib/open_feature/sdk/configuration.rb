@@ -27,6 +27,8 @@ module OpenFeature
         @logger = nil
         @event_emitter = EventEmitter.new(@logger)
         @provider_state_registry = ProviderStateRegistry.new
+        @client_handlers = {}
+        @client_handlers_mutex = Mutex.new
       end
 
       def provider(domain: nil)
@@ -48,6 +50,26 @@ module OpenFeature
 
       def clear_all_handlers
         @event_emitter.clear_all_handlers
+        @client_handlers_mutex.synchronize do
+          @client_handlers.clear
+        end
+      end
+
+      def add_client_handler(client, event_type, handler)
+        @client_handlers_mutex.synchronize do
+          @client_handlers[client] ||= Hash.new { |h, k| h[k] = [] }
+          @client_handlers[client][event_type] << handler
+        end
+
+        run_immediate_handler(client, event_type, handler)
+      end
+
+      def remove_client_handler(client, event_type, handler)
+        @client_handlers_mutex.synchronize do
+          return unless @client_handlers[client]
+          handlers = @client_handlers[client][event_type]
+          handlers&.delete(handler)
+        end
       end
 
       def set_provider(provider, domain: nil)
@@ -128,13 +150,13 @@ module OpenFeature
       def dispatch_provider_event(provider, event_type, details = {})
         @provider_state_registry.update_state_from_event(provider, event_type, details)
 
-        # Trigger event handlers
+        provider_name = extract_provider_name(provider)
+
         event_details = {
-          provider:,
-          provider_name: provider.class.name
+          provider_name: provider_name
         }.merge(details)
 
-        @event_emitter.trigger_event(event_type, event_details)
+        run_handlers_for_provider(provider, event_type, event_details)
       end
 
       def provider_state(provider)
@@ -142,6 +164,60 @@ module OpenFeature
       end
 
       private
+
+      def extract_provider_name(provider)
+        provider.respond_to?(:metadata) ? provider.metadata.name : provider.class.name
+      end
+
+      def run_handlers_for_provider(provider, event_type, event_details)
+        # Run global handlers (API-level, no domain filtering)
+        @event_emitter.trigger_event(event_type, event_details)
+
+        # Run client handlers (domain-scoped)
+        @client_handlers_mutex.synchronize do
+          @client_handlers.each do |client, handlers_by_event|
+            # Check if this client should receive events from this provider
+            client_provider = provider(domain: client.metadata.domain)
+            next unless client_provider&.equal?(provider)
+
+            # Trigger handlers for this client
+            handlers = handlers_by_event[event_type]
+            handlers.each do |handler|
+              handler.call(event_details)
+            rescue => e
+              @logger&.error("Client event handler failed: #{e.message}")
+            end
+          end
+        end
+      end
+
+      def run_immediate_handler(client, event_type, handler)
+        status_to_event = {
+          ProviderState::READY => ProviderEvent::PROVIDER_READY,
+          ProviderState::ERROR => ProviderEvent::PROVIDER_ERROR,
+          ProviderState::FATAL => ProviderEvent::PROVIDER_ERROR,
+          ProviderState::STALE => ProviderEvent::PROVIDER_STALE
+        }
+
+        # Get provider for specific domain, but don't fall back to default unless domain is nil
+        client_provider = @providers[client.metadata.domain]
+        client_provider ||= @providers[nil] if client.metadata.domain.nil?
+        return unless client_provider
+
+        provider_state = @provider_state_registry.get_state(client_provider)
+
+        # Only run if the event type matches the current provider status
+        if event_type == status_to_event[provider_state]
+          provider_name = extract_provider_name(client_provider)
+          event_details = {provider_name: provider_name}
+
+          begin
+            handler.call(event_details)
+          rescue => e
+            @logger&.error("Immediate client event handler failed: #{e.message}")
+          end
+        end
+      end
 
       class ProviderEventDispatcher
         def initialize(config)

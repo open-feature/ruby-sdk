@@ -108,7 +108,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         sleep(0.1)
 
         expect(ready_events.size).to eq(1)
-        expect(ready_events.first[:provider]).to eq(provider)
+        expect(ready_events.first[:provider_name]).to eq(provider.class.name)
       end
 
       it "emits PROVIDER_ERROR event on initialization failure" do
@@ -123,7 +123,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         sleep(0.2)
 
         expect(error_events.size).to eq(1)
-        expect(error_events.first[:provider]).to eq(provider)
+        expect(error_events.first[:provider_name]).to eq(provider.class.name)
         expect(error_events.first[:message]).to include("Init error")
       end
     end

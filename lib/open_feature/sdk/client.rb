@@ -27,6 +27,16 @@ module OpenFeature
         @hooks = []
       end
 
+      def add_handler(event_type, handler = nil, &block)
+        actual_handler = handler || block
+        OpenFeature::SDK.configuration.add_client_handler(self, event_type, actual_handler)
+      end
+
+      def remove_handler(event_type, handler = nil, &block)
+        actual_handler = handler || block
+        OpenFeature::SDK.configuration.remove_client_handler(self, event_type, actual_handler)
+      end
+
       RESULT_TYPE.each do |result_type|
         SUFFIXES.each do |suffix|
           class_eval <<-RUBY, __FILE__, __LINE__ + 1

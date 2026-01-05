@@ -9,9 +9,7 @@ RSpec.describe "OpenFeature Specification: Events" do
     OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
   end
 
-  # Remove all handlers after each test to avoid test pollution
   after(:each) do
-    # Clean up any remaining handlers
     OpenFeature::SDK::API.instance.send(:clear_all_handlers)
   end
 
@@ -76,10 +74,56 @@ RSpec.describe "OpenFeature Specification: Events" do
 
   context "Requirement 5.2.1" do
     specify "The client MUST provide a function for associating handler functions with provider event types" do
-      # NOTE: In the current Ruby SDK implementation, event handlers are managed at the API level,
-      # not the client level. This is a known deviation from the specification.
-      # Clients inherit event behavior through their providers.
-      skip "Client-level event handlers not yet implemented in Ruby SDK"
+      client = OpenFeature::SDK.build_client(domain: "test-domain")
+
+      # Verify client has methods to associate handlers with provider event types
+      expect(client).to respond_to(:add_handler)
+      expect(client).to respond_to(:remove_handler)
+
+      handler1 = ->(event_details) {}
+      handler2 = ->(event_details) {}
+
+      # Test adding handlers for all provider event types
+      expect do
+        client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler1)
+        client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, handler1)
+        client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, handler1)
+        client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED, handler1)
+      end.not_to raise_error
+
+      # Test multiple handlers for the same event type
+      expect do
+        client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler2)
+      end.not_to raise_error
+
+      # Verify handlers are stored in global configuration
+      client_handlers = OpenFeature::SDK.configuration.instance_variable_get(:@client_handlers)
+      expect(client_handlers).to have_key(client)
+      expect(client_handlers[client][OpenFeature::SDK::ProviderEvent::PROVIDER_READY]).to include(handler1, handler2)
+      expect(client_handlers[client][OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR]).to include(handler1)
+
+      # Test removing handlers
+      expect do
+        client.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler1)
+        client.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, handler1)
+        client.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, handler1)
+        client.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED, handler1)
+      end.not_to raise_error
+
+      # Verify handler1 is removed, handler2 remains
+      client_handlers = OpenFeature::SDK.configuration.instance_variable_get(:@client_handlers)
+      expect(client_handlers[client][OpenFeature::SDK::ProviderEvent::PROVIDER_READY]).not_to include(handler1)
+      expect(client_handlers[client][OpenFeature::SDK::ProviderEvent::PROVIDER_READY]).to include(handler2)
+      expect(client_handlers[client][OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR]).to be_empty
+
+      # Test removing the remaining handler
+      expect do
+        client.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler2)
+      end.not_to raise_error
+
+      # Verify all handlers are removed
+      client_handlers = OpenFeature::SDK.configuration.instance_variable_get(:@client_handlers)
+      expect(client_handlers[client][OpenFeature::SDK::ProviderEvent::PROVIDER_READY]).to be_empty
     end
   end
 
@@ -117,7 +161,7 @@ RSpec.describe "OpenFeature Specification: Events" do
 
       expect(event_details_received).not_to be_nil
       expect(event_details_received).to be_a(Hash)
-      expect(event_details_received[:provider]).to eq(provider)
+      expect(event_details_received[:provider_name]).to eq("In-memory Provider")
       expect(event_details_received[:message]).to include("Init failed")
 
       # Cleanup
@@ -213,10 +257,21 @@ RSpec.describe "OpenFeature Specification: Events" do
 
   context "Requirement 5.3.3" do
     specify "Handlers attached after the provider is already in the associated state, MUST run immediately" do
-      # NOTE: This requirement is about handlers running immediately when attached after a provider
-      # is already in the associated state (e.g., READY). This feature is not yet implemented
-      # in the Ruby SDK. Handlers are only triggered by state transitions, not by current state.
-      skip "Immediate handler execution for current state not yet implemented"
+      events_received = []
+
+      # Set up provider and get it into READY state first
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      OpenFeature::SDK.set_provider_and_wait(provider, domain: "immediate_test")
+
+      # Now create client and add handler - should run immediately since provider is READY
+      client = OpenFeature::SDK.build_client(domain: "immediate_test")
+      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) do |event|
+        events_received << event
+      end
+
+      # Handler should have executed immediately, no additional events needed
+      expect(events_received).to have_attributes(size: 1)
+      expect(events_received[0][:provider_name]).to eq("In-memory Provider")
     end
   end
 end

@@ -168,7 +168,7 @@ RSpec.describe OpenFeature::SDK::EventEmitter do
   end
 
   describe "thread safety" do
-    let(:handler) { ->(_event_details) { sleep(0.001) } } # Small delay to increase chance of race conditions
+    let(:handler) { ->(_event_details) { Timecop.travel(0.001) } } # Small delay to increase chance of race conditions
 
     it "handles concurrent add/remove operations safely" do
       threads = []

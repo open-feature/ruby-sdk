@@ -12,12 +12,9 @@ RSpec.describe OpenFeature::SDK::Configuration do
       it "inits and sets the provider" do
         expect(provider).to receive(:init)
 
-        configuration.set_provider(provider)
+        configuration.set_provider_and_wait(provider)
 
         expect(configuration.provider).to be(provider)
-
-        # Wait for async initialization
-        sleep(0.1)
       end
     end
 
@@ -36,12 +33,9 @@ RSpec.describe OpenFeature::SDK::Configuration do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         expect(provider).to receive(:init)
 
-        configuration.set_provider(provider, domain: "testing")
+        configuration.set_provider_and_wait(provider, domain: "testing")
 
         expect(configuration.provider(domain: "testing")).to be(provider)
-
-        # Wait for async initialization
-        sleep(0.1)
       end
     end
 
@@ -53,7 +47,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         providers[0, 2].each { |provider| allow(provider).to receive(:shutdown) }
         configuration.set_provider(providers[0])
 
-        allow(providers[0]).to(receive(:shutdown).once { sleep 0.5 })
+        allow(providers[0]).to(receive(:shutdown).once { Timecop.travel(0.5) })
         background { configuration.set_provider(providers[1]) }
         background { configuration.set_provider(providers[2]) }
         yield_to_background
@@ -166,7 +160,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         configuration.set_provider_and_wait(providers[0])
 
         # Simulate slow initialization for concurrent testing
-        allow(providers[0]).to receive(:shutdown) { sleep 0.1 }
+        allow(providers[0]).to receive(:shutdown) { Timecop.travel(0.1) }
 
         background { configuration.set_provider_and_wait(providers[1]) }
         background { configuration.set_provider_and_wait(providers[2]) }
@@ -208,7 +202,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
           def init(context = nil)
             @received_context = context
             # Simulate slow initialization
-            sleep(0.1)
+            Timecop.travel(0.1)
           end
 
           def metadata
@@ -227,7 +221,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         configuration.evaluation_context = changed_context
 
         # Wait for initialization to complete
-        sleep(0.2)
+        sleep(0.001) until context_capturing_provider.received_context
 
         # Provider should have received the initial context, not the changed one
         expect(context_capturing_provider.received_context).to eq(initial_context)
@@ -265,7 +259,8 @@ RSpec.describe OpenFeature::SDK::Configuration do
 
       configuration.set_provider(provider)
 
-      sleep(0.1)
+      # Wait for init to be called, check every millisecond
+      sleep(0.001) until provider.init_called
 
       expect(provider.init_called).to be true
     end

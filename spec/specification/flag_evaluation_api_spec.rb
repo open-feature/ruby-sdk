@@ -25,10 +25,7 @@ RSpec.describe "Flag Evaluation API" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         expect(provider).to receive(:init)
 
-        OpenFeature::SDK.set_provider(provider)
-
-        # Wait for async initialization
-        sleep(0.1)
+        OpenFeature::SDK.set_provider_and_wait(provider)
       end
     end
 

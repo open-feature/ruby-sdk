@@ -7,6 +7,7 @@ require "open_feature/sdk"
 require "markly"
 
 require "debug"
+require "timecop"
 
 Dir["./spec/support/**/*.rb"].sort.each { |f| require f }
 
@@ -22,6 +23,11 @@ RSpec.configure do |config|
   end
 
   config.filter_run_when_matching :focus
+
+  # Reset timecop after each test
+  config.after(:each) do
+    Timecop.return
+  end
 
   # ie for GitHub Actions
   # see https://docs.github.com/en/actions/learn-github-actions/environment-variables#default-environment-variables

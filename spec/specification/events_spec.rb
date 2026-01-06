@@ -5,7 +5,7 @@ require_relative "../../lib/open_feature/sdk"
 
 RSpec.describe "OpenFeature Specification: Events" do
   before(:each) do
-    OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
+    OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::NoOpProvider.new)
   end
 
   after(:each) do
@@ -49,7 +49,6 @@ RSpec.describe "OpenFeature Specification: Events" do
 
         def init(_evaluation_context)
           Thread.new do
-            sleep(0.05)
             emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
           end
         end
@@ -61,8 +60,8 @@ RSpec.describe "OpenFeature Specification: Events" do
       provider = provider_class.new
       OpenFeature::SDK.set_provider(provider)
 
-      # Wait for event
-      sleep(0.1)
+      # Wait for event, check every millisecond
+      sleep(0.001) until event_received
 
       expect(event_received).to be true
 
@@ -156,7 +155,9 @@ RSpec.describe "OpenFeature Specification: Events" do
       allow(provider).to receive(:init).and_raise("Init failed")
 
       OpenFeature::SDK.set_provider(provider)
-      sleep(0.1) # Wait for async initialization
+
+      # Wait for event, check every millisecond
+      sleep(0.001) until event_details_received
 
       expect(event_details_received).not_to be_nil
       expect(event_details_received).to be_a(Hash)
@@ -187,8 +188,7 @@ RSpec.describe "OpenFeature Specification: Events" do
 
       # Set provider
       provider = OpenFeature::SDK::Provider::InMemoryProvider.new
-      OpenFeature::SDK.set_provider(provider)
-      sleep(0.1) # Wait for async initialization
+      OpenFeature::SDK.set_provider_and_wait(provider)
 
       # All handlers should have been called despite the failure
       expect(handler1_called).to be true
@@ -205,9 +205,6 @@ RSpec.describe "OpenFeature Specification: Events" do
 
   context "Requirement 5.2.6" do
     specify "Event handlers MUST persist across provider changes" do
-      # Wait for initial provider to be ready
-      sleep(0.1)
-
       handler_call_count = 0
       handler = ->(_event_details) { handler_call_count += 1 }
 
@@ -216,16 +213,14 @@ RSpec.describe "OpenFeature Specification: Events" do
 
       # Set first provider
       provider1 = OpenFeature::SDK::Provider::InMemoryProvider.new
-      OpenFeature::SDK.set_provider(provider1)
-      sleep(0.1)
+      OpenFeature::SDK.set_provider_and_wait(provider1)
 
       # Should be 2: 1 immediate (NoOpProvider is READY by set_provider in before(:each)) + 1 from InMemoryProvider
       expect(handler_call_count).to eq(2)
 
       # Set second provider - handler should still be active
       provider2 = OpenFeature::SDK::Provider::NoOpProvider.new
-      OpenFeature::SDK.set_provider(provider2)
-      sleep(0.1)
+      OpenFeature::SDK.set_provider_and_wait(provider2)
 
       # Should be 3: 1 immediate + 2 from provider changes
       expect(handler_call_count).to eq(3)
@@ -246,8 +241,7 @@ RSpec.describe "OpenFeature Specification: Events" do
       provider = OpenFeature::SDK::Provider::InMemoryProvider.new
       allow(provider).to receive(:init).and_return(nil) # Normal termination
 
-      OpenFeature::SDK.set_provider(provider)
-      sleep(0.1) # Wait for async initialization
+      OpenFeature::SDK.set_provider_and_wait(provider)
 
       expect(ready_event_received).to be true
 

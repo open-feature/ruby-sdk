@@ -282,4 +282,48 @@ RSpec.describe OpenFeature::SDK::Configuration do
         OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
     end
   end
+
+  describe "SDK lifecycle events" do
+    it "emits PROVIDER_READY events for all provider types regardless of EventHandler capability" do
+      events_received = []
+      handler = ->(event_details) { events_received << event_details[:provider_name] }
+
+      configuration.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
+
+      event_handler_provider = Class.new do
+        include OpenFeature::SDK::Provider::EventHandler
+
+        def init(_context)
+        end
+
+        def metadata
+          OpenFeature::SDK::Provider::ProviderMetadata.new(name: "EventHandler Provider")
+        end
+      end
+
+      regular_provider = Class.new do
+        def init(_context)
+        end
+
+        def metadata
+          OpenFeature::SDK::Provider::ProviderMetadata.new(name: "Regular Provider")
+        end
+      end
+
+      configuration.set_provider_and_wait(event_handler_provider.new)
+      configuration.set_provider_and_wait(regular_provider.new)
+
+      expect(events_received).to include("EventHandler Provider", "Regular Provider")
+    end
+
+    it "emits PROVIDER_READY for providers without init methods" do
+      events_received = []
+      handler = ->(event_details) { events_received << event_details[:provider_name] }
+
+      configuration.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
+      configuration.set_provider_and_wait(OpenFeature::SDK::Provider::NoOpProvider.new)
+
+      expect(events_received).to include("No-op Provider")
+    end
+  end
 end

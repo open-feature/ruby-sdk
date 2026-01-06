@@ -134,9 +134,7 @@ module OpenFeature
           end
         end
 
-        unless provider.is_a?(Provider::EventHandler)
-          dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
-        end
+        dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
       rescue => e
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
           error_code: Provider::ErrorCode::PROVIDER_FATAL,

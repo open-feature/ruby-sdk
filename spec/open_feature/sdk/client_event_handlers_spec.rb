@@ -7,7 +7,7 @@ RSpec.describe "Client Event Handlers" do
     # Ensure clean state before each test
     begin
       # Clear handlers from any existing configuration
-      OpenFeature::SDK.configuration.clear_all_handlers if OpenFeature::SDK.instance_variable_get(:@instance)
+      OpenFeature::SDK.configuration.send(:clear_all_handlers) if OpenFeature::SDK.instance_variable_get(:@instance)
     rescue
       # Ignore errors if configuration doesn't exist
     end

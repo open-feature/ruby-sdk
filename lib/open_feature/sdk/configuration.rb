@@ -49,13 +49,7 @@ module OpenFeature
         @event_emitter.remove_handler(event_type, handler)
       end
 
-      def clear_all_handlers
-        @event_emitter.clear_all_handlers
-        @client_handlers_mutex.synchronize do
-          @client_handlers.clear
-        end
-      end
-
+      # @api private
       def add_client_handler(client, event_type, handler)
         @client_handlers_mutex.synchronize do
           @client_handlers[client] ||= Hash.new { |h, k| h[k] = [] }
@@ -65,6 +59,7 @@ module OpenFeature
         run_immediate_handler(event_type, handler, client)
       end
 
+      # @api private
       def remove_client_handler(client, event_type, handler)
         @client_handlers_mutex.synchronize do
           return unless @client_handlers[client]
@@ -86,6 +81,13 @@ module OpenFeature
       end
 
       private
+
+      def clear_all_handlers
+        @event_emitter.clear_all_handlers
+        @client_handlers_mutex.synchronize do
+          @client_handlers.clear
+        end
+      end
 
       def set_provider_internal(provider, domain:, wait_for_init:)
         old_provider = @providers[domain]

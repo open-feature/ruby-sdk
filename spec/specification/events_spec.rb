@@ -9,7 +9,7 @@ RSpec.describe "OpenFeature Specification: Events" do
   end
 
   after(:each) do
-    OpenFeature::SDK::API.instance.send(:clear_all_handlers)
+    OpenFeature::SDK.configuration.send(:clear_all_handlers)
   end
 
   context "Requirement 5.1.1" do

@@ -67,12 +67,6 @@ module OpenFeature
       def logger=(new_logger)
         configuration.logger = new_logger
       end
-
-      private
-
-      def clear_all_handlers
-        configuration.clear_all_handlers
-      end
     end
   end
 end

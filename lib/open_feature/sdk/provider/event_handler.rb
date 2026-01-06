@@ -7,14 +7,6 @@ module OpenFeature
     module Provider
       # Mixin for providers that emit lifecycle events
       module EventHandler
-        def attach(event_dispatcher)
-          @event_dispatcher = event_dispatcher
-        end
-
-        def detach
-          @event_dispatcher = nil
-        end
-
         def emit_event(event_type, details = {})
           dispatcher = @event_dispatcher
           return unless dispatcher
@@ -28,6 +20,16 @@ module OpenFeature
 
         def event_dispatcher_attached?
           !@event_dispatcher.nil?
+        end
+
+        private
+
+        def attach(event_dispatcher)
+          @event_dispatcher = event_dispatcher
+        end
+
+        def detach
+          @event_dispatcher = nil
         end
       end
     end

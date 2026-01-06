@@ -107,7 +107,7 @@ module OpenFeature
 
         @provider_state_registry.set_initial_state(provider)
 
-        provider.attach(ProviderEventDispatcher.new(self)) if provider.is_a?(Provider::EventHandler)
+        provider.send(:attach, ProviderEventDispatcher.new(self)) if provider.is_a?(Provider::EventHandler)
 
         # Capture evaluation context to prevent race condition
         context_for_init = @evaluation_context

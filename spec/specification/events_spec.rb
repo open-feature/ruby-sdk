@@ -30,8 +30,6 @@ RSpec.describe "OpenFeature Specification: Events" do
 
       provider = provider_class.new
       expect(provider).to respond_to(:emit_event)
-      expect(provider).to respond_to(:attach)
-      expect(provider).to respond_to(:detach)
     end
   end
 

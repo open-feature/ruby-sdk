@@ -19,14 +19,6 @@ RSpec.describe OpenFeature::SDK::Provider::EventHandler do
   let(:event_dispatcher) { double("EventDispatcher") }
 
   describe "interface methods" do
-    it "responds to attach" do
-      expect(provider).to respond_to(:attach).with(1).argument
-    end
-
-    it "responds to detach" do
-      expect(provider).to respond_to(:detach).with(0).arguments
-    end
-
     it "responds to emit_event" do
       expect(provider).to respond_to(:emit_event).with(1..2).arguments
     end
@@ -38,22 +30,22 @@ RSpec.describe OpenFeature::SDK::Provider::EventHandler do
 
   describe "#attach" do
     it "attaches an event dispatcher" do
-      provider.attach(event_dispatcher)
+      provider.send(:attach, event_dispatcher)
       expect(provider.event_dispatcher_attached?).to be true
     end
   end
 
   describe "#detach" do
     it "detaches the event dispatcher" do
-      provider.attach(event_dispatcher)
-      provider.detach
+      provider.send(:attach, event_dispatcher)
+      provider.send(:detach)
       expect(provider.event_dispatcher_attached?).to be false
     end
   end
 
   describe "#emit_event" do
     before do
-      provider.attach(event_dispatcher)
+      provider.send(:attach, event_dispatcher)
     end
 
     it "dispatches events through the attached dispatcher" do
@@ -79,7 +71,7 @@ RSpec.describe OpenFeature::SDK::Provider::EventHandler do
     end
 
     it "does nothing when no dispatcher is attached" do
-      provider.detach
+      provider.send(:detach)
 
       expect { provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) }.not_to raise_error
     end
@@ -109,13 +101,13 @@ RSpec.describe OpenFeature::SDK::Provider::EventHandler do
     end
 
     it "returns true when dispatcher attached" do
-      provider.attach(event_dispatcher)
+      provider.send(:attach, event_dispatcher)
       expect(provider.event_dispatcher_attached?).to be true
     end
 
     it "returns false after detaching" do
-      provider.attach(event_dispatcher)
-      provider.detach
+      provider.send(:attach, event_dispatcher)
+      provider.send(:detach)
       expect(provider.event_dispatcher_attached?).to be false
     end
   end
@@ -125,8 +117,8 @@ RSpec.describe OpenFeature::SDK::Provider::EventHandler do
       threads = []
 
       5.times do
-        threads << Thread.new { provider.attach(event_dispatcher) }
-        threads << Thread.new { provider.detach }
+        threads << Thread.new { provider.send(:attach, event_dispatcher) }
+        threads << Thread.new { provider.send(:detach) }
       end
 
       threads.each(&:join)

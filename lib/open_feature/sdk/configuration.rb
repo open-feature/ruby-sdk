@@ -69,15 +69,11 @@ module OpenFeature
       end
 
       def set_provider(provider, domain: nil)
-        @provider_mutex.synchronize do
-          set_provider_internal(provider, domain: domain, wait_for_init: false)
-        end
+        set_provider_internal(provider, domain: domain, wait_for_init: false)
       end
 
       def set_provider_and_wait(provider, domain: nil)
-        @provider_mutex.synchronize do
-          set_provider_internal(provider, domain: domain, wait_for_init: true)
-        end
+        set_provider_internal(provider, domain: domain, wait_for_init: true)
       end
 
       private
@@ -90,33 +86,40 @@ module OpenFeature
       end
 
       def set_provider_internal(provider, domain:, wait_for_init:)
-        old_provider = @providers[domain]
-
-        begin
-          old_provider.shutdown if old_provider.respond_to?(:shutdown)
-        rescue => e
-          @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || "unknown"}: #{e.message}")
-        end
-
-        # Remove old provider state to prevent memory leaks
-        @provider_state_registry.remove_provider(old_provider)
-
-        new_providers = @providers.dup
-        new_providers[domain] = provider
-        @providers = new_providers
-
-        @provider_state_registry.set_initial_state(provider)
-
-        provider.send(:attach, ProviderEventDispatcher.new(self)) if provider.is_a?(Provider::EventHandler)
-
-        # Capture evaluation context to prevent race condition
+        # Capture evaluation context before acquiring mutex to prevent race conditions
         context_for_init = @evaluation_context
 
+        old_provider, provider_to_init = nil
+
+        @provider_mutex.synchronize do
+          old_provider = @providers[domain]
+
+          begin
+            old_provider.shutdown if old_provider.respond_to?(:shutdown)
+          rescue => e
+            @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || "unknown"}: #{e.message}")
+          end
+
+          # Remove old provider state to prevent memory leaks
+          @provider_state_registry.remove_provider(old_provider)
+
+          new_providers = @providers.dup
+          new_providers[domain] = provider
+          @providers = new_providers
+
+          @provider_state_registry.set_initial_state(provider)
+
+          provider.send(:attach, ProviderEventDispatcher.new(self)) if provider.is_a?(Provider::EventHandler)
+
+          provider_to_init = provider
+        end
+
+        # Initialize provider outside the mutex to avoid blocking other operations
         if wait_for_init
-          init_provider(provider, context_for_init, raise_on_error: true)
+          init_provider(provider_to_init, context_for_init, raise_on_error: true)
         else
           Thread.new do
-            init_provider(provider, context_for_init, raise_on_error: false)
+            init_provider(provider_to_init, context_for_init, raise_on_error: false)
           end
         end
       end

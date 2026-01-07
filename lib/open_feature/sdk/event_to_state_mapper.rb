@@ -10,14 +10,16 @@ module OpenFeature
     class EventToStateMapper
       def self.state_from_event(event_type, event_details = nil)
         case event_type
-        when ProviderEvent::PROVIDER_READY, ProviderEvent::PROVIDER_CONFIGURATION_CHANGED
+        when ProviderEvent::PROVIDER_READY
           ProviderState::READY
         when ProviderEvent::PROVIDER_STALE
           ProviderState::STALE
         when ProviderEvent::PROVIDER_ERROR
           state_from_error_event(event_details)
+        when ProviderEvent::PROVIDER_CONFIGURATION_CHANGED
+          nil # No state change per Requirement 5.3.5
         else
-          ProviderState::NOT_READY
+          nil # No state change for unknown events - conservative default
         end
       end
 

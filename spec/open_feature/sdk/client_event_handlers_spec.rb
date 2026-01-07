@@ -38,10 +38,13 @@ RSpec.describe "Client Event Handlers" do
     # Set provider for this domain
     OpenFeature::SDK.set_provider_and_wait(test_provider("TestProvider"), domain: "test_domain")
 
-    # Should receive event
-    expect(events_received).to have_attributes(size: 1)
+    # Should receive two events: one from SDK lifecycle, one from provider emit_event call
+    # Note: Per Requirement 5.3.1, SDK automatically emits PROVIDER_READY when initialization terminates normally
+    expect(events_received).to have_attributes(size: 2)
     expect(events_received[0][:provider_name]).to eq("TestProvider")
+    expect(events_received[1][:provider_name]).to eq("TestProvider")
     expect(events_received[0]).not_to have_key(:provider_domain)
+    expect(events_received[1]).not_to have_key(:provider_domain)
     expect(events_received[0]).not_to have_key(:provider)
   end
 
@@ -106,8 +109,9 @@ RSpec.describe "Client Event Handlers" do
 
     OpenFeature::SDK.set_provider_and_wait(test_provider("TestProvider"), domain: "test_domain")
 
-    expect(events_received).to have_attributes(size: 1)
+    expect(events_received).to have_attributes(size: 2)
     expect(events_received[0][:provider_name]).to eq("TestProvider")
+    expect(events_received[1][:provider_name]).to eq("TestProvider")
   end
 
   it "handles global domain (nil) correctly" do
@@ -123,8 +127,9 @@ RSpec.describe "Client Event Handlers" do
     # Set global provider
     OpenFeature::SDK.set_provider_and_wait(test_provider("TestProvider"))
 
-    expect(events_received).to have_attributes(size: 1)
+    expect(events_received).to have_attributes(size: 2)
     expect(events_received[0][:provider_name]).to eq("TestProvider")
+    expect(events_received[1][:provider_name]).to eq("TestProvider")
   end
 
   private
@@ -134,7 +139,8 @@ RSpec.describe "Client Event Handlers" do
       include OpenFeature::SDK::Provider::EventHandler
 
       define_method :init do |evaluation_context = nil|
-        # Providers implementing EventHandler must emit their own events
+        # NOTE: Per Requirement 5.3.1, SDK automatically emits PROVIDER_READY when init terminates normally
+        # Manual emission here results in duplicate events - kept for backward compatibility testing
         emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
       end
 

@@ -67,6 +67,33 @@ RSpec.describe OpenFeature::SDK::ProviderStateRegistry do
       expect(new_state).to eq(OpenFeature::SDK::ProviderState::STALE)
       expect(registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::STALE)
     end
+
+    it "does not change state on PROVIDER_CONFIGURATION_CHANGED event" do
+      # Set provider to READY state first
+      registry.update_state_from_event(provider, OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+      expect(registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+
+      # PROVIDER_CONFIGURATION_CHANGED should not change the state
+      new_state = registry.update_state_from_event(
+        provider,
+        OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED
+      )
+
+      expect(new_state).to eq(OpenFeature::SDK::ProviderState::READY)
+      expect(registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+    end
+
+    it "does not change state for unknown events" do
+      # Set provider to READY state first
+      registry.update_state_from_event(provider, OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+      expect(registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+
+      # Unknown event should not change the state
+      new_state = registry.update_state_from_event(provider, "UNKNOWN_EVENT")
+
+      expect(new_state).to eq(OpenFeature::SDK::ProviderState::READY)
+      expect(registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+    end
   end
 
   describe "#get_state" do

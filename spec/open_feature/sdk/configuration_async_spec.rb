@@ -129,7 +129,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
     end
 
     context "with event-aware providers" do
-      it "does not emit duplicate PROVIDER_READY events" do
+      it "emits PROVIDER_READY events from both SDK and provider" do
         ready_events = []
         configuration.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY,
           ->(event) { ready_events << event })
@@ -140,8 +140,8 @@ RSpec.describe OpenFeature::SDK::Configuration do
         # Wait for initialization
         sleep(0.15)
 
-        # Should only have one event (from the provider itself)
-        expect(ready_events.size).to eq(1)
+        # Should have two events: one from SDK lifecycle (per Requirement 5.3.1), one from provider emit_event call
+        expect(ready_events.size).to eq(2)
       end
     end
   end

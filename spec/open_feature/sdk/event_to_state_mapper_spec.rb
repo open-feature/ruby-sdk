@@ -15,9 +15,9 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
     end
 
     context "with PROVIDER_CONFIGURATION_CHANGED event" do
-      it "returns READY state" do
+      it "returns nil (no state change per Requirement 5.3.5)" do
         state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED)
-        expect(state).to eq(OpenFeature::SDK::ProviderState::READY)
+        expect(state).to be_nil
       end
     end
 
@@ -71,9 +71,9 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
     end
 
     context "with unknown event type" do
-      it "returns NOT_READY state as fallback" do
+      it "returns nil (no state change)" do
         state = described_class.state_from_event("UNKNOWN_EVENT")
-        expect(state).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+        expect(state).to be_nil
       end
     end
   end
@@ -87,8 +87,8 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
       end
     end
 
-    it "maps to valid provider states" do
-      # Test all known events return valid states
+    it "maps to valid provider states or nil for no-change events" do
+      # Test all known events return valid states or nil
       ready_state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
       config_state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED)
       stale_state = described_class.state_from_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
@@ -97,7 +97,7 @@ RSpec.describe OpenFeature::SDK::EventToStateMapper do
         {error_code: OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL})
 
       expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(ready_state)
-      expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(config_state)
+      expect(config_state).to be_nil  # PROVIDER_CONFIGURATION_CHANGED should not change state per Requirement 5.3.5
       expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(stale_state)
       expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(error_state)
       expect(OpenFeature::SDK::ProviderState::ALL_STATES).to include(fatal_state)

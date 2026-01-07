@@ -26,11 +26,16 @@ module OpenFeature
 
         new_state = EventToStateMapper.state_from_event(event_type, event_details)
 
-        @mutex.synchronize do
-          @states[provider.object_id] = new_state
+        # Only update state if the event should cause a state change
+        if new_state
+          @mutex.synchronize do
+            @states[provider.object_id] = new_state
+          end
+          new_state
+        else
+          # Return current state without changing it
+          get_state(provider)
         end
-
-        new_state
       end
 
       def get_state(provider)

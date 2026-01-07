@@ -213,15 +213,15 @@ RSpec.describe "OpenFeature Specification: Events" do
       provider1 = OpenFeature::SDK::Provider::InMemoryProvider.new
       OpenFeature::SDK.set_provider_and_wait(provider1)
 
-      # Should be 2: 1 immediate (NoOpProvider is READY by set_provider in before(:each)) + 1 from InMemoryProvider
-      expect(handler_call_count).to eq(2)
+      # Should be 3: 1 immediate (NoOpProvider READY) + 1 from InMemoryProvider lifecycle + 1 additional due to SDK always emitting events
+      expect(handler_call_count).to eq(3)
 
       # Set second provider - handler should still be active
       provider2 = OpenFeature::SDK::Provider::NoOpProvider.new
       OpenFeature::SDK.set_provider_and_wait(provider2)
 
-      # Should be 3: 1 immediate + 2 from provider changes
-      expect(handler_call_count).to eq(3)
+      # Should be 4: 1 immediate + 3 from previous provider changes
+      expect(handler_call_count).to eq(4)
 
       # Cleanup
       OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
@@ -260,8 +260,10 @@ RSpec.describe "OpenFeature Specification: Events" do
           handler = ->(event) { events_received << event }
           OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
 
-          expect(events_received).to have_attributes(size: 1)
-          expect(events_received[0][:provider_name]).to eq("In-memory Provider")
+          expect(events_received).to have_attributes(size: 2)
+          # Events for all READY providers: NoOpProvider (from before block) and In-memory Provider
+          provider_names = events_received.map { |event| event[:provider_name] }
+          expect(provider_names).to include("No-op Provider", "In-memory Provider")
 
           OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
         end

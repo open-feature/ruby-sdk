@@ -53,6 +53,20 @@ RSpec.describe OpenFeature::SDK::Configuration do
         yield_to_background
         expect(configuration.provider).to be(providers[2])
       end
+
+      it "does not call shutdown on same provider instance when set multiple times concurrently" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        allow(provider).to receive(:init)
+        # Provider should never be shut down since it's being set to itself
+        expect(provider).not_to receive(:shutdown)
+
+        configuration.set_provider(provider)
+        background { configuration.set_provider(provider) }
+        background { configuration.set_provider(provider) }
+        yield_to_background
+
+        expect(configuration.provider).to be(provider)
+      end
     end
   end
 

@@ -94,12 +94,6 @@ module OpenFeature
         @provider_mutex.synchronize do
           old_provider = @providers[domain]
 
-          begin
-            old_provider.shutdown if old_provider.respond_to?(:shutdown)
-          rescue => e
-            @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || "unknown"}: #{e.message}")
-          end
-
           # Remove old provider state to prevent memory leaks
           @provider_state_registry.remove_provider(old_provider)
 
@@ -112,6 +106,16 @@ module OpenFeature
           provider.send(:attach, ProviderEventDispatcher.new(self)) if provider.is_a?(Provider::EventHandler)
 
           provider_to_init = provider
+        end
+
+        # Shutdown old provider outside mutex to avoid blocking other operations
+        # Only shutdown if it's a different provider to prevent race condition
+        if old_provider && old_provider != provider
+          begin
+            old_provider.shutdown if old_provider.respond_to?(:shutdown)
+          rescue => e
+            @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || "unknown"}: #{e.message}")
+          end
         end
 
         # Initialize provider outside the mutex to avoid blocking other operations

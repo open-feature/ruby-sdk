@@ -14,7 +14,6 @@ require_relative "provider/in_memory_provider"
 require_relative "provider_event"
 require_relative "provider_state"
 require_relative "event_emitter"
-require_relative "event_to_state_mapper"
 require_relative "provider_state_registry"
 
 module OpenFeature

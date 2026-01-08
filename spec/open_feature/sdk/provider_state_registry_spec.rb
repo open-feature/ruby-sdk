@@ -237,4 +237,14 @@ RSpec.describe OpenFeature::SDK::ProviderStateRegistry do
       expect(registry.error?(provider2)).to be true
     end
   end
+
+  describe "event handling" do
+    it "handles all valid provider events without errors" do
+      OpenFeature::SDK::ProviderEvent::ALL_EVENTS.each do |event_type|
+        expect do
+          registry.update_state_from_event(provider, event_type)
+        end.not_to raise_error
+      end
+    end
+  end
 end

@@ -2,7 +2,7 @@
 
 require_relative "provider_state"
 require_relative "provider_event"
-require_relative "event_to_state_mapper"
+require_relative "provider/error_code"
 
 module OpenFeature
   module SDK
@@ -24,7 +24,7 @@ module OpenFeature
       def update_state_from_event(provider, event_type, event_details = nil)
         return ProviderState::NOT_READY unless provider
 
-        new_state = EventToStateMapper.state_from_event(event_type, event_details)
+        new_state = state_from_event(event_type, event_details)
 
         # Only update state if the event should cause a state change
         if new_state
@@ -66,6 +66,32 @@ module OpenFeature
       def clear
         @mutex.synchronize do
           @states.clear
+        end
+      end
+
+      private
+
+      def state_from_event(event_type, event_details = nil)
+        case event_type
+        when ProviderEvent::PROVIDER_READY
+          ProviderState::READY
+        when ProviderEvent::PROVIDER_STALE
+          ProviderState::STALE
+        when ProviderEvent::PROVIDER_ERROR
+          state_from_error_event(event_details)
+        when ProviderEvent::PROVIDER_CONFIGURATION_CHANGED
+          nil # No state change per OpenFeature spec Requirement 5.3.5
+        else
+          nil # No state change for unknown events - conservative default
+        end
+      end
+
+      def state_from_error_event(event_details)
+        error_code = event_details&.dig(:error_code)
+        if error_code == Provider::ErrorCode::PROVIDER_FATAL
+          ProviderState::FATAL
+        else
+          ProviderState::ERROR
         end
       end
     end

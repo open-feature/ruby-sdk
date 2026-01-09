@@ -142,8 +142,8 @@ begin
 rescue OpenFeature::SDK::ProviderInitializationError => e
   puts "Provider failed to initialize: #{e.message}"
   puts "Error code: #{e.error_code}"
-  # Note: original_error is only present for timeout errors, nil for provider event errors
-  puts "Original error: #{e.original_error}" if e.original_error
+  # original_error contains the underlying exception that caused the initialization failure
+  puts "Original error: #{e.original_error}"
 end
 
 # With custom timeout (default is 30 seconds)
@@ -164,9 +164,9 @@ end
 
 The `set_provider_and_wait` method:
 - Waits for the provider's `init` method to complete successfully
-- Raises `ProviderInitializationError` with `PROVIDER_FATAL` error code if initialization fails or times out
-- Provides access to the provider instance and error code for debugging
-- The `original_error` field only contains the underlying exception for timeout errors; it is `nil` for errors that occur through the provider event system
+- Raises `ProviderInitializationError` if initialization fails or times out
+- Provides access to the provider instance, error code, and original exception for debugging
+- The `original_error` field contains the underlying exception that caused the initialization failure
 - Uses the same thread-safe provider switching as `set_provider`
 
 In some situations, it may be beneficial to register multiple providers in the same application.

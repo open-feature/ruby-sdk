@@ -35,28 +35,6 @@ RSpec.describe "Client Event Handlers" do
     expect(events_received[0]).not_to have_key(:provider)
   end
 
-  it "does not trigger handlers for other domains" do
-    # Clear providers to ensure clean state - no default provider should exist
-    OpenFeature::SDK.configuration.instance_variable_set(:@providers, {})
-    OpenFeature::SDK.configuration.instance_variable_get(:@provider_state_registry).instance_variable_set(:@states, {})
-
-    events_received = []
-
-    # Create client with specific domain
-    client = OpenFeature::SDK.build_client(domain: "test_domain")
-
-    # Add handler to client
-    client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) do |event|
-      events_received << event
-    end
-
-    # Set provider for different domain
-    OpenFeature::SDK.set_provider_and_wait(test_provider("OtherProvider"), domain: "other_domain")
-
-    # Should not receive event
-    expect(events_received).to be_empty
-  end
-
   it "allows removal of client event handlers" do
     # Clear providers to ensure clean state - no default provider should exist
     OpenFeature::SDK.configuration.instance_variable_set(:@providers, {})

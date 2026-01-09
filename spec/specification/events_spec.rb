@@ -68,6 +68,36 @@ RSpec.describe "OpenFeature Specification: Events" do
     end
   end
 
+  context "Requirement 5.1.3" do
+    specify "When a provider signals the occurrence of a particular event, event handlers on clients which are not associated with that provider MUST NOT run" do
+      events_received = []
+
+      # Create client with specific domain
+      client = OpenFeature::SDK.build_client(domain: "test_domain")
+
+      # Add handler to client - this will receive immediate event from associated provider (global fallback)
+      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) do |event|
+        events_received << event
+      end
+
+      # Record initial event count (should have received 1 from global NoOpProvider fallback)
+      initial_event_count = events_received.length
+      expect(initial_event_count).to eq(1)
+
+      # Create provider (SDK will automatically emit PROVIDER_READY after init)
+      provider_class = Class.new do
+        def init(_evaluation_context)
+        end
+      end
+
+      # Set provider for different domain - this should NOT trigger the client's handler
+      OpenFeature::SDK.set_provider_and_wait(provider_class.new, domain: "other_domain")
+
+      # Client handler should not receive any NEW events from different domain
+      expect(events_received.length).to eq(initial_event_count)
+    end
+  end
+
   context "Requirement 5.2.1" do
     specify "The client MUST provide a function for associating handler functions with provider event types" do
       client = OpenFeature::SDK.build_client(domain: "test-domain")

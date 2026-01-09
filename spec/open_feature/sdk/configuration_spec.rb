@@ -128,7 +128,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
           expect(error.message).to include(error_message)
           expect(error.provider).to be(provider)
           expect(error.original_error).to be_a(StandardError) # Synchronous init preserves original exception
-          expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
+          expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
         end
       end
 

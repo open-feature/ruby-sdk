@@ -45,7 +45,7 @@ RSpec.describe OpenFeature::SDK do
       expect do
         OpenFeature::SDK.set_provider_and_wait(provider)
       end.to raise_error(OpenFeature::SDK::ProviderInitializationError, /Provider initialization failed/) do |error|
-        expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
+        expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
       end
 
       # Clean up

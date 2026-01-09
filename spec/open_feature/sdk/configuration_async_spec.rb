@@ -201,7 +201,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
 
       # Wait for initialization
       sleep(0.1)
-      expect(configuration.send(:provider_state, provider)).to eq(OpenFeature::SDK::ProviderState::FATAL)
+      expect(configuration.send(:provider_state, provider)).to eq(OpenFeature::SDK::ProviderState::ERROR)
     end
   end
 

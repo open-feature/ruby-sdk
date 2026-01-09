@@ -145,7 +145,7 @@ module OpenFeature
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
       rescue => e
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
-          error_code: Provider::ErrorCode::PROVIDER_FATAL,
+          error_code: Provider::ErrorCode::GENERAL,
           message: e.message)
 
         if raise_on_error
@@ -153,7 +153,7 @@ module OpenFeature
           raise ProviderInitializationError.new(
             "Provider #{provider.class.name} initialization failed: #{e.message}",
             provider:,
-            error_code: Provider::ErrorCode::PROVIDER_FATAL,
+            error_code: Provider::ErrorCode::GENERAL,
             original_error: e
           )
         end

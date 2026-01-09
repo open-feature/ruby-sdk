@@ -247,9 +247,10 @@ end
 
 OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ready_handler)
 
-# Providers can emit events using the EventHandler mixin
+# The SDK automatically emits lifecycle events. Providers can emit additional spontaneous events
+# using the EventEmitter mixin to signal internal state changes like configuration updates.
 class MyEventAwareProvider
-  include OpenFeature::SDK::Provider::EventHandler
+  include OpenFeature::SDK::Provider::EventEmitter
 
   def init(evaluation_context)
     # Start background process to monitor for configuration changes

@@ -66,7 +66,7 @@ RSpec.describe "Provider Interface Detection" do
   # Create a test provider that implements the new interfaces
   let(:event_capable_provider) do
     Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
-      include OpenFeature::SDK::Provider::EventHandler
+      include OpenFeature::SDK::Provider::EventEmitter
     end.new
   end
 
@@ -79,11 +79,11 @@ RSpec.describe "Provider Interface Detection" do
     expect(inmemory_provider.respond_to?(:init)).to be true
   end
 
-  it "can check if provider implements EventHandler" do
+  it "can check if provider implements EventEmitter" do
     noop_provider = OpenFeature::SDK::Provider::NoOpProvider.new
 
     # Check using is_a? with module
-    expect(noop_provider.class.included_modules).not_to include(OpenFeature::SDK::Provider::EventHandler)
-    expect(event_capable_provider.class.included_modules).to include(OpenFeature::SDK::Provider::EventHandler)
+    expect(noop_provider.class.included_modules).not_to include(OpenFeature::SDK::Provider::EventEmitter)
+    expect(event_capable_provider.class.included_modules).to include(OpenFeature::SDK::Provider::EventEmitter)
   end
 end

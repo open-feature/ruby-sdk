@@ -3,21 +3,8 @@
 require "spec_helper"
 
 RSpec.describe "Client Event Handlers" do
-  before do
-    # Ensure clean state before each test
-    begin
-      # Clear handlers from any existing configuration
-      OpenFeature::SDK.configuration.send(:clear_all_handlers) if OpenFeature::SDK.instance_variable_get(:@instance)
-    rescue
-      # Ignore errors if configuration doesn't exist
-    end
-    # Reset the singleton instance to get a fresh configuration
-    OpenFeature::SDK.instance_variable_set(:@instance, nil)
-  end
-
   after do
-    # Reset providers to clean state between tests
-    OpenFeature::SDK.instance_variable_get(:@instance)&.instance_variable_set(:@configuration, nil)
+    OpenFeature::SDK.configuration.send(:reset)
   end
 
   it "allows clients to add event handlers scoped to their domain" do
@@ -136,7 +123,7 @@ RSpec.describe "Client Event Handlers" do
 
   def test_provider(name)
     Class.new do
-      include OpenFeature::SDK::Provider::EventHandler
+      include OpenFeature::SDK::Provider::EventEmitter
 
       define_method :init do |evaluation_context = nil|
         # NOTE: Per Requirement 5.3.1, SDK automatically emits PROVIDER_READY when init terminates normally

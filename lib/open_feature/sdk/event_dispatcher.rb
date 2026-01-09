@@ -5,7 +5,7 @@ require_relative "provider_event"
 module OpenFeature
   module SDK
     # Thread-safe pub-sub for provider events
-    class EventEmitter
+    class EventDispatcher
       attr_writer :logger
 
       def initialize(logger = nil)

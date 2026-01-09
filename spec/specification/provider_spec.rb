@@ -18,7 +18,7 @@ RSpec.describe "Provider" do
       specify "The provider initialization function, if defined, SHOULD indicate an error if flag evaluation does NOT become possible" do
         # Create a provider that cannot initialize properly
         failing_provider_class = Class.new do
-          include OpenFeature::SDK::Provider::EventHandler
+          include OpenFeature::SDK::Provider::EventEmitter
 
           def metadata
             OpenFeature::SDK::Provider::ProviderMetadata.new(name: "Failing Provider")

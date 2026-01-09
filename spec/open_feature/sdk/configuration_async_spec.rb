@@ -30,7 +30,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
   # Helper to create an event-aware provider
   def create_event_aware_provider(init_time: 0.1, &on_init)
     Class.new do
-      include OpenFeature::SDK::Provider::EventHandler
+      include OpenFeature::SDK::Provider::EventEmitter
 
       define_method :init do |_evaluation_context|
         sleep(init_time)
@@ -54,7 +54,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
   # Helper to create a failing provider
   def create_failing_provider(error_message = "Init failed")
     Class.new do
-      include OpenFeature::SDK::Provider::EventHandler
+      include OpenFeature::SDK::Provider::EventEmitter
 
       define_method :init do |_evaluation_context|
         sleep(0.05) # Simulate some initialization time

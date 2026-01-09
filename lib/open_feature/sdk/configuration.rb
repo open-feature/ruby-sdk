@@ -3,10 +3,10 @@
 require "timeout"
 require_relative "api"
 require_relative "provider_initialization_error"
-require_relative "event_emitter"
+require_relative "event_dispatcher"
 require_relative "provider_event"
 require_relative "provider_state_registry"
-require_relative "provider/event_handler"
+require_relative "provider/event_emitter"
 
 module OpenFeature
   module SDK
@@ -25,7 +25,7 @@ module OpenFeature
         @providers = {}
         @provider_mutex = Mutex.new
         @logger = nil
-        @event_emitter = EventEmitter.new(@logger)
+        @event_dispatcher = EventDispatcher.new(@logger)
         @provider_state_registry = ProviderStateRegistry.new
         @client_handlers = {}
         @client_handlers_mutex = Mutex.new
@@ -37,16 +37,16 @@ module OpenFeature
 
       def logger=(new_logger)
         @logger = new_logger
-        @event_emitter.logger = new_logger if @event_emitter
+        @event_dispatcher.logger = new_logger if @event_dispatcher
       end
 
       def add_handler(event_type, handler)
-        @event_emitter.add_handler(event_type, handler)
+        @event_dispatcher.add_handler(event_type, handler)
         run_immediate_handler(event_type, handler, nil)
       end
 
       def remove_handler(event_type, handler)
-        @event_emitter.remove_handler(event_type, handler)
+        @event_dispatcher.remove_handler(event_type, handler)
       end
 
       # @api private
@@ -78,10 +78,14 @@ module OpenFeature
 
       private
 
-      def clear_all_handlers
-        @event_emitter.clear_all_handlers
+      def reset
+        @event_dispatcher.clear_all_handlers
         @client_handlers_mutex.synchronize do
           @client_handlers.clear
+        end
+        @provider_state_registry.clear
+        @provider_mutex.synchronize do
+          @providers.clear
         end
       end
 
@@ -103,7 +107,7 @@ module OpenFeature
 
           @provider_state_registry.set_initial_state(provider)
 
-          provider.send(:attach, ProviderEventDispatcher.new(self)) if provider.is_a?(Provider::EventHandler)
+          provider.send(:attach, self) if provider.is_a?(Provider::EventEmitter)
 
           provider_to_init = provider
         end
@@ -179,7 +183,7 @@ module OpenFeature
 
       def run_handlers_for_provider(provider, event_type, event_details)
         # Run global handlers (API-level, no domain filtering)
-        @event_emitter.trigger_event(event_type, event_details)
+        @event_dispatcher.trigger_event(event_type, event_details)
 
         # Run client handlers (domain-scoped)
         @client_handlers_mutex.synchronize do
@@ -242,16 +246,6 @@ module OpenFeature
               @logger&.error("Immediate client event handler failed: #{e.message}")
             end
           end
-        end
-      end
-
-      class ProviderEventDispatcher
-        def initialize(config)
-          @config = config
-        end
-
-        def dispatch_event(provider, event_type, details)
-          @config.send(:dispatch_provider_event, provider, event_type, details)
         end
       end
     end

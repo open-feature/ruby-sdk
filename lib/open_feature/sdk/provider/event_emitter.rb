@@ -6,30 +6,30 @@ module OpenFeature
   module SDK
     module Provider
       # Mixin for providers that emit lifecycle events
-      module EventHandler
+      module EventEmitter
         def emit_event(event_type, details = {})
-          dispatcher = @event_dispatcher
-          return unless dispatcher
+          config = @configuration
+          return unless config
 
           unless ::OpenFeature::SDK::ProviderEvent::ALL_EVENTS.include?(event_type)
             raise ArgumentError, "Invalid event type: #{event_type}"
           end
 
-          dispatcher.dispatch_event(self, event_type, details)
+          config.send(:dispatch_provider_event, self, event_type, details)
         end
 
-        def event_dispatcher_attached?
-          !@event_dispatcher.nil?
+        def configuration_attached?
+          !@configuration.nil?
         end
 
         private
 
-        def attach(event_dispatcher)
-          @event_dispatcher = event_dispatcher
+        def attach(configuration)
+          @configuration = configuration
         end
 
         def detach
-          @event_dispatcher = nil
+          @configuration = nil
         end
       end
     end

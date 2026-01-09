@@ -253,7 +253,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
       end.not_to raise_error
 
       expect(configuration.logger).to eq(logger)
-      expect(configuration.instance_variable_get(:@event_emitter).instance_variable_get(:@logger)).to eq(logger)
+      expect(configuration.instance_variable_get(:@event_dispatcher).instance_variable_get(:@logger)).to eq(logger)
     end
   end
 
@@ -298,20 +298,20 @@ RSpec.describe OpenFeature::SDK::Configuration do
   end
 
   describe "SDK lifecycle events" do
-    it "emits PROVIDER_READY events for all provider types regardless of EventHandler capability" do
+    it "emits PROVIDER_READY events for all provider types regardless of EventEmitter capability" do
       events_received = []
       handler = ->(event_details) { events_received << event_details[:provider_name] }
 
       configuration.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
 
       event_handler_provider = Class.new do
-        include OpenFeature::SDK::Provider::EventHandler
+        include OpenFeature::SDK::Provider::EventEmitter
 
         def init(_context)
         end
 
         def metadata
-          OpenFeature::SDK::Provider::ProviderMetadata.new(name: "EventHandler Provider")
+          OpenFeature::SDK::Provider::ProviderMetadata.new(name: "EventEmitter Provider")
         end
       end
 
@@ -327,7 +327,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
       configuration.set_provider_and_wait(event_handler_provider.new)
       configuration.set_provider_and_wait(regular_provider.new)
 
-      expect(events_received).to include("EventHandler Provider", "Regular Provider")
+      expect(events_received).to include("EventEmitter Provider", "Regular Provider")
     end
 
     it "emits PROVIDER_READY for providers without init methods" do

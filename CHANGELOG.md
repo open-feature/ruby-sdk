@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0](https://github.com/open-feature/ruby-sdk/compare/v0.4.1...v0.5.0) (2026-01-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* add provider eventing, remove setProvider timeout ([#207](https://github.com/open-feature/ruby-sdk/issues/207))
+
+### Features
+
+* add provider eventing, remove setProvider timeout ([#207](https://github.com/open-feature/ruby-sdk/issues/207)) ([fffd615](https://github.com/open-feature/ruby-sdk/commit/fffd6155ff308c75220185de030c38eb6eeac7e8))
+
 ## [0.4.1](https://github.com/open-feature/ruby-sdk/compare/v0.4.0...v0.4.1) (2025-11-03)
 
 

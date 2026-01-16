@@ -3,6 +3,10 @@
 require "timeout"
 require_relative "api"
 require_relative "provider_initialization_error"
+require_relative "event_dispatcher"
+require_relative "provider_event"
+require_relative "provider_state_registry"
+require_relative "provider/event_emitter"
 
 module OpenFeature
   module SDK
@@ -14,73 +18,233 @@ module OpenFeature
       extend Forwardable
 
       attr_accessor :evaluation_context, :hooks
+      attr_reader :logger
 
       def initialize
         @hooks = []
         @providers = {}
         @provider_mutex = Mutex.new
+        @logger = nil
+        @event_dispatcher = EventDispatcher.new(@logger)
+        @provider_state_registry = ProviderStateRegistry.new
+        @client_handlers = {}
+        @client_handlers_mutex = Mutex.new
       end
 
       def provider(domain: nil)
         @providers[domain] || @providers[nil]
       end
 
-      # When switching providers, there are a few lifecycle methods that need to be taken care of.
-      #   1. If a provider is already set, we need to call `shutdown` on it.
-      #   2. On the new provider, call `init`.
-      #   3. Finally, set the internal provider to the new provider
-      def set_provider(provider, domain: nil)
-        @provider_mutex.synchronize do
-          @providers[domain].shutdown if @providers[domain].respond_to?(:shutdown)
-          provider.init if provider.respond_to?(:init)
-          new_providers = @providers.dup
-          new_providers[domain] = provider
-          @providers = new_providers
+      def logger=(new_logger)
+        @logger = new_logger
+        @event_dispatcher.logger = new_logger if @event_dispatcher
+      end
+
+      def add_handler(event_type, handler)
+        @event_dispatcher.add_handler(event_type, handler)
+        run_immediate_handler(event_type, handler, nil)
+      end
+
+      def remove_handler(event_type, handler)
+        @event_dispatcher.remove_handler(event_type, handler)
+      end
+
+      # @api private
+      def add_client_handler(client, event_type, handler)
+        @client_handlers_mutex.synchronize do
+          @client_handlers[client] ||= Hash.new { |h, k| h[k] = [] }
+          @client_handlers[client][event_type] << handler
+        end
+
+        run_immediate_handler(event_type, handler, client)
+      end
+
+      # @api private
+      def remove_client_handler(client, event_type, handler)
+        @client_handlers_mutex.synchronize do
+          return unless @client_handlers[client]
+          handlers = @client_handlers[client][event_type]
+          handlers&.delete(handler)
         end
       end
 
-      # Sets a provider and waits for the initialization to complete or fail.
-      # This method ensures the provider is ready (or in error state) before returning.
-      #
-      # @param provider [Object] the provider to set
-      # @param domain [String, nil] the domain for the provider (optional)
-      # @param timeout [Integer] maximum time to wait for initialization in seconds (default: 30)
-      # @raise [ProviderInitializationError] if the provider fails to initialize or times out
-      def set_provider_and_wait(provider, domain: nil, timeout: 30)
+      def set_provider(provider, domain: nil)
+        set_provider_internal(provider, domain: domain, wait_for_init: false)
+      end
+
+      def set_provider_and_wait(provider, domain: nil)
+        set_provider_internal(provider, domain: domain, wait_for_init: true)
+      end
+
+      private
+
+      def reset
+        @event_dispatcher.clear_all_handlers
+        @client_handlers_mutex.synchronize do
+          @client_handlers.clear
+        end
+        @provider_state_registry.clear
+        @provider_mutex.synchronize do
+          @providers.clear
+        end
+      end
+
+      def set_provider_internal(provider, domain:, wait_for_init:)
+        # Capture evaluation context before acquiring mutex to prevent race conditions
+        context_for_init = @evaluation_context
+
+        old_provider, provider_to_init = nil
+
         @provider_mutex.synchronize do
           old_provider = @providers[domain]
 
-          # Shutdown old provider (ignore errors)
+          # Remove old provider state to prevent memory leaks
+          @provider_state_registry.remove_provider(old_provider)
+
+          new_providers = @providers.dup
+          new_providers[domain] = provider
+          @providers = new_providers
+
+          @provider_state_registry.set_initial_state(provider)
+
+          provider.send(:attach, self) if provider.is_a?(Provider::EventEmitter)
+
+          provider_to_init = provider
+        end
+
+        # Shutdown old provider outside mutex to avoid blocking other operations
+        # Only shutdown if it's a different provider to prevent race condition
+        if old_provider && old_provider != provider
           begin
             old_provider.shutdown if old_provider.respond_to?(:shutdown)
-          rescue
-            # Ignore shutdown errors and continue with provider initialization
+          rescue => e
+            @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || "unknown"}: #{e.message}")
           end
+        end
 
-          begin
-            # Initialize new provider with timeout
-            if provider.respond_to?(:init)
-              Timeout.timeout(timeout) do
-                provider.init
+        # Initialize provider outside the mutex to avoid blocking other operations
+        if wait_for_init
+          init_provider(provider_to_init, context_for_init, raise_on_error: true)
+        else
+          Thread.new do
+            init_provider(provider_to_init, context_for_init, raise_on_error: false)
+          end
+        end
+      end
+
+      def init_provider(provider, context, raise_on_error: false)
+        if provider.respond_to?(:init)
+          init_method = provider.method(:init)
+          if init_method.parameters.empty?
+            provider.init
+          else
+            provider.init(context)
+          end
+        end
+
+        dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
+      rescue => e
+        dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
+          error_code: Provider::ErrorCode::GENERAL,
+          message: e.message)
+
+        if raise_on_error
+          # Re-raise as ProviderInitializationError for synchronous callers
+          raise ProviderInitializationError.new(
+            "Provider #{provider.class.name} initialization failed: #{e.message}",
+            provider:,
+            error_code: Provider::ErrorCode::GENERAL,
+            original_error: e
+          )
+        end
+      end
+
+      def dispatch_provider_event(provider, event_type, details = {})
+        @provider_state_registry.update_state_from_event(provider, event_type, details)
+
+        provider_name = extract_provider_name(provider)
+
+        event_details = {
+          provider_name: provider_name
+        }.merge(details)
+
+        run_handlers_for_provider(provider, event_type, event_details)
+      end
+
+      def provider_state(provider)
+        @provider_state_registry.get_state(provider)
+      end
+
+      private
+
+      def extract_provider_name(provider)
+        provider.respond_to?(:metadata) ? provider.metadata.name : provider.class.name
+      end
+
+      def run_handlers_for_provider(provider, event_type, event_details)
+        # Run global handlers (API-level, no domain filtering)
+        @event_dispatcher.trigger_event(event_type, event_details)
+
+        # Run client handlers (domain-scoped)
+        @client_handlers_mutex.synchronize do
+          @client_handlers.each do |client, handlers_by_event|
+            # Check if this client should receive events from this provider
+            client_provider = provider(domain: client.metadata.domain)
+            next unless client_provider&.equal?(provider)
+
+            # Trigger handlers for this client
+            handlers = handlers_by_event[event_type]
+            handlers.each do |handler|
+              handler.call(event_details)
+            rescue => e
+              @logger&.error("Client event handler failed: #{e.message}")
+            end
+          end
+        end
+      end
+
+      def run_immediate_handler(event_type, handler, client)
+        status_to_event = {
+          ProviderState::READY => ProviderEvent::PROVIDER_READY,
+          ProviderState::ERROR => ProviderEvent::PROVIDER_ERROR,
+          ProviderState::FATAL => ProviderEvent::PROVIDER_ERROR,
+          ProviderState::STALE => ProviderEvent::PROVIDER_STALE
+        }
+
+        if client.nil?
+          # API-level handler: check all providers
+          @providers.each do |domain, provider|
+            next unless provider
+
+            provider_state = @provider_state_registry.get_state(provider)
+
+            if event_type == status_to_event[provider_state]
+              provider_name = extract_provider_name(provider)
+              event_details = {provider_name: provider_name}
+
+              begin
+                handler.call(event_details)
+              rescue => e
+                @logger&.error("Immediate API event handler failed: #{e.message}")
               end
             end
+          end
+        else
+          # Client-level handler: check specific provider only
+          client_provider = provider(domain: client.metadata.domain)
+          return unless client_provider
 
-            # Set the new provider
-            new_providers = @providers.dup
-            new_providers[domain] = provider
-            @providers = new_providers
-          rescue Timeout::Error => e
-            raise ProviderInitializationError.new(
-              "Provider initialization timed out after #{timeout} seconds",
-              provider:,
-              original_error: e
-            )
-          rescue => e
-            raise ProviderInitializationError.new(
-              "Provider initialization failed: #{e.message}",
-              provider:,
-              original_error: e
-            )
+          provider_state = @provider_state_registry.get_state(client_provider)
+
+          if event_type == status_to_event[provider_state]
+            provider_name = extract_provider_name(client_provider)
+            event_details = {provider_name: provider_name}
+
+            begin
+              handler.call(event_details)
+            rescue => e
+              @logger&.error("Immediate client event handler failed: #{e.message}")
+            end
           end
         end
       end

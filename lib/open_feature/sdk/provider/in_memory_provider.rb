@@ -12,7 +12,7 @@ module OpenFeature
           @flags = flags
         end
 
-        def init
+        def init(evaluation_context = nil)
           # Intentional no-op, used for testing
         end
 

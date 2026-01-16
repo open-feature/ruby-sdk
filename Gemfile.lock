@@ -89,12 +89,14 @@ GEM
       rubocop-performance (~> 1.20.2)
     stringio (3.1.0)
     strscan (3.1.0)
+    timecop (0.9.10)
     unicode-display_width (2.5.0)
 
 PLATFORMS
   arm64-darwin-21
   arm64-darwin-22
   arm64-darwin-23
+  arm64-darwin-24
   x64-mingw-ucrt
   x64-mingw32
   x86_64-darwin-19
@@ -112,6 +114,7 @@ DEPENDENCIES
   simplecov-cobertura (~> 2.1.0)
   standard
   standard-performance
+  timecop (~> 0.9.10)
 
 BUNDLED WITH
    2.3.25

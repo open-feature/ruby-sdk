@@ -51,6 +51,22 @@ module OpenFeature
       rescue
         Client.new(provider: Provider::NoOpProvider.new, evaluation_context:)
       end
+
+      def add_handler(event_type, handler)
+        configuration.add_handler(event_type, handler)
+      end
+
+      def remove_handler(event_type, handler)
+        configuration.remove_handler(event_type, handler)
+      end
+
+      def logger
+        configuration.logger
+      end
+
+      def logger=(new_logger)
+        configuration.logger = new_logger
+      end
     end
   end
 end

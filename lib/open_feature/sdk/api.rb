@@ -8,6 +8,7 @@ require_relative "evaluation_context"
 require_relative "evaluation_context_builder"
 require_relative "evaluation_details"
 require_relative "client_metadata"
+require_relative "hooks"
 require_relative "client"
 require_relative "provider"
 

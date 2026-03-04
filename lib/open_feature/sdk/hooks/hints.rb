@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "delegate"
+
 module OpenFeature
   module SDK
     module Hooks

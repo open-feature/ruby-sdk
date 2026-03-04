@@ -431,5 +431,29 @@ RSpec.describe OpenFeature::SDK::Client do
         end
       end
     end
+
+    context "Hook hints" do
+      it "accepts a Hash as hook_hints and converts it to Hints" do
+        captured_hints = nil
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:before) do |hook_context:, hints:|
+            captured_hints = hints
+            nil
+          end
+        end.new
+
+        client.fetch_boolean_value(
+          flag_key: "test-flag",
+          default_value: false,
+          hooks: [hook],
+          hook_hints: {key: "value"}
+        )
+
+        expect(captured_hints).to be_a(OpenFeature::SDK::Hooks::Hints)
+        expect(captured_hints[:key]).to eq("value")
+      end
+    end
   end
 end

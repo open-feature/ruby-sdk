@@ -29,6 +29,16 @@ RSpec.describe OpenFeature::SDK::Hooks::HookContext do
       expect(hook_context.flag_value_type).to be_frozen
     end
 
+    it "has a frozen default_value" do
+      ctx = described_class.new(
+        flag_key: "flag",
+        flag_value_type: :object,
+        default_value: {key: "value"},
+        evaluation_context: nil
+      )
+      expect(ctx.default_value).to be_frozen
+    end
+
     it "exposes the default_value" do
       expect(hook_context.default_value).to eq(false)
     end

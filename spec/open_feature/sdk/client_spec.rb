@@ -433,16 +433,21 @@ RSpec.describe OpenFeature::SDK::Client do
     end
 
     context "Hook hints" do
-      it "accepts a Hash as hook_hints and converts it to Hints" do
-        captured_hints = nil
+      let(:capturing_hook) do
+        captured = nil
         hook = Class.new do
           include OpenFeature::SDK::Hooks::Hook
 
           define_method(:before) do |hook_context:, hints:|
-            captured_hints = hints
+            captured = hints
             nil
           end
         end.new
+        [hook, -> { captured }]
+      end
+
+      it "accepts a Hash as hook_hints and converts it to Hints" do
+        hook, get_hints = capturing_hook
 
         client.fetch_boolean_value(
           flag_key: "test-flag",
@@ -451,8 +456,23 @@ RSpec.describe OpenFeature::SDK::Client do
           hook_hints: {key: "value"}
         )
 
-        expect(captured_hints).to be_a(OpenFeature::SDK::Hooks::Hints)
-        expect(captured_hints[:key]).to eq("value")
+        expect(get_hints.call).to be_a(OpenFeature::SDK::Hooks::Hints)
+        expect(get_hints.call[:key]).to eq("value")
+      end
+
+      it "passes through a Hints instance directly" do
+        hook, get_hints = capturing_hook
+        hints = OpenFeature::SDK::Hooks::Hints.new(source: "direct")
+
+        client.fetch_boolean_value(
+          flag_key: "test-flag",
+          default_value: false,
+          hooks: [hook],
+          hook_hints: hints
+        )
+
+        expect(get_hints.call).to be(hints)
+        expect(get_hints.call[:source]).to eq("direct")
       end
     end
   end

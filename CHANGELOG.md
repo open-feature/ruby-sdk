@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/open-feature/ruby-sdk/compare/v0.5.0...v0.5.1) (2026-03-04)
+
+
+### Features
+
+* implement hooks lifecycle (spec section 4) ([#214](https://github.com/open-feature/ruby-sdk/issues/214)) ([41c3b9e](https://github.com/open-feature/ruby-sdk/commit/41c3b9e2b73b34f50d8135122fb4592f8ec44e49))
+
 ## [0.5.0](https://github.com/open-feature/ruby-sdk/compare/v0.4.1...v0.5.0) (2026-01-16)
 
 

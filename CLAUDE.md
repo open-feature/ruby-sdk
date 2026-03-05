@@ -48,3 +48,4 @@ Providers can be registered for specific domains. `Configuration#provider(domain
 - All `.rb` files must have `# frozen_string_literal: true` as the first line.
 - Tests live under `spec/` and mirror the `lib/` structure. `spec/specification/` contains tests mapped to OpenFeature spec requirements.
 - Always sign git commits using the `-S` flag.
+- Always include DCO sign-off in commits using the `-s` flag (i.e., `git commit -s -S`). This adds a `Signed-off-by` trailer required by the project's CI.

@@ -3,8 +3,9 @@
 module OpenFeature
   module SDK
     module Provider
-      # TODO: Add evaluation context support
       class InMemoryProvider
+        include Provider::EventEmitter
+
         NAME = "In-memory Provider"
 
         attr_reader :metadata
@@ -24,7 +25,12 @@ module OpenFeature
 
         def add_flag(flag_key:, value:)
           flags[flag_key] = value
-          # TODO: Emit PROVIDER_CONFIGURATION_CHANGED event once events are implemented
+          emit_provider_changed([flag_key])
+        end
+
+        def update_flags(new_flags)
+          @flags = new_flags
+          emit_provider_changed(new_flags.keys)
         end
 
         def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
@@ -56,13 +62,24 @@ module OpenFeature
         attr_reader :flags
 
         def fetch_value(flag_key:, default_value:, evaluation_context:)
-          value = flags[flag_key]
+          raw_value = flags[flag_key]
 
-          if value.nil?
+          if raw_value.nil?
             return ResolutionDetails.new(value: default_value, error_code: ErrorCode::FLAG_NOT_FOUND, reason: Reason::ERROR)
           end
 
-          ResolutionDetails.new(value:, reason: Reason::STATIC)
+          if raw_value.respond_to?(:call)
+            value = raw_value.call(evaluation_context)
+            ResolutionDetails.new(value: value, reason: Reason::TARGETING_MATCH)
+          else
+            ResolutionDetails.new(value: raw_value, reason: Reason::STATIC)
+          end
+        end
+
+        def emit_provider_changed(flag_keys)
+          return unless configuration_attached?
+
+          emit_event(ProviderEvent::PROVIDER_CONFIGURATION_CHANGED, flags_changed: flag_keys)
         end
       end
     end

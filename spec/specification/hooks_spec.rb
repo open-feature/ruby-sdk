@@ -81,6 +81,72 @@ RSpec.describe "Hooks Specification" do
       end
     end
 
+    context "Requirement 4.1.5" do
+      specify "Hook context MUST provide a mechanism for hook instances to store and retrieve per-hook data" do
+        data_across_stages = {}
+
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:before) do |hook_context:, hints:|
+            hook_context.hook_data_for(self)["my_key"] = "set_in_before"
+            nil
+          end
+
+          define_method(:after) do |hook_context:, evaluation_details:, hints:|
+            data_across_stages[:after_value] = hook_context.hook_data_for(self)["my_key"]
+          end
+
+          define_method(:finally) do |hook_context:, evaluation_details:, hints:|
+            data_across_stages[:finally_value] = hook_context.hook_data_for(self)["my_key"]
+          end
+        end.new
+
+        client = OpenFeature::SDK.build_client
+        client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook])
+
+        expect(data_across_stages[:after_value]).to eq("set_in_before")
+        expect(data_across_stages[:finally_value]).to eq("set_in_before")
+      end
+
+      specify "Hook data MUST be isolated between different hook instances" do
+        hook_a_data = {}
+        hook_b_data = {}
+
+        hook_a = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:before) do |hook_context:, hints:|
+            hook_context.hook_data_for(self)["owner"] = "hook_a"
+            nil
+          end
+
+          define_method(:after) do |hook_context:, evaluation_details:, hints:|
+            hook_a_data[:owner] = hook_context.hook_data_for(self)["owner"]
+          end
+        end.new
+
+        hook_b = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:before) do |hook_context:, hints:|
+            hook_context.hook_data_for(self)["owner"] = "hook_b"
+            nil
+          end
+
+          define_method(:after) do |hook_context:, evaluation_details:, hints:|
+            hook_b_data[:owner] = hook_context.hook_data_for(self)["owner"]
+          end
+        end.new
+
+        client = OpenFeature::SDK.build_client
+        client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook_a, hook_b])
+
+        expect(hook_a_data[:owner]).to eq("hook_a")
+        expect(hook_b_data[:owner]).to eq("hook_b")
+      end
+    end
+
     context "Requirement 4.1.4" do
       specify "evaluation context MUST be mutable" do
         captured_context = nil
@@ -244,6 +310,51 @@ RSpec.describe "Hooks Specification" do
         allow(provider).to receive(:fetch_boolean_value).and_raise("error")
         client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook])
         expect(finally_count).to eq(2)
+      end
+    end
+
+    context "Requirement 4.3.8" do
+      specify "On success, finally hook receives evaluation details with the resolved value" do
+        captured_details = nil
+
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:finally) do |hook_context:, evaluation_details:, hints:|
+            captured_details = evaluation_details
+          end
+        end.new
+
+        client = OpenFeature::SDK.build_client
+        client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook])
+
+        expect(captured_details).not_to be_nil
+        expect(captured_details.value).to eq(true)
+        expect(captured_details.flag_key).to eq("flag-1")
+      end
+
+      specify "On error, finally hook receives evaluation details with default value and error info" do
+        captured_details = nil
+
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:finally) do |hook_context:, evaluation_details:, hints:|
+            captured_details = evaluation_details
+          end
+        end.new
+
+        allow(provider).to receive(:fetch_boolean_value).and_raise("provider error")
+
+        client = OpenFeature::SDK.build_client
+        client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook])
+
+        expect(captured_details).not_to be_nil
+        expect(captured_details.value).to eq(false)
+        expect(captured_details.flag_key).to eq("flag-1")
+        expect(captured_details.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+        expect(captured_details.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+        expect(captured_details.error_message).to eq("provider error")
       end
     end
   end

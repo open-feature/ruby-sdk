@@ -222,6 +222,54 @@ RSpec.describe "Flag Evaluation API" do
     end
   end
 
+  context "1.4 - Flag Metadata" do
+    context "Requirement 1.4.14" do
+      specify "flag_metadata defaults to an empty hash when not provided" do
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(value: true)
+        expect(resolution.flag_metadata).to eq({})
+      end
+
+      specify "flag_metadata defaults to an empty hash when explicitly set to nil" do
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(value: true, flag_metadata: nil)
+        expect(resolution.flag_metadata).to eq({})
+      end
+
+      specify "flag_metadata preserves provided values" do
+        metadata = {"scope" => "user", "version" => 2}
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(value: true, flag_metadata: metadata)
+        expect(resolution.flag_metadata).to eq({"scope" => "user", "version" => 2})
+      end
+
+      specify "flag_metadata defaults correctly through client evaluation" do
+        provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        OpenFeature::SDK.set_provider(provider)
+        client = OpenFeature::SDK.build_client
+
+        details = client.fetch_boolean_details(flag_key: "test", default_value: false)
+        expect(details.flag_metadata).to eq({})
+      end
+    end
+
+    context "Requirement 1.4.15.1" do
+      specify "flag_metadata is frozen when not provided" do
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(value: true)
+        expect(resolution.flag_metadata).to be_frozen
+      end
+
+      specify "flag_metadata is frozen when provided" do
+        metadata = {"scope" => "user"}
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(value: true, flag_metadata: metadata)
+        expect(resolution.flag_metadata).to be_frozen
+      end
+
+      specify "flag_metadata cannot be mutated" do
+        metadata = {"scope" => "user"}
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(value: true, flag_metadata: metadata)
+        expect { resolution.flag_metadata["new_key"] = "value" }.to raise_error(FrozenError)
+      end
+    end
+  end
+
   context "1.6 - Shutdown" do
     context "Requirement 1.6.1" do
       specify "The API MUST define a mechanism to propagate a shutdown request to registered providers." do

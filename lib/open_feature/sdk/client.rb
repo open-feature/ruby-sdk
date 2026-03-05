@@ -42,6 +42,22 @@ module OpenFeature
         OpenFeature::SDK.configuration.remove_client_handler(self, event_type, actual_handler)
       end
 
+      # Tracking API (spec 6.1.1.1) — dynamic-context paradigm
+      #
+      # Records a tracking event. If the provider does not implement
+      # tracking, this is a no-op (spec 6.1.4).
+      def track(tracking_event_name, evaluation_context: nil, tracking_event_details: nil)
+        return unless @provider.respond_to?(:track)
+
+        built_context = EvaluationContextBuilder.new.call(
+          api_context: OpenFeature::SDK.evaluation_context,
+          client_context: self.evaluation_context,
+          invocation_context: evaluation_context
+        )
+
+        @provider.track(tracking_event_name, evaluation_context: built_context, tracking_event_details: tracking_event_details)
+      end
+
       RESULT_TYPE.each do |result_type|
         SUFFIXES.each do |suffix|
           class_eval <<-RUBY, __FILE__, __LINE__ + 1

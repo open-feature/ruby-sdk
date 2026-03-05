@@ -32,9 +32,9 @@ RSpec.describe "Providers Without Event Capabilities" do
       expect { provider.shutdown }.not_to raise_error
     end
 
-    it "does not automatically gain event capabilities" do
-      expect(provider).not_to respond_to(:attach)
-      expect(provider).not_to respond_to(:emit_event)
+    it "has event capabilities via EventEmitter" do
+      expect(provider).to respond_to(:emit_event)
+      expect(provider).to respond_to(:configuration_attached?)
     end
 
     it "fetch methods continue to work" do
@@ -63,13 +63,6 @@ RSpec.describe "Mixed Provider Usage" do
 end
 
 RSpec.describe "Provider Interface Detection" do
-  # Create a test provider that implements the new interfaces
-  let(:event_capable_provider) do
-    Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
-      include OpenFeature::SDK::Provider::EventEmitter
-    end.new
-  end
-
   it "can check if provider implements lifecycle methods using duck typing" do
     noop_provider = OpenFeature::SDK::Provider::NoOpProvider.new
     inmemory_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
@@ -81,9 +74,10 @@ RSpec.describe "Provider Interface Detection" do
 
   it "can check if provider implements EventEmitter" do
     noop_provider = OpenFeature::SDK::Provider::NoOpProvider.new
+    inmemory_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
 
     # Check using is_a? with module
     expect(noop_provider.class.included_modules).not_to include(OpenFeature::SDK::Provider::EventEmitter)
-    expect(event_capable_provider.class.included_modules).to include(OpenFeature::SDK::Provider::EventEmitter)
+    expect(inmemory_provider.class.included_modules).to include(OpenFeature::SDK::Provider::EventEmitter)
   end
 end

@@ -98,6 +98,63 @@ RSpec.describe "OpenFeature Specification: Events" do
     end
   end
 
+  context "Requirement 5.1.4" do
+    specify "PROVIDER_ERROR events SHOULD populate the error message field" do
+      event_details_received = nil
+      handler = ->(event_details) { event_details_received = event_details }
+
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, handler)
+
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      allow(provider).to receive(:init).and_raise("Custom init failure")
+
+      OpenFeature::SDK.set_provider(provider)
+      sleep(0.001) until event_details_received
+
+      expect(event_details_received[:message]).to eq("Custom init failure")
+
+      OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, handler)
+    end
+  end
+
+  context "Requirement 5.1.5" do
+    specify "PROVIDER_ERROR events SHOULD populate the error code field" do
+      event_details_received = nil
+      handler = ->(event_details) { event_details_received = event_details }
+
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, handler)
+
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      allow(provider).to receive(:init).and_raise("Init failed")
+
+      OpenFeature::SDK.set_provider(provider)
+      sleep(0.001) until event_details_received
+
+      expect(event_details_received[:error_code]).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+
+      OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, handler)
+    end
+
+    specify "error details are available in immediate handlers attached after the error" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      allow(provider).to receive(:init).and_raise("Delayed failure")
+
+      OpenFeature::SDK.set_provider(provider)
+      sleep(0.01) # Wait for async init to complete
+
+      event_details_received = nil
+      handler = ->(event_details) { event_details_received = event_details }
+
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, handler)
+
+      expect(event_details_received).not_to be_nil
+      expect(event_details_received[:error_code]).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+      expect(event_details_received[:message]).to eq("Delayed failure")
+
+      OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, handler)
+    end
+  end
+
   context "Requirement 5.2.1" do
     specify "The client MUST provide a function for associating handler functions with provider event types" do
       client = OpenFeature::SDK.build_client(domain: "test-domain")

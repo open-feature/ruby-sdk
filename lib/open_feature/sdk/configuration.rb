@@ -235,8 +235,7 @@ module OpenFeature
             provider_state = @provider_state_registry.get_state(provider)
 
             if event_type == status_to_event[provider_state]
-              provider_name = extract_provider_name(provider)
-              event_details = {provider_name: provider_name}
+              event_details = build_event_details(provider)
 
               begin
                 handler.call(event_details)
@@ -253,8 +252,7 @@ module OpenFeature
           provider_state = @provider_state_registry.get_state(client_provider)
 
           if event_type == status_to_event[provider_state]
-            provider_name = extract_provider_name(client_provider)
-            event_details = {provider_name: provider_name}
+            event_details = build_event_details(client_provider)
 
             begin
               handler.call(event_details)
@@ -263,6 +261,11 @@ module OpenFeature
             end
           end
         end
+      end
+
+      def build_event_details(provider)
+        stored_details = @provider_state_registry.get_details(provider)
+        {provider_name: extract_provider_name(provider)}.merge(stored_details)
       end
     end
   end

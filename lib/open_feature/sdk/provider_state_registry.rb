@@ -17,7 +17,7 @@ module OpenFeature
         return unless provider
 
         @mutex.synchronize do
-          @states[provider.object_id] = state
+          @states[provider.object_id] = {state: state, details: {}}
         end
       end
 
@@ -29,7 +29,7 @@ module OpenFeature
         # Only update state if the event should cause a state change
         if new_state
           @mutex.synchronize do
-            @states[provider.object_id] = new_state
+            @states[provider.object_id] = {state: new_state, details: event_details || {}}
           end
           new_state
         else
@@ -42,7 +42,17 @@ module OpenFeature
         return ProviderState::NOT_READY unless provider
 
         @mutex.synchronize do
-          @states[provider.object_id] || ProviderState::NOT_READY
+          entry = @states[provider.object_id]
+          entry ? entry[:state] : ProviderState::NOT_READY
+        end
+      end
+
+      def get_details(provider)
+        return {} unless provider
+
+        @mutex.synchronize do
+          entry = @states[provider.object_id]
+          entry ? entry[:details] : {}
         end
       end
 

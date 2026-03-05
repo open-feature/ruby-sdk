@@ -15,7 +15,7 @@ This is the official OpenFeature SDK for Ruby — an implementation of the [Open
 - **Lint with autofix:** `bundle exec standardrb --fix`
 - **Default rake (tests + lint):** `bundle exec rake`
 
-Note: Linting uses [Standard Ruby](https://github.com/standardrb/standard) (configured via the `standard` gem), which enforces single-quoted strings and its own opinionated style. There is no `.rubocop.yml` — Standard manages RuboCop configuration internally.
+Note: Linting uses [Standard Ruby](https://github.com/standardrb/standard) (configured via the `standard` gem), which enforces double-quoted strings and its own opinionated style. There is no `.rubocop.yml` — Standard manages RuboCop configuration internally. Do not use `bundle exec rubocop` directly as a stale RuboCop server may apply different rules; always use `bundle exec standardrb`.
 
 ## Architecture
 

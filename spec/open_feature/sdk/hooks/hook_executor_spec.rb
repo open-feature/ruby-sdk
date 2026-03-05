@@ -155,6 +155,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
 
         hook2_class = Class.new do
           include OpenFeature::SDK::Hooks::Hook
+
           define_method(:initialize) { |log| @log = log }
 
           define_method(:before) do |hook_context:, hints:|

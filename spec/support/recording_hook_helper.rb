@@ -4,6 +4,7 @@ module RecordingHookHelper
   def recording_hook(name, call_log)
     Class.new do
       include OpenFeature::SDK::Hooks::Hook
+
       define_method(:hook_name) { name }
 
       define_method(:before) do |hook_context:, hints:|

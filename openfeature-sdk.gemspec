@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description = "Ruby SDK for an the specifications for the open standard of feature flag management"
   spec.homepage = "https://github.com/open-feature/openfeature-ruby"
   spec.license = "Apache-2.0"
-  spec.required_ruby_version = ">= 3.1"
+  spec.required_ruby_version = ">= 3.4"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/open-feature/openfeature-ruby"
@@ -38,6 +38,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "standard"
   spec.add_development_dependency "standard-performance"
   spec.add_development_dependency "simplecov", "~> 0.22.0"
-  spec.add_development_dependency "simplecov-cobertura", "~> 2.1.0"
+  spec.add_development_dependency "simplecov-cobertura", "~> 3.0"
   spec.add_development_dependency "timecop", "~> 0.9.10"
 end

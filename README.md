@@ -38,9 +38,8 @@
 
 | Supported Ruby Version | OS                    |
 | ------------ | --------------------- |
-| Ruby 3.1.4   | Windows, MacOS, Linux |
-| Ruby 3.2.3   | Windows, MacOS, Linux |
-| Ruby 3.3.0   | Windows, MacOS, Linux |
+| Ruby 3.4.x   | Windows, MacOS, Linux |
+| Ruby 4.0.x   | Windows, MacOS, Linux |
 
 ### Install
 

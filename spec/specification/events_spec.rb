@@ -139,8 +139,11 @@ RSpec.describe "OpenFeature Specification: Events" do
       provider = OpenFeature::SDK::Provider::InMemoryProvider.new
       allow(provider).to receive(:init).and_raise("Delayed failure")
 
-      OpenFeature::SDK.set_provider(provider)
-      sleep(0.01) # Wait for async init to complete
+      begin
+        OpenFeature::SDK.set_provider_and_wait(provider)
+      rescue OpenFeature::SDK::ProviderInitializationError
+        # Expected — provider init fails, putting provider in ERROR state
+      end
 
       event_details_received = nil
       handler = ->(event_details) { event_details_received = event_details }

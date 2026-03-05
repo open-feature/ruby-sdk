@@ -101,9 +101,31 @@ RSpec.describe "Flag Evaluation API" do
     end
 
     context "Requirement 1.1.4" do
-      pending "The API must provide a function to add hooks which accepts one or more API-conformant hooks, and appends them to the collection of any previously added hooks."
+      before(:each) do
+        OpenFeature::SDK.hooks.clear
+      end
 
-      pending "When new hooks are added, previously added hooks are not removed."
+      specify "The API must provide a function to add hooks which accepts one or more API-conformant hooks, and appends them to the collection of any previously added hooks." do
+        hook1 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+        hook2 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+
+        OpenFeature::SDK.hooks << hook1
+        OpenFeature::SDK.hooks << hook2
+
+        expect(OpenFeature::SDK.hooks).to eq([hook1, hook2])
+      end
+
+      specify "When new hooks are added, previously added hooks are not removed." do
+        hook1 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+        OpenFeature::SDK.hooks << hook1
+
+        hook2 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+        OpenFeature::SDK.hooks << hook2
+
+        expect(OpenFeature::SDK.hooks).to include(hook1)
+        expect(OpenFeature::SDK.hooks).to include(hook2)
+        expect(OpenFeature::SDK.hooks.size).to eq(2)
+      end
     end
 
     context "Requirement 1.1.5" do
@@ -165,7 +187,20 @@ RSpec.describe "Flag Evaluation API" do
 
   context "1.2 - Client Usage" do
     context "Requirement 1.2.1" do
-      pending "The client MUST provide a method to add hooks which accepts one or more API-conformant hooks, and appends them to the collection of any previously added hooks. When new hooks are added, previously added hooks are not removed."
+      specify "The client MUST provide a method to add hooks which accepts one or more API-conformant hooks, and appends them to the collection of any previously added hooks. When new hooks are added, previously added hooks are not removed." do
+        provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        OpenFeature::SDK.set_provider(provider)
+        client = OpenFeature::SDK.build_client
+
+        hook1 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+        hook2 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+
+        client.hooks << hook1
+        client.hooks << hook2
+
+        expect(client.hooks).to eq([hook1, hook2])
+        expect(client.hooks).to include(hook1)
+      end
     end
 
     context "Requirement 1.2.2" do

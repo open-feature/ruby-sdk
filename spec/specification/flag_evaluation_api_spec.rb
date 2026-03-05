@@ -222,6 +222,83 @@ RSpec.describe "Flag Evaluation API" do
     end
   end
 
+  context "1.6 - Shutdown" do
+    context "Requirement 1.6.1" do
+      specify "The API MUST define a mechanism to propagate a shutdown request to registered providers." do
+        expect(OpenFeature::SDK).to respond_to(:shutdown)
+      end
+    end
+
+    context "Requirement 1.6.2" do
+      specify "When a shutdown function is called, the API invokes the shutdown function on the registered provider." do
+        provider1 = OpenFeature::SDK::Provider::InMemoryProvider.new
+        provider2 = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+        OpenFeature::SDK.set_provider_and_wait(provider1)
+        OpenFeature::SDK.set_provider_and_wait(provider2, domain: "test-domain")
+
+        expect(provider1).to receive(:shutdown)
+        expect(provider2).to receive(:shutdown)
+
+        OpenFeature::SDK.shutdown
+      end
+
+      specify "After shutdown, providers are cleared." do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        OpenFeature::SDK.shutdown
+
+        expect(OpenFeature::SDK.provider).to be_nil
+      end
+    end
+  end
+
+  context "1.7 - Provider Status" do
+    context "Requirement 1.7.1" do
+      specify "The client MUST define a provider status accessor which indicates the readiness of the associated provider." do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        client = OpenFeature::SDK.build_client
+
+        expect(client).to respond_to(:provider_status)
+        expect(client.provider_status).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+    end
+
+    context "Requirement 1.7.6" do
+      specify "If the provider status is NOT_READY, the client should return the default value with PROVIDER_NOT_READY error." do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        client = OpenFeature::SDK.build_client
+
+        allow(OpenFeature::SDK.configuration).to receive(:provider_state).with(provider).and_return(OpenFeature::SDK::ProviderState::NOT_READY)
+
+        result = client.fetch_boolean_details(flag_key: "flag", default_value: false)
+
+        expect(result.value).to eq(false)
+        expect(result.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_NOT_READY)
+        expect(result.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+      end
+    end
+
+    context "Requirement 1.7.7" do
+      specify "If the provider status is FATAL, the client should return the default value with PROVIDER_FATAL error." do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        client = OpenFeature::SDK.build_client
+
+        allow(OpenFeature::SDK.configuration).to receive(:provider_state).with(provider).and_return(OpenFeature::SDK::ProviderState::FATAL)
+
+        result = client.fetch_string_details(flag_key: "flag", default_value: "default")
+
+        expect(result.value).to eq("default")
+        expect(result.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
+        expect(result.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+      end
+    end
+  end
+
   context "Logger Methods" do
     specify "delegates logger getter to configuration" do
       logger = double("Logger")

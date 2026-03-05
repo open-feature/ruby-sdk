@@ -54,6 +54,14 @@ module OpenFeature
         end
       end
 
+      def tracked?(provider)
+        return false unless provider
+
+        @mutex.synchronize do
+          @states.key?(provider.object_id)
+        end
+      end
+
       def ready?(provider)
         get_state(provider) == ProviderState::READY
       end

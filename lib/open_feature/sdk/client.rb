@@ -28,6 +28,10 @@ module OpenFeature
         @hooks = []
       end
 
+      def provider_status
+        OpenFeature::SDK.configuration.provider_state(@provider)
+      end
+
       def add_handler(event_type, handler = nil, &block)
         actual_handler = handler || block
         OpenFeature::SDK.configuration.add_client_handler(self, event_type, actual_handler)
@@ -53,6 +57,23 @@ module OpenFeature
 
       def fetch_details(type:, flag_key:, default_value:, evaluation_context: nil, invocation_hooks: [], hook_hints: nil)
         validate_default_value_type(type, default_value)
+
+        state = provider_status
+        if OpenFeature::SDK.configuration.provider_tracked?(@provider) && state == ProviderState::NOT_READY
+          resolution = Provider::ResolutionDetails.new(
+            value: default_value,
+            error_code: Provider::ErrorCode::PROVIDER_NOT_READY,
+            reason: Provider::Reason::ERROR
+          )
+          return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
+        elsif OpenFeature::SDK.configuration.provider_tracked?(@provider) && state == ProviderState::FATAL
+          resolution = Provider::ResolutionDetails.new(
+            value: default_value,
+            error_code: Provider::ErrorCode::PROVIDER_FATAL,
+            reason: Provider::Reason::ERROR
+          )
+          return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
+        end
 
         built_context = EvaluationContextBuilder.new.call(
           api_context: OpenFeature::SDK.evaluation_context,

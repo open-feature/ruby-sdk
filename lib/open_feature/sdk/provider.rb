@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "provider/error_code"
 require_relative "provider/reason"
 require_relative "provider/resolution_details"

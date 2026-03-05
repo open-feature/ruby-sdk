@@ -82,7 +82,7 @@ GEM
       docile (~> 1.1)
       simplecov-html (~> 0.11)
       simplecov_json_formatter (~> 0.1)
-    simplecov-cobertura (2.1.0)
+    simplecov-cobertura (3.1.0)
       rexml
       simplecov (~> 0.19)
     simplecov-html (0.13.2)
@@ -126,7 +126,7 @@ DEPENDENCIES
   rake (~> 13.0)
   rspec (~> 3.12.0)
   simplecov (~> 0.22.0)
-  simplecov-cobertura (~> 2.1.0)
+  simplecov-cobertura (~> 3.0)
   standard
   standard-performance
   timecop (~> 0.9.10)

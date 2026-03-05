@@ -13,7 +13,7 @@ module OpenFeature
           elsif raw.frozen?
             raw
           else
-            raw.freeze
+            raw.dup.freeze
           end
         end
       end

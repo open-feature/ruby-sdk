@@ -29,7 +29,7 @@ module OpenFeature
         end
 
         def update_flags(new_flags)
-          @flags = new_flags
+          @flags = new_flags.dup
           emit_provider_changed(new_flags.keys)
         end
 

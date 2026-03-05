@@ -82,7 +82,7 @@ RSpec.describe OpenFeature::SDK::Provider::InMemoryProvider do
         expect(config).to have_received(:dispatch_provider_event).with(
           provider,
           OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED,
-          flags_changed: ["flag_a", "flag_b"]
+          flags_changed: contain_exactly("flag_a", "flag_b")
         )
       end
     end

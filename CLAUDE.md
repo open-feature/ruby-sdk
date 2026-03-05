@@ -2,71 +2,50 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Overview
 
-OpenFeature Ruby SDK — implements the [OpenFeature specification](https://openfeature.dev) (v0.8.0) for vendor-agnostic feature flag management. Published as the `openfeature-sdk` gem. Pure Ruby, no runtime dependencies. Requires Ruby >= 3.1.
+This is the official OpenFeature SDK for Ruby — an implementation of the [OpenFeature specification](https://openfeature.dev) providing a vendor-agnostic API for feature flag evaluation. Published as the `openfeature-sdk` gem. Requires Ruby >= 3.1.
 
 ## Commands
 
-```bash
-# Install dependencies
-bundle install
+- **Run all tests:** `bundle exec rspec`
+- **Run a single test file:** `bundle exec rspec spec/open_feature/sdk/client_spec.rb`
+- **Run a specific test by line:** `bundle exec rspec spec/open_feature/sdk/client_spec.rb:43`
+- **Lint:** `bundle exec standardrb`
+- **Lint with autofix:** `bundle exec standardrb --fix`
+- **Default rake (tests + lint):** `bundle exec rake`
 
-# Run full test suite + linting (default rake task)
-bundle exec rake
-
-# Run tests only
-bundle exec rspec
-
-# Run a single test file
-bundle exec rspec spec/open_feature/sdk/client_spec.rb
-
-# Run a specific test by line number
-bundle exec rspec spec/open_feature/sdk/client_spec.rb:40
-
-# Lint (StandardRB with performance plugin)
-bundle exec rake standard
-
-# Auto-fix lint issues
-bundle exec standardrb --fix
-```
+Note: Linting uses [Standard Ruby](https://github.com/standardrb/standard) (configured via the `standard` gem), which enforces double-quoted strings and its own opinionated style. There is no `.rubocop.yml` — Standard manages RuboCop configuration internally. Do not use `bundle exec rubocop` directly as a stale RuboCop server may apply different rules; always use `bundle exec standardrb`.
 
 ## Architecture
 
-Entry point: `require 'open_feature/sdk'` — the `OpenFeature::SDK` module delegates all method calls to `API.instance` (Singleton) via `method_missing`.
+### Entry point and API singleton
 
-### Core Components
+`OpenFeature::SDK` (in `lib/open_feature/sdk.rb`) delegates all method calls to `API.instance` via `method_missing`. `API` is a Singleton that holds a `Configuration` object and builds `Client` instances.
 
-- **API** (`lib/open_feature/sdk/api.rb`) — Singleton orchestrator. Manages providers (global or domain-scoped), builds clients, stores API-level evaluation context, and registers event handlers.
-- **Configuration** (`lib/open_feature/sdk/configuration.rb`) — Thread-safe provider storage. Handles provider lifecycle (init/shutdown), domain-scoped provider mapping, and event dispatching. Uses Mutex for all shared state.
-- **Client** (`lib/open_feature/sdk/client.rb`) — Flag evaluation interface. Uses `class_eval` metaprogramming to generate 12 typed methods: `fetch_{boolean,string,number,integer,float,object}_value` and `fetch_*_details` variants. Merges evaluation contexts (API + client + invocation).
-- **EvaluationContext** (`lib/open_feature/sdk/evaluation_context.rb`) — Key-value targeting data with a special `targeting_key`. Supports merging with precedence: invocation > client > API.
+### Provider duck type
 
-### Provider System
+Providers are not subclasses — they follow a duck type interface. Any object implementing `fetch_boolean_value`, `fetch_string_value`, `fetch_number_value`, `fetch_integer_value`, `fetch_float_value`, and `fetch_object_value` (all accepting `flag_key:`, `default_value:`, `evaluation_context:`) works as a provider. Each method must return a `ResolutionDetails` struct. Two built-in providers exist: `NoOpProvider` (default) and `InMemoryProvider` (for testing). Providers may optionally implement `init(evaluation_context)`, `shutdown`, and `metadata`.
 
-- **Provider interface** — Must implement 6 `fetch_*_value` methods, optional `init(evaluation_context)` and `shutdown`. Returns `ResolutionDetails`.
-- **EventEmitter** (`lib/open_feature/sdk/provider/event_emitter.rb`) — Mixin that providers include to emit lifecycle events.
-- **Built-in providers**: `NoOpProvider` (default), `InMemoryProvider` (testing/examples).
-- **Provider states**: `NOT_READY → READY`, with `ERROR`, `FATAL`, `STALE` transitions. Tracked per-instance via `ProviderStateRegistry` using `object_id`.
-- **Initialization modes**: `set_provider` (async, background thread) or `set_provider_and_wait` (sync, raises `ProviderInitializationError` on failure).
+### Client dynamic method generation
 
-### Event System
+`Client` uses `class_eval` to metaprogram `fetch_<type>_value` and `fetch_<type>_details` methods from `RESULT_TYPE` and `SUFFIXES` arrays. This generates 12 public methods (6 types × 2 suffixes).
 
-- **EventDispatcher** (`lib/open_feature/sdk/event_dispatcher.rb`) — Thread-safe pub-sub. Handlers called outside mutex to prevent deadlocks. Supports API-level and client-level handlers.
-- **ProviderEvent** constants: `PROVIDER_READY`, `PROVIDER_ERROR`, `PROVIDER_STALE`, `PROVIDER_CONFIGURATION_CHANGED`.
+### Evaluation context merging
 
-## Test Structure
+`EvaluationContextBuilder` merges three layers of context with this precedence: invocation > client > API (global). Context is a hash-like object with a special `targeting_key` field.
 
-Tests in `spec/` split into two categories:
-- `spec/specification/` — OpenFeature spec compliance tests, organized by requirement number (e.g., "Requirement 1.1.1")
-- `spec/open_feature/` — Unit tests for individual components
+### Provider eventing
 
-Uses Timecop for time-sensitive tests (auto-reset after each test), SimpleCov for coverage.
+`Configuration` manages provider lifecycle events (READY, ERROR, STALE, CONFIGURATION_CHANGED). Providers can emit spontaneous events by including `Provider::EventEmitter`. Event handlers can be registered at API level (global) or client level (domain-scoped). `ProviderStateRegistry` tracks provider states; `EventDispatcher` manages handler registration and invocation.
+
+### Domain-based provider binding
+
+Providers can be registered for specific domains. `Configuration#provider(domain:)` resolves domain-specific providers, falling back to the default (nil-domain) provider. Clients are built with an optional `domain:` that binds them to a specific provider.
 
 ## Conventions
 
-- **Linter**: StandardRB (Ruby Standard Style) with `standard-performance` plugin, targeting Ruby 3.1
-- **Commits**: Conventional Commits required for PR titles (enforced by CI)
-- **Releases**: Automated via release-please; changelog auto-generated
-- **Threading**: All shared mutable state must be Mutex-protected. Provider storage uses immutable reassignment (`@providers = @providers.dup.merge(...)`)
-- **Structs for DTOs**: `EvaluationDetails`, `ResolutionDetails`, `ClientMetadata`, `ProviderMetadata` are `Struct`-based
+- All `.rb` files must have `# frozen_string_literal: true` as the first line.
+- Tests live under `spec/` and mirror the `lib/` structure. `spec/specification/` contains tests mapped to OpenFeature spec requirements.
+- Always sign git commits using the `-S` flag.
+- Always include DCO sign-off in commits using the `-s` flag (i.e., `git commit -s -S`). This adds a `Signed-off-by` trailer required by the project's CI.

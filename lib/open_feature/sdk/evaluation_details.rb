@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module OpenFeature
   module SDK
     EvaluationDetails = Struct.new(:flag_key, :resolution_details, keyword_init: true) do

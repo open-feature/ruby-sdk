@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module OpenFeature
   module SDK
     # Used to combine evaluation contexts from different sources

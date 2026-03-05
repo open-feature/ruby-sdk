@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0](https://github.com/open-feature/ruby-sdk/compare/v0.5.1...v0.6.0) (2026-03-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* add Ruby 4.0 support, require minimum Ruby 3.4 ([#217](https://github.com/open-feature/ruby-sdk/issues/217))
+
+### Features
+
+* add Ruby 4.0 support, require minimum Ruby 3.4 ([#217](https://github.com/open-feature/ruby-sdk/issues/217)) ([f38ba40](https://github.com/open-feature/ruby-sdk/commit/f38ba40b31beb650ba475c631947fc7969e476fa))
+
 ## [0.5.1](https://github.com/open-feature/ruby-sdk/compare/v0.5.0...v0.5.1) (2026-03-04)
 
 

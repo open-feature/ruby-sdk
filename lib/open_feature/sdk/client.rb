@@ -58,21 +58,16 @@ module OpenFeature
       def fetch_details(type:, flag_key:, default_value:, evaluation_context: nil, invocation_hooks: [], hook_hints: nil)
         validate_default_value_type(type, default_value)
 
-        state = provider_status
-        if OpenFeature::SDK.configuration.provider_tracked?(@provider) && state == ProviderState::NOT_READY
-          resolution = Provider::ResolutionDetails.new(
-            value: default_value,
-            error_code: Provider::ErrorCode::PROVIDER_NOT_READY,
-            reason: Provider::Reason::ERROR
-          )
-          return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
-        elsif OpenFeature::SDK.configuration.provider_tracked?(@provider) && state == ProviderState::FATAL
-          resolution = Provider::ResolutionDetails.new(
-            value: default_value,
-            error_code: Provider::ErrorCode::PROVIDER_FATAL,
-            reason: Provider::Reason::ERROR
-          )
-          return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
+        if OpenFeature::SDK.configuration.provider_tracked?(@provider)
+          error_code = short_circuit_error_code(provider_status)
+          if error_code
+            resolution = Provider::ResolutionDetails.new(
+              value: default_value,
+              error_code: error_code,
+              reason: Provider::Reason::ERROR
+            )
+            return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
+          end
         end
 
         built_context = EvaluationContextBuilder.new.call(
@@ -128,6 +123,13 @@ module OpenFeature
         end
 
         EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution_details)
+      end
+
+      def short_circuit_error_code(state)
+        case state
+        when ProviderState::NOT_READY then Provider::ErrorCode::PROVIDER_NOT_READY
+        when ProviderState::FATAL then Provider::ErrorCode::PROVIDER_FATAL
+        end
       end
 
       def validate_default_value_type(type, default_value)

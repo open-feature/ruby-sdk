@@ -11,6 +11,10 @@ module OpenFeature
       attr_reader :value, :fields
 
       def initialize(value: nil, **fields)
+        if !value.nil? && !value.is_a?(Numeric)
+          raise ArgumentError, "Tracking event value must be Numeric, got #{value.class}"
+        end
+
         @value = value
         @fields = fields.transform_keys(&:to_s)
       end

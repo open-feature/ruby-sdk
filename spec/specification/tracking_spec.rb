@@ -107,6 +107,10 @@ RSpec.describe "Tracking Specification" do
         details = OpenFeature::SDK::TrackingEventDetails.new
         expect(details.value).to be_nil
       end
+
+      specify "The value must be numeric if provided" do
+        expect { OpenFeature::SDK::TrackingEventDetails.new(value: "not_a_number") }.to raise_error(ArgumentError)
+      end
     end
 
     context "Requirement 6.2.2" do

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.1](https://github.com/open-feature/ruby-sdk/compare/v0.6.0...v0.6.1) (2026-03-05)
+
+
+### Features
+
+* add flag metadata defaulting and immutability ([#221](https://github.com/open-feature/ruby-sdk/issues/221)) ([a300fc5](https://github.com/open-feature/ruby-sdk/commit/a300fc559293169f22eb1ce26f738cdee664cd26))
+* add hook data per-hook mutable state ([#222](https://github.com/open-feature/ruby-sdk/issues/222)) ([28518a0](https://github.com/open-feature/ruby-sdk/commit/28518a0e08143d167b9d34c86e57a583fe5ee0de))
+* add InMemoryProvider context callbacks and event emission ([#224](https://github.com/open-feature/ruby-sdk/issues/224)) ([0a148f6](https://github.com/open-feature/ruby-sdk/commit/0a148f66abc815fc2ec9fd70027075125dbd504a))
+* add shutdown API, provider status, and status short-circuit ([#223](https://github.com/open-feature/ruby-sdk/issues/223)) ([f9c32ad](https://github.com/open-feature/ruby-sdk/commit/f9c32ad1b467af25697423a542bc568597f39743))
+* implement Tracking API (spec section 6) ([#227](https://github.com/open-feature/ruby-sdk/issues/227)) ([5576fce](https://github.com/open-feature/ruby-sdk/commit/5576fce1c3bcf6e7510d8957c7e40e85c4b83b6f))
+* populate event details payload with error_code and message ([#225](https://github.com/open-feature/ruby-sdk/issues/225)) ([a185003](https://github.com/open-feature/ruby-sdk/commit/a185003dc09a69b2dda1fe569d1f82c45979cdad))
+
 ## [0.6.0](https://github.com/open-feature/ruby-sdk/compare/v0.5.1...v0.6.0) (2026-03-05)
 
 

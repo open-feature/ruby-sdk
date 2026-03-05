@@ -100,13 +100,14 @@ object = client.fetch_object_value(flag_key: 'object_value', default_value: { na
 | ------ | --------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ✅      | [Providers](#providers)                                             | Integrate with a commercial, open source, or in-house feature management tool.                                                                               |
 | ✅      | [Targeting](#targeting)                                             | Contextually-aware flag evaluation using [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context).                           |
-| ⚠️      | [Hooks](#hooks)                                                     | Add functionality to various stages of the flag evaluation life-cycle.                                                                                       |
+| ✅      | [Hooks](#hooks)                                                     | Add functionality to various stages of the flag evaluation life-cycle.                                                                                       |
 | ❌      | [Logging](#logging)                                                 | Integrate with popular logging packages.                                                                                                                     |
 | ✅      | [Domains](#domains)                                                 | Logically bind clients with providers.                                                                                                                       |
 | ✅      | [Eventing](#eventing)                                               | React to state changes in the provider or flag management system.                                                                                            |
-| ⚠️      | [Shutdown](#shutdown)                                               | Gracefully clean up a provider during application shutdown.                                                                                                  |
+| ✅      | [Shutdown](#shutdown)                                               | Gracefully clean up a provider during application shutdown.                                                                                                  |
+| ✅      | [Tracking](#tracking)                                               | Associate user actions with feature flag evaluations for experimentation.                                                                                    |
 | ❌      | [Transaction Context Propagation](#transaction-context-propagation) | Set a specific [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context) for a transaction (e.g. an HTTP request or a thread) |
-| ⚠️      | [Extending](#extending)                                             | Extend OpenFeature with custom providers and hooks.                                                                                                          |
+| ✅      | [Extending](#extending)                                             | Extend OpenFeature with custom providers and hooks.                                                                                                          |
 
 <sub>Implemented: ✅ | In-progress: ⚠️ | Not implemented yet: ❌</sub>
 
@@ -200,15 +201,49 @@ bool_value = client.fetch_boolean_value(
 
 ### Hooks
 
-Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/52) to be worked on.
-
-<!-- [Hooks](https://openfeature.dev/docs/reference/concepts/hooks) allow for custom logic to be added at well-defined points of the flag evaluation life-cycle.
+[Hooks](https://openfeature.dev/docs/reference/concepts/hooks) allow for custom logic to be added at well-defined points of the flag evaluation life-cycle.
 Look [here](https://openfeature.dev/ecosystem/?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Hook&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Ruby) for a complete list of available hooks.
 If the hook you're looking for hasn't been created yet, see the [develop a hook](#develop-a-hook) section to learn how to build it yourself.
 
-Once you've added a hook as a dependency, it can be registered at the global, client, or flag invocation level. -->
+Hooks can be registered at the global, client, or flag invocation level.
 
-<!-- TODO: code example of setting hooks at all levels -->
+```ruby
+# Define a hook
+class MyHook
+  include OpenFeature::SDK::Hooks::Hook
+
+  def before(hook_context:, hints:)
+    puts "Evaluating flag: #{hook_context.flag_key}"
+    nil
+  end
+
+  def after(hook_context:, evaluation_details:, hints:)
+    puts "Flag #{hook_context.flag_key} evaluated to: #{evaluation_details.value}"
+  end
+
+  def error(hook_context:, exception:, hints:)
+    puts "Error evaluating #{hook_context.flag_key}: #{exception.message}"
+  end
+
+  def finally(hook_context:, evaluation_details:, hints:)
+    puts "Evaluation complete for #{hook_context.flag_key}"
+  end
+end
+
+# Register at the API (global) level
+OpenFeature::SDK.hooks << MyHook.new
+
+# Register at the client level
+client = OpenFeature::SDK.build_client
+client.hooks << MyHook.new
+
+# Register at the invocation level
+client.fetch_boolean_value(
+  flag_key: "my-flag",
+  default_value: false,
+  hooks: [MyHook.new]
+)
+```
 
 ### Logging
 
@@ -276,19 +311,53 @@ OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY,
 
 ### Shutdown
 
-Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/149) to be worked on.
-
-<!-- TODO The OpenFeature API provides a close function to perform a cleanup of all registered providers.
+The OpenFeature API provides a `shutdown` method to perform cleanup of all registered providers.
 This should only be called when your application is in the process of shutting down.
+
+```ruby
+# Shut down all registered providers and clear state
+OpenFeature::SDK.shutdown
+```
+
+Individual providers can implement a `shutdown` method to perform cleanup:
 
 ```ruby
 class MyProvider
   def shutdown
     # Perform any shutdown/reclamation steps with flag management system here
-    # Return value is ignored
   end
 end
-``` -->
+```
+
+### Tracking
+
+The tracking API allows you to use OpenFeature abstractions and objects to associate user actions with feature flag evaluations.
+This is essential for robust experimentation powered by feature flags.
+For example, a flag enhancing the appearance of a UI component might drive user engagement to a new feature; to test this hypothesis, telemetry collected by a [hook](#hooks) or [provider](#providers) can be associated with telemetry reported in the client's `track` function.
+
+```ruby
+client = OpenFeature::SDK.build_client
+
+# Simple tracking event
+client.track("checkout_completed")
+
+# With evaluation context
+client.track(
+  "purchase",
+  evaluation_context: OpenFeature::SDK::EvaluationContext.new(targeting_key: "user-123")
+)
+
+# With tracking event details (optional numeric value + custom fields)
+details = OpenFeature::SDK::TrackingEventDetails.new(
+  value: 99.99,
+  plan: "premium",
+  currency: "USD"
+)
+client.track("subscription", tracking_event_details: details)
+```
+
+Note that some providers may not support tracking; if the provider does not implement a `track` method, the call is a no-op.
+Check the documentation for your [provider](#providers) for more information.
 
 ### Transaction Context Propagation
 
@@ -344,6 +413,12 @@ class MyProvider
   def fetch_object_value(flag_key:, default_value:, evaluation_context: nil)
     # Retrieve a hash value from provider source
   end
+
+  # Optional: implement tracking support (spec 6.1.4)
+  # If not defined, Client#track is a no-op
+  def track(tracking_event_name, evaluation_context:, tracking_event_details:)
+    # Record a tracking event with your flag management system
+  end
 end
 ```
 
@@ -351,17 +426,29 @@ end
 
 ### Develop a hook
 
-Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/52) to be worked on.
-
-<!-- To develop a hook, you need to create a new project and include the OpenFeature SDK as a dependency.
+To develop a hook, you need to create a new project and include the OpenFeature SDK as a dependency.
 This can be a new repository or included in [the existing contrib repository](https://github.com/open-feature/ruby-sdk-contrib) available under the OpenFeature organization.
-Implement your own hook by conforming to the `Hook interface`.
-To satisfy the interface, all methods (`Before`/`After`/`Finally`/`Error`) need to be defined.
-To avoid defining empty functions, make use of the `UnimplementedHook` struct (which already implements all the empty functions). -->
+Implement your own hook by including the `OpenFeature::SDK::Hooks::Hook` module.
+You only need to define the stages you care about — unimplemented stages are no-ops by default.
 
-<!-- TODO: code example of hook implementation -->
+```ruby
+class MyLoggingHook
+  include OpenFeature::SDK::Hooks::Hook
 
-<!-- > Built a new hook? [Let us know](https://github.com/open-feature/openfeature.dev/issues/new?assignees=&labels=hook&projects=&template=document-hook.yaml&title=%5BHook%5D%3A+) so we can add it to the docs! -->
+  def before(hook_context:, hints:)
+    puts "Evaluating #{hook_context.flag_key}"
+    nil # Return nil or an EvaluationContext to merge
+  end
+
+  def after(hook_context:, evaluation_details:, hints:)
+    puts "Result: #{evaluation_details.value}"
+  end
+
+  # error and finally are optional — only define what you need
+end
+```
+
+> Built a new hook? [Let us know](https://github.com/open-feature/openfeature.dev/issues/new?assignees=&labels=hook&projects=&template=document-hook.yaml&title=%5BHook%5D%3A+) so we can add it to the docs!
 
 <!-- x-hide-in-docs-start -->
 ## ⭐️ Support the project

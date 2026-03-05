@@ -22,6 +22,14 @@ module OpenFeature
           @evaluation_context = evaluation_context
           @client_metadata = client_metadata
           @provider_metadata = provider_metadata
+          @hook_data = {}
+        end
+
+        # Returns a mutable hash scoped to the given hook instance.
+        # The same hash is returned across all hook stages (before, after, error, finally),
+        # allowing hooks to share state across their lifecycle (spec 4.1.5, 4.6.1).
+        def hook_data_for(hook)
+          @hook_data[hook.object_id] ||= {}
         end
       end
     end

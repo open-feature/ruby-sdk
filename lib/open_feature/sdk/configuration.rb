@@ -76,6 +76,26 @@ module OpenFeature
         set_provider_internal(provider, domain: domain, wait_for_init: true)
       end
 
+      def provider_state(provider)
+        @provider_state_registry.get_state(provider)
+      end
+
+      def provider_tracked?(provider)
+        @provider_state_registry.tracked?(provider)
+      end
+
+      def shutdown
+        providers_to_shutdown = @provider_mutex.synchronize { @providers.values.uniq }
+
+        providers_to_shutdown.each do |prov|
+          prov.shutdown if prov.respond_to?(:shutdown)
+        rescue => e
+          @logger&.warn("Error shutting down provider #{prov&.class&.name || "unknown"}: #{e.message}")
+        end
+
+        reset
+      end
+
       private
 
       def reset
@@ -169,10 +189,6 @@ module OpenFeature
         }.merge(details)
 
         run_handlers_for_provider(provider, event_type, event_details)
-      end
-
-      def provider_state(provider)
-        @provider_state_registry.get_state(provider)
       end
 
       private

@@ -28,6 +28,10 @@ module OpenFeature
         @hooks = []
       end
 
+      def provider_status
+        OpenFeature::SDK.configuration.provider_state(@provider)
+      end
+
       def add_handler(event_type, handler = nil, &block)
         actual_handler = handler || block
         OpenFeature::SDK.configuration.add_client_handler(self, event_type, actual_handler)
@@ -53,6 +57,18 @@ module OpenFeature
 
       def fetch_details(type:, flag_key:, default_value:, evaluation_context: nil, invocation_hooks: [], hook_hints: nil)
         validate_default_value_type(type, default_value)
+
+        if OpenFeature::SDK.configuration.provider_tracked?(@provider)
+          error_code = short_circuit_error_code(provider_status)
+          if error_code
+            resolution = Provider::ResolutionDetails.new(
+              value: default_value,
+              error_code: error_code,
+              reason: Provider::Reason::ERROR
+            )
+            return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
+          end
+        end
 
         built_context = EvaluationContextBuilder.new.call(
           api_context: OpenFeature::SDK.evaluation_context,
@@ -107,6 +123,13 @@ module OpenFeature
         end
 
         EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution_details)
+      end
+
+      def short_circuit_error_code(state)
+        case state
+        when ProviderState::NOT_READY then Provider::ErrorCode::PROVIDER_NOT_READY
+        when ProviderState::FATAL then Provider::ErrorCode::PROVIDER_FATAL
+        end
       end
 
       def validate_default_value_type(type, default_value)

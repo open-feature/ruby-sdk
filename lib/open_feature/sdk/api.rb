@@ -68,6 +68,10 @@ module OpenFeature
       def logger=(new_logger)
         configuration.logger = new_logger
       end
+
+      def shutdown
+        configuration.shutdown
+      end
     end
   end
 end

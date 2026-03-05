@@ -10,6 +10,7 @@ require_relative "evaluation_details"
 require_relative "client_metadata"
 require_relative "hooks"
 require_relative "client"
+require_relative "tracking_event_details"
 require_relative "provider"
 
 module OpenFeature

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.2](https://github.com/open-feature/ruby-sdk/compare/v0.6.1...v0.6.2) (2026-03-07)
+
+
+### Features
+
+* add logging hook (spec Appendix A) ([#229](https://github.com/open-feature/ruby-sdk/issues/229)) ([2f681c9](https://github.com/open-feature/ruby-sdk/commit/2f681c910198d2bfa16389018f42ca9dc3270936))
+* add transaction context propagation (spec 3.3) ([#230](https://github.com/open-feature/ruby-sdk/issues/230)) ([0aff30f](https://github.com/open-feature/ruby-sdk/commit/0aff30f77a0b680341cfd3d1f43e9d1f0ede1b75))
+
 ## [0.6.1](https://github.com/open-feature/ruby-sdk/compare/v0.6.0...v0.6.1) (2026-03-05)
 
 

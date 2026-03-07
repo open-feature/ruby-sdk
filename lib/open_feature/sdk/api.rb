@@ -34,7 +34,7 @@ module OpenFeature
       include Singleton # Satisfies Flag Evaluation API Requirement 1.1.1
       extend Forwardable
 
-      def_delegators :configuration, :provider, :set_provider, :set_provider_and_wait, :hooks, :evaluation_context
+      def_delegators :configuration, :provider, :set_provider, :set_provider_and_wait, :hooks, :add_hooks, :evaluation_context
 
       def configuration
         @configuration ||= Configuration.new

@@ -31,6 +31,10 @@ module OpenFeature
         @client_handlers_mutex = Mutex.new
       end
 
+      def add_hooks(*new_hooks)
+        @hooks.concat(new_hooks.flatten)
+      end
+
       def provider(domain: nil)
         @providers[domain] || @providers[nil]
       end
@@ -85,9 +89,12 @@ module OpenFeature
       end
 
       def shutdown
-        providers_to_shutdown = @provider_mutex.synchronize { @providers.values.uniq }
+        providers_to_shutdown = @provider_mutex.synchronize { @providers.values.uniq(&:object_id) }
 
         providers_to_shutdown.each do |prov|
+          # Spec 1.7.9: Set provider state to NOT_READY before shutdown
+          @provider_state_registry.update_state_from_event(prov, ProviderEvent::PROVIDER_READY)
+          @provider_state_registry.set_initial_state(prov, ProviderState::NOT_READY)
           prov.shutdown if prov.respond_to?(:shutdown)
         rescue => e
           @logger&.warn("Error shutting down provider #{prov&.class&.name || "unknown"}: #{e.message}")
@@ -113,28 +120,37 @@ module OpenFeature
         # Capture evaluation context before acquiring mutex to prevent race conditions
         context_for_init = @evaluation_context
 
-        old_provider, provider_to_init = nil
+        old_provider = nil
+        needs_init = false
+        needs_shutdown = false
 
         @provider_mutex.synchronize do
           old_provider = @providers[domain]
-
-          # Remove old provider state to prevent memory leaks
-          @provider_state_registry.remove_provider(old_provider)
 
           new_providers = @providers.dup
           new_providers[domain] = provider
           @providers = new_providers
 
-          @provider_state_registry.set_initial_state(provider)
+          # Spec 1.1.2.2: Only initialize if the provider is not already active
+          # (i.e., not already bound to another domain)
+          already_active = @providers.any? { |d, p| d != domain && p.equal?(provider) && @provider_state_registry.tracked?(p) }
+          needs_init = !already_active
 
-          provider.send(:attach, self) if provider.is_a?(Provider::EventEmitter)
+          if needs_init
+            @provider_state_registry.set_initial_state(provider)
+            provider.send(:attach, self) if provider.is_a?(Provider::EventEmitter)
+          end
 
-          provider_to_init = provider
+          # Spec 1.1.2.3: Only shutdown old provider if it's no longer bound to any domain
+          if old_provider && !old_provider.equal?(provider)
+            still_bound = @providers.any? { |_, p| p.equal?(old_provider) }
+            needs_shutdown = !still_bound
+            @provider_state_registry.remove_provider(old_provider) unless still_bound
+          end
         end
 
         # Shutdown old provider outside mutex to avoid blocking other operations
-        # Only shutdown if it's a different provider to prevent race condition
-        if old_provider && old_provider != provider
+        if needs_shutdown
           begin
             old_provider.shutdown if old_provider.respond_to?(:shutdown)
           rescue => e
@@ -143,12 +159,17 @@ module OpenFeature
         end
 
         # Initialize provider outside the mutex to avoid blocking other operations
-        if wait_for_init
-          init_provider(provider_to_init, context_for_init, raise_on_error: true)
-        else
-          Thread.new do
-            init_provider(provider_to_init, context_for_init, raise_on_error: false)
+        if needs_init
+          if wait_for_init
+            init_provider(provider, context_for_init, raise_on_error: true)
+          else
+            Thread.new do
+              init_provider(provider, context_for_init, raise_on_error: false)
+            end
           end
+        elsif wait_for_init
+          # Provider already active; no init needed but still dispatch READY
+          dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
         end
       end
 
@@ -164,16 +185,22 @@ module OpenFeature
 
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
       rescue => e
+        # Spec 1.7.8: Propagate error code from provider if available
+        error_code = if e.respond_to?(:error_code) && e.error_code
+          e.error_code
+        else
+          Provider::ErrorCode::GENERAL
+        end
+
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
-          error_code: Provider::ErrorCode::GENERAL,
+          error_code: error_code,
           message: e.message)
 
         if raise_on_error
-          # Re-raise as ProviderInitializationError for synchronous callers
           raise ProviderInitializationError.new(
             "Provider #{provider.class.name} initialization failed: #{e.message}",
             provider:,
-            error_code: Provider::ErrorCode::GENERAL,
+            error_code: error_code,
             original_error: e
           )
         end

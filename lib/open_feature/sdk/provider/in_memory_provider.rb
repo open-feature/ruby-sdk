@@ -29,8 +29,10 @@ module OpenFeature
         end
 
         def update_flags(new_flags)
+          old_keys = @flags.keys
           @flags = new_flags.dup
-          emit_provider_changed(new_flags.keys)
+          changed_keys = (old_keys | new_flags.keys)
+          emit_provider_changed(changed_keys)
         end
 
         def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)

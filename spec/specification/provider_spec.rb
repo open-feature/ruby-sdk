@@ -51,6 +51,39 @@ RSpec.describe "Provider" do
         end
       end
 
+      specify "Requirement 2.4.5: Provider status indicates FATAL if init terminates with PROVIDER_FATAL error code" do
+        fatal_error_class = Class.new(StandardError) do
+          define_method(:error_code) { OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL }
+        end
+
+        fatal_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        allow(fatal_provider).to receive(:init).and_raise(fatal_error_class.new("Fatal init failure"))
+
+        expect do
+          OpenFeature::SDK.set_provider_and_wait(fatal_provider)
+        end.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
+          expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
+        end
+
+        # Provider state should be FATAL, not ERROR
+        state = OpenFeature::SDK.configuration.provider_state(fatal_provider)
+        expect(state).to eq(OpenFeature::SDK::ProviderState::FATAL)
+      end
+
+      specify "Requirement 2.4.5: Provider status indicates ERROR for non-fatal init errors" do
+        generic_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        allow(generic_provider).to receive(:init).and_raise(StandardError.new("Generic init failure"))
+
+        expect do
+          OpenFeature::SDK.set_provider_and_wait(generic_provider)
+        end.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
+          expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+        end
+
+        state = OpenFeature::SDK.configuration.provider_state(generic_provider)
+        expect(state).to eq(OpenFeature::SDK::ProviderState::ERROR)
+      end
+
       specify "Provider initialization errors should prevent the provider from being used" do
         # Store the old provider
         OpenFeature::SDK.provider

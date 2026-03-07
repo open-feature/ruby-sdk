@@ -18,6 +18,20 @@ module OpenFeature
           @logger = logger
         end
 
+        # Runs error hooks and finally hooks for a short-circuit evaluation
+        # (spec 1.7.6 + 1.7.7). Before hooks and after hooks are NOT run.
+        #
+        # @param ordered_hooks [Array] hooks in before-order
+        # @param hook_context [HookContext] the hook context
+        # @param hints [Hints] hook hints
+        # @param evaluation_details [EvaluationDetails] the short-circuit result
+        def run_short_circuit(ordered_hooks:, hook_context:, hints:, evaluation_details:)
+          error = StandardError.new(evaluation_details.error_code)
+          run_error_hooks(ordered_hooks, hook_context, error, hints)
+        ensure
+          run_finally_hooks(ordered_hooks, hook_context, evaluation_details, hints)
+        end
+
         # Executes the full hook lifecycle around the flag evaluation block.
         #
         # @param ordered_hooks [Array] hooks in before-order (API, Client, Invocation, Provider)

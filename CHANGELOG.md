@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.3](https://github.com/open-feature/ruby-sdk/compare/v0.6.2...v0.6.3) (2026-03-07)
+
+
+### Features
+
+* close spec compliance gaps for OpenFeature v0.8.0 ([#237](https://github.com/open-feature/ruby-sdk/issues/237)) ([9a87d04](https://github.com/open-feature/ruby-sdk/commit/9a87d04d5f261ea06e073f405c15613db7099d8a))
+* enable Gherkin feature tests ([#50](https://github.com/open-feature/ruby-sdk/issues/50)) ([#233](https://github.com/open-feature/ruby-sdk/issues/233)) ([95845ba](https://github.com/open-feature/ruby-sdk/commit/95845ba6ec26357d9c0895d310361e411f85da11))
+
+
+### Bug Fixes
+
+* close remaining MUST-level spec compliance gaps ([#238](https://github.com/open-feature/ruby-sdk/issues/238)) ([1d08491](https://github.com/open-feature/ruby-sdk/commit/1d084911964c8672dd66b23834eec6f14e453749))
+
 ## [0.6.2](https://github.com/open-feature/ruby-sdk/compare/v0.6.1...v0.6.2) (2026-03-07)
 
 

@@ -28,6 +28,10 @@ module OpenFeature
         @hooks = []
       end
 
+      def add_hooks(*new_hooks)
+        @hooks.concat(new_hooks.flatten)
+      end
+
       def provider_status
         OpenFeature::SDK.configuration.provider_state(@provider)
       end
@@ -70,26 +74,29 @@ module OpenFeature
       def fetch_details(type:, flag_key:, default_value:, evaluation_context: nil, invocation_hooks: [], hook_hints: nil)
         validate_default_value_type(type, default_value)
 
-        if OpenFeature::SDK.configuration.provider_tracked?(@provider)
-          error_code = short_circuit_error_code(provider_status)
-          if error_code
-            resolution = Provider::ResolutionDetails.new(
-              value: default_value,
-              error_code: error_code,
-              reason: Provider::Reason::ERROR
-            )
-            return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
-          end
-        end
-
         built_context = build_evaluation_context(evaluation_context)
 
         # Assemble ordered hooks: API → Client → Invocation → Provider (spec 4.4.2)
         provider_hooks = @provider.respond_to?(:hooks) ? Array(@provider.hooks) : []
         ordered_hooks = [*OpenFeature::SDK.hooks, *@hooks, *invocation_hooks, *provider_hooks]
 
+        # Check for short-circuit conditions (spec 1.7.6 + 1.7.7)
+        short_circuit_code = nil
+        if OpenFeature::SDK.configuration.provider_tracked?(@provider)
+          short_circuit_code = short_circuit_error_code(provider_status)
+        end
+
         # Fast path: skip hook ceremony when no hooks are registered
         if ordered_hooks.empty?
+          if short_circuit_code
+            resolution = Provider::ResolutionDetails.new(
+              value: default_value,
+              error_code: short_circuit_code,
+              reason: Provider::Reason::ERROR
+            )
+            return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
+          end
+
           return evaluate_flag(type: type, flag_key: flag_key, default_value: default_value, evaluation_context: built_context)
         end
 
@@ -111,8 +118,21 @@ module OpenFeature
         end
 
         executor = Hooks::HookExecutor.new(logger: OpenFeature::SDK.configuration.logger)
-        executor.execute(ordered_hooks: ordered_hooks, hook_context: hook_context, hints: hints) do |hctx|
-          evaluate_flag(type: type, flag_key: flag_key, default_value: default_value, evaluation_context: hctx.evaluation_context)
+
+        if short_circuit_code
+          # Spec 1.7.6 + 1.7.7: short-circuit must still run error hooks and finally hooks
+          resolution = Provider::ResolutionDetails.new(
+            value: default_value,
+            error_code: short_circuit_code,
+            reason: Provider::Reason::ERROR
+          )
+          evaluation_details = EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
+          executor.run_short_circuit(ordered_hooks: ordered_hooks, hook_context: hook_context, hints: hints, evaluation_details: evaluation_details)
+          evaluation_details
+        else
+          executor.execute(ordered_hooks: ordered_hooks, hook_context: hook_context, hints: hints) do |hctx|
+            evaluate_flag(type: type, flag_key: flag_key, default_value: default_value, evaluation_context: hctx.evaluation_context)
+          end
         end
       end
 

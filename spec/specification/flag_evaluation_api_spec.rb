@@ -29,6 +29,17 @@ RSpec.describe "Flag Evaluation API" do
       end
     end
 
+    context "Requirement 1.1.2.2" do
+      specify "provider instances already active need not be initialized again" do
+        shared_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+        expect(shared_provider).to receive(:init).once
+
+        OpenFeature::SDK.set_provider_and_wait(shared_provider, domain: "domain-a")
+        OpenFeature::SDK.set_provider_and_wait(shared_provider, domain: "domain-b")
+      end
+    end
+
     context "Requirement 1.1.2.3" do
       specify "the provider mutator must invoke a shutdown function on previously registered provider" do
         previous_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
@@ -39,6 +50,34 @@ RSpec.describe "Flag Evaluation API" do
 
         OpenFeature::SDK.set_provider(previous_provider)
         OpenFeature::SDK.set_provider(new_provider)
+      end
+
+      specify "provider bound to multiple domains is not shut down until the last binding is removed" do
+        shared_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        replacement = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+        OpenFeature::SDK.set_provider_and_wait(shared_provider, domain: "domain-a")
+        OpenFeature::SDK.set_provider_and_wait(shared_provider, domain: "domain-b")
+
+        # Replace in one domain — should NOT shut down since still bound to "domain-b"
+        expect(shared_provider).not_to receive(:shutdown)
+        OpenFeature::SDK.set_provider_and_wait(replacement, domain: "domain-a")
+      end
+
+      specify "provider is shut down when the last binding is removed" do
+        shared_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        replacement_a = OpenFeature::SDK::Provider::InMemoryProvider.new
+        replacement_b = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+        OpenFeature::SDK.set_provider_and_wait(shared_provider, domain: "domain-a")
+        OpenFeature::SDK.set_provider_and_wait(shared_provider, domain: "domain-b")
+
+        # Replace first binding — no shutdown
+        OpenFeature::SDK.set_provider_and_wait(replacement_a, domain: "domain-a")
+
+        # Replace last binding — shutdown
+        expect(shared_provider).to receive(:shutdown)
+        OpenFeature::SDK.set_provider_and_wait(replacement_b, domain: "domain-b")
       end
     end
 
@@ -126,6 +165,17 @@ RSpec.describe "Flag Evaluation API" do
         expect(OpenFeature::SDK.hooks).to include(hook2)
         expect(OpenFeature::SDK.hooks.size).to eq(2)
       end
+
+      specify "The API provides an add_hooks method that appends to existing hooks." do
+        hook1 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+        hook2 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+        hook3 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+
+        OpenFeature::SDK.add_hooks(hook1)
+        OpenFeature::SDK.add_hooks(hook2, hook3)
+
+        expect(OpenFeature::SDK.hooks).to eq([hook1, hook2, hook3])
+      end
     end
 
     context "Requirement 1.1.5" do
@@ -201,6 +251,21 @@ RSpec.describe "Flag Evaluation API" do
         expect(client.hooks).to eq([hook1, hook2])
         expect(client.hooks).to include(hook1)
       end
+
+      specify "The client provides an add_hooks method that appends to existing hooks." do
+        provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        OpenFeature::SDK.set_provider(provider)
+        client = OpenFeature::SDK.build_client
+
+        hook1 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+        hook2 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+        hook3 = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+
+        client.add_hooks(hook1)
+        client.add_hooks(hook2, hook3)
+
+        expect(client.hooks).to eq([hook1, hook2, hook3])
+      end
     end
 
     context "Requirement 1.2.2" do
@@ -218,6 +283,12 @@ RSpec.describe "Flag Evaluation API" do
 
         client = OpenFeature::SDK.build_client(domain: "domain_1")
         expect(client.metadata.domain).to eq("domain_1")
+      end
+
+      specify "name SHOULD be an alias to domain for backward compatibility." do
+        client = OpenFeature::SDK.build_client(domain: "my-domain")
+        expect(client.metadata.name).to eq("my-domain")
+        expect(client.metadata.name).to eq(client.metadata.domain)
       end
     end
   end
@@ -328,6 +399,32 @@ RSpec.describe "Flag Evaluation API" do
         expect(result.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_NOT_READY)
         expect(result.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
       end
+
+      specify "error hooks and finally hooks MUST run when short-circuiting due to NOT_READY" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        client = OpenFeature::SDK.build_client
+
+        allow(OpenFeature::SDK.configuration).to receive(:provider_state).with(provider).and_return(OpenFeature::SDK::ProviderState::NOT_READY)
+
+        call_log = []
+
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:error) do |hook_context:, exception:, hints:|
+            call_log << "error"
+          end
+
+          define_method(:finally) do |hook_context:, evaluation_details:, hints:|
+            call_log << "finally"
+          end
+        end.new
+
+        client.fetch_boolean_value(flag_key: "flag", default_value: false, hooks: [hook])
+
+        expect(call_log).to include("error", "finally")
+      end
     end
 
     context "Requirement 1.7.7" do
@@ -343,6 +440,32 @@ RSpec.describe "Flag Evaluation API" do
         expect(result.value).to eq("default")
         expect(result.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
         expect(result.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+      end
+
+      specify "error hooks and finally hooks MUST run when short-circuiting due to FATAL" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        client = OpenFeature::SDK.build_client
+
+        allow(OpenFeature::SDK.configuration).to receive(:provider_state).with(provider).and_return(OpenFeature::SDK::ProviderState::FATAL)
+
+        call_log = []
+
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:error) do |hook_context:, exception:, hints:|
+            call_log << "error"
+          end
+
+          define_method(:finally) do |hook_context:, evaluation_details:, hints:|
+            call_log << "finally"
+          end
+        end.new
+
+        client.fetch_string_value(flag_key: "flag", default_value: "default", hooks: [hook])
+
+        expect(call_log).to include("error", "finally")
       end
     end
   end

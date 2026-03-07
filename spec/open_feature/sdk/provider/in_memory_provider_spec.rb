@@ -72,7 +72,7 @@ RSpec.describe OpenFeature::SDK::Provider::InMemoryProvider do
     end
 
     context "when attached to configuration" do
-      it "emits PROVIDER_CONFIGURATION_CHANGED event with all flag keys" do
+      it "emits PROVIDER_CONFIGURATION_CHANGED event with union of old and new flag keys" do
         config = instance_double("OpenFeature::SDK::Configuration")
         allow(config).to receive(:dispatch_provider_event)
         provider.send(:attach, config)
@@ -82,7 +82,7 @@ RSpec.describe OpenFeature::SDK::Provider::InMemoryProvider do
         expect(config).to have_received(:dispatch_provider_event).with(
           provider,
           OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED,
-          flags_changed: contain_exactly("flag_a", "flag_b")
+          flags_changed: contain_exactly("bool", "str", "int", "float", "struct", "flag_a", "flag_b")
         )
       end
     end

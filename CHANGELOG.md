@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4](https://github.com/open-feature/ruby-sdk/compare/v0.6.3...v0.6.4) (2026-03-07)
+
+
+### Features
+
+* add OTel-compatible telemetry utility ([#240](https://github.com/open-feature/ruby-sdk/issues/240)) ([a03e524](https://github.com/open-feature/ruby-sdk/commit/a03e524681a38c8762257049fae360fa15fcfba3))
+
 ## [0.6.3](https://github.com/open-feature/ruby-sdk/compare/v0.6.2...v0.6.3) (2026-03-07)
 
 

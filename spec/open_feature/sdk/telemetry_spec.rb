@@ -1,0 +1,67 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+
+RSpec.describe OpenFeature::SDK::Telemetry do
+  let(:client_metadata) { OpenFeature::SDK::ClientMetadata.new(domain: "test-domain") }
+  let(:provider_metadata) { OpenFeature::SDK::Provider::ProviderMetadata.new(name: "test-provider") }
+  let(:evaluation_context) { OpenFeature::SDK::EvaluationContext.new(targeting_key: "user-123") }
+
+  let(:hook_context) do
+    OpenFeature::SDK::Hooks::HookContext.new(
+      flag_key: "my-flag",
+      flag_value_type: :boolean,
+      default_value: false,
+      evaluation_context: evaluation_context,
+      client_metadata: client_metadata,
+      provider_metadata: provider_metadata
+    )
+  end
+
+  let(:flag_metadata) do
+    {
+      "contextId" => "ctx-456",
+      "flagSetId" => "set-789",
+      "version" => "v1.0"
+    }
+  end
+
+  let(:resolution_details) do
+    OpenFeature::SDK::Provider::ResolutionDetails.new(
+      value: true,
+      reason: "TARGETING_MATCH",
+      variant: "enabled",
+      flag_metadata: flag_metadata
+    )
+  end
+
+  let(:evaluation_details) do
+    OpenFeature::SDK::EvaluationDetails.new(
+      flag_key: "my-flag",
+      resolution_details: resolution_details
+    )
+  end
+
+  describe ".create_evaluation_event" do
+    context "with full data" do
+      it "returns an EvaluationEvent with all attributes populated" do
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: evaluation_details
+        )
+
+        expect(event).to be_a(OpenFeature::SDK::Telemetry::EvaluationEvent)
+        expect(event.name).to eq("feature_flag.evaluation")
+        expect(event.attributes).to eq(
+          "feature_flag.key" => "my-flag",
+          "feature_flag.provider.name" => "test-provider",
+          "feature_flag.result.variant" => "enabled",
+          "feature_flag.result.reason" => "targeting_match",
+          "feature_flag.context.id" => "ctx-456",
+          "feature_flag.set.id" => "set-789",
+          "feature_flag.version" => "v1.0"
+        )
+      end
+    end
+  end
+end

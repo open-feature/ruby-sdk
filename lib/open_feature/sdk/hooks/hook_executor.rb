@@ -31,7 +31,15 @@ module OpenFeature
           begin
             run_before_hooks(ordered_hooks, hook_context, hints)
             evaluation_details = evaluate_block.call(hook_context)
-            run_after_hooks(ordered_hooks, hook_context, evaluation_details, hints)
+
+            # Spec 4.3.6: If evaluation resulted in an error (e.g. FLAG_NOT_FOUND,
+            # TYPE_MISMATCH), run error hooks instead of after hooks.
+            if evaluation_details.error_code
+              error = StandardError.new(evaluation_details.error_message || evaluation_details.error_code)
+              run_error_hooks(ordered_hooks, hook_context, error, hints)
+            else
+              run_after_hooks(ordered_hooks, hook_context, evaluation_details, hints)
+            end
           rescue => e
             run_error_hooks(ordered_hooks, hook_context, e, hints)
 

@@ -113,7 +113,7 @@ module OpenFeature
         @provider_mutex.synchronize do
           @providers.clear
         end
-        @hooks = []
+        @hooks.clear
         @evaluation_context = nil
         @transaction_context_propagator = nil
       end

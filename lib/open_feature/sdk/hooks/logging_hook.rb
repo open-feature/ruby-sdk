@@ -40,17 +40,18 @@ module OpenFeature
 
         def build_after_message(hook_context, evaluation_details)
           parts = base_parts("after", hook_context)
-          parts << "reason=#{evaluation_details.reason}" if evaluation_details.reason
-          parts << "variant=#{evaluation_details.variant}" if evaluation_details.variant
-          parts << "value=#{evaluation_details.value}"
+          parts << "reason=#{sanitize(evaluation_details.reason)}" if evaluation_details.reason
+          parts << "variant=#{sanitize(evaluation_details.variant)}" if evaluation_details.variant
+          parts << "value=#{sanitize(evaluation_details.value)}"
           parts << "evaluation_context=#{format_context(hook_context.evaluation_context)}" if @include_evaluation_context
           parts.join(" ")
         end
 
         def build_error_message(hook_context, exception)
           parts = base_parts("error", hook_context)
-          parts << "error_code=#{exception.respond_to?(:error_code) ? exception.error_code : Provider::ErrorCode::GENERAL}"
-          parts << "error_message=#{exception.message}"
+          error_code = exception.respond_to?(:error_code) ? exception.error_code : Provider::ErrorCode::GENERAL
+          parts << "error_code=#{sanitize(error_code)}"
+          parts << "error_message=#{sanitize(exception.message)}"
           parts << "evaluation_context=#{format_context(hook_context.evaluation_context)}" if @include_evaluation_context
           parts.join(" ")
         end
@@ -60,10 +61,10 @@ module OpenFeature
           provider_name = hook_context.provider_metadata&.name
           [
             "stage=#{stage}",
-            "domain=#{domain}",
-            "provider_name=#{provider_name}",
-            "flag_key=#{hook_context.flag_key}",
-            "default_value=#{hook_context.default_value}"
+            "domain=#{sanitize(domain)}",
+            "provider_name=#{sanitize(provider_name)}",
+            "flag_key=#{sanitize(hook_context.flag_key)}",
+            "default_value=#{sanitize(hook_context.default_value)}"
           ]
         end
 
@@ -71,7 +72,11 @@ module OpenFeature
           return "" unless evaluation_context
           fields = evaluation_context.fields.dup
           fields["targeting_key"] = evaluation_context.targeting_key if evaluation_context.targeting_key
-          fields.map { |k, v| "#{k}=#{v}" }.join(", ")
+          fields.map { |k, v| "#{sanitize(k)}=#{sanitize(v)}" }.join(", ")
+        end
+
+        def sanitize(value)
+          value.to_s.gsub(/[\n\r]/, " ")
         end
       end
     end

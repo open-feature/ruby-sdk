@@ -210,4 +210,39 @@ RSpec.describe OpenFeature::SDK::Hooks::LoggingHook do
       expect { hook.before(hook_context: hook_context, hints: hints) }.not_to raise_error
     end
   end
+
+  describe "log injection sanitization" do
+    it "sanitizes newlines in logged values" do
+      injected_context = OpenFeature::SDK::Hooks::HookContext.new(
+        flag_key: "safe-key\ninjected=malicious",
+        flag_value_type: :boolean,
+        default_value: false,
+        evaluation_context: evaluation_context,
+        client_metadata: client_metadata,
+        provider_metadata: provider_metadata
+      )
+
+      hook = described_class.new(logger: logger)
+      expect(logger).to receive(:debug) do |&block|
+        message = block.call
+        expect(message).not_to include("\n")
+        expect(message).to include("safe-key injected=malicious")
+      end
+
+      hook.before(hook_context: injected_context, hints: hints)
+    end
+
+    it "sanitizes newlines in error messages" do
+      exception = StandardError.new("error\nfake_entry=injected")
+      hook = described_class.new(logger: logger)
+
+      expect(logger).to receive(:error) do |&block|
+        message = block.call
+        expect(message).not_to include("\n")
+        expect(message).to include("error fake_entry=injected")
+      end
+
+      hook.error(hook_context: hook_context, exception: exception, hints: hints)
+    end
+  end
 end

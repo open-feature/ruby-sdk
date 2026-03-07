@@ -7,4 +7,9 @@ RSpec::Core::RakeTask.new(:spec)
 
 require "standard/rake"
 
+desc "Run Cucumber Gherkin feature tests"
+task :cucumber do
+  sh "bundle exec cucumber"
+end
+
 task default: %i[spec standard]

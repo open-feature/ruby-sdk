@@ -63,5 +63,36 @@ RSpec.describe OpenFeature::SDK::Telemetry do
         )
       end
     end
+
+    context "variant vs value precedence" do
+      it "uses variant when present and omits value" do
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: evaluation_details
+        )
+
+        expect(event.attributes).to have_key("feature_flag.result.variant")
+        expect(event.attributes).not_to have_key("feature_flag.result.value")
+      end
+
+      it "uses value when variant is nil" do
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
+          value: "blue",
+          reason: "STATIC"
+        )
+        details = OpenFeature::SDK::EvaluationDetails.new(
+          flag_key: "color-flag",
+          resolution_details: resolution
+        )
+
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: details
+        )
+
+        expect(event.attributes["feature_flag.result.value"]).to eq("blue")
+        expect(event.attributes).not_to have_key("feature_flag.result.variant")
+      end
+    end
   end
 end

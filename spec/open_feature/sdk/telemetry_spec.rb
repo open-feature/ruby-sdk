@@ -126,5 +126,54 @@ RSpec.describe OpenFeature::SDK::Telemetry do
         expect(event.attributes["feature_flag.result.reason"]).to eq("error")
       end
     end
+
+    context "error attributes" do
+      it "includes error attributes only when error occurred" do
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
+          value: false,
+          reason: "ERROR",
+          error_code: "PARSE_ERROR",
+          error_message: "Could not parse flag"
+        )
+        details = OpenFeature::SDK::EvaluationDetails.new(
+          flag_key: "bad-flag",
+          resolution_details: resolution
+        )
+
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: details
+        )
+
+        expect(event.attributes["error.type"]).to eq("parse_error")
+        expect(event.attributes["error.message"]).to eq("Could not parse flag")
+      end
+
+      it "omits error attributes when no error" do
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: evaluation_details
+        )
+
+        expect(event.attributes).not_to have_key("error.type")
+        expect(event.attributes).not_to have_key("error.message")
+      end
+    end
+
+    context "nil evaluation_details" do
+      it "returns event with only flag_key and available context" do
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: nil
+        )
+
+        expect(event.name).to eq("feature_flag.evaluation")
+        expect(event.attributes).to eq(
+          "feature_flag.key" => "my-flag",
+          "feature_flag.provider.name" => "test-provider",
+          "feature_flag.context.id" => "user-123"
+        )
+      end
+    end
   end
 end

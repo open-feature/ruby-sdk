@@ -42,6 +42,11 @@ RSpec.describe OpenFeature::SDK::Telemetry do
     )
   end
 
+  def build_details(flag_key: "my-flag", **resolution_attrs)
+    resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(**resolution_attrs)
+    OpenFeature::SDK::EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
+  end
+
   describe ".create_evaluation_event" do
     context "with full data" do
       it "returns an EvaluationEvent with all attributes populated" do
@@ -76,14 +81,7 @@ RSpec.describe OpenFeature::SDK::Telemetry do
       end
 
       it "uses value when variant is nil" do
-        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
-          value: "blue",
-          reason: "STATIC"
-        )
-        details = OpenFeature::SDK::EvaluationDetails.new(
-          flag_key: "color-flag",
-          resolution_details: resolution
-        )
+        details = build_details(flag_key: "color-flag", value: "blue", reason: "STATIC")
 
         event = described_class.create_evaluation_event(
           hook_context: hook_context,
@@ -106,15 +104,9 @@ RSpec.describe OpenFeature::SDK::Telemetry do
       end
 
       it "downcases error_code to OTel convention" do
-        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
-          value: false,
-          reason: "ERROR",
-          error_code: "FLAG_NOT_FOUND",
-          error_message: "Flag not found"
-        )
-        details = OpenFeature::SDK::EvaluationDetails.new(
-          flag_key: "missing-flag",
-          resolution_details: resolution
+        details = build_details(
+          flag_key: "missing-flag", value: false, reason: "ERROR",
+          error_code: "FLAG_NOT_FOUND", error_message: "Flag not found"
         )
 
         event = described_class.create_evaluation_event(
@@ -129,15 +121,9 @@ RSpec.describe OpenFeature::SDK::Telemetry do
 
     context "error attributes" do
       it "includes error attributes only when error occurred" do
-        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
-          value: false,
-          reason: "ERROR",
-          error_code: "PARSE_ERROR",
-          error_message: "Could not parse flag"
-        )
-        details = OpenFeature::SDK::EvaluationDetails.new(
-          flag_key: "bad-flag",
-          resolution_details: resolution
+        details = build_details(
+          flag_key: "bad-flag", value: false, reason: "ERROR",
+          error_code: "PARSE_ERROR", error_message: "Could not parse flag"
         )
 
         event = described_class.create_evaluation_event(
@@ -178,14 +164,7 @@ RSpec.describe OpenFeature::SDK::Telemetry do
 
     context "flag metadata" do
       it "ignores nil flag_metadata" do
-        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
-          value: true,
-          variant: "on"
-        )
-        details = OpenFeature::SDK::EvaluationDetails.new(
-          flag_key: "my-flag",
-          resolution_details: resolution
-        )
+        details = build_details(value: true, variant: "on")
 
         event = described_class.create_evaluation_event(
           hook_context: hook_context,
@@ -197,15 +176,7 @@ RSpec.describe OpenFeature::SDK::Telemetry do
       end
 
       it "ignores empty flag_metadata" do
-        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
-          value: true,
-          variant: "on",
-          flag_metadata: {}
-        )
-        details = OpenFeature::SDK::EvaluationDetails.new(
-          flag_key: "my-flag",
-          resolution_details: resolution
-        )
+        details = build_details(value: true, variant: "on", flag_metadata: {})
 
         event = described_class.create_evaluation_event(
           hook_context: hook_context,
@@ -217,14 +188,9 @@ RSpec.describe OpenFeature::SDK::Telemetry do
       end
 
       it "ignores unknown metadata keys" do
-        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
-          value: true,
-          variant: "on",
+        details = build_details(
+          value: true, variant: "on",
           flag_metadata: {"customKey" => "custom-value", "anotherKey" => 42}
-        )
-        details = OpenFeature::SDK::EvaluationDetails.new(
-          flag_key: "my-flag",
-          resolution_details: resolution
         )
 
         event = described_class.create_evaluation_event(
@@ -249,15 +215,7 @@ RSpec.describe OpenFeature::SDK::Telemetry do
       end
 
       it "falls back to targeting_key when no contextId in metadata" do
-        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
-          value: true,
-          variant: "on",
-          flag_metadata: {"flagSetId" => "set-1"}
-        )
-        details = OpenFeature::SDK::EvaluationDetails.new(
-          flag_key: "my-flag",
-          resolution_details: resolution
-        )
+        details = build_details(value: true, variant: "on", flag_metadata: {"flagSetId" => "set-1"})
 
         event = described_class.create_evaluation_event(
           hook_context: hook_context,
@@ -275,14 +233,7 @@ RSpec.describe OpenFeature::SDK::Telemetry do
           default_value: false,
           evaluation_context: bare_context
         )
-        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
-          value: true,
-          variant: "on"
-        )
-        details = OpenFeature::SDK::EvaluationDetails.new(
-          flag_key: "my-flag",
-          resolution_details: resolution
-        )
+        details = build_details(value: true, variant: "on")
 
         event = described_class.create_evaluation_event(
           hook_context: bare_hook_context,

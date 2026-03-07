@@ -56,7 +56,7 @@ module OpenFeature
 
       def provider_metadata(domain: nil)
         prov = provider(domain: domain)
-        prov&.respond_to?(:metadata) ? prov.metadata : nil
+        prov.metadata if prov&.respond_to?(:metadata)
       end
 
       def add_handler(event_type, handler)

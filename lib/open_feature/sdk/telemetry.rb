@@ -33,6 +33,7 @@ module OpenFeature
         attributes[PROVIDER_NAME_KEY] = provider_name if provider_name
 
         targeting_key = hook_context.evaluation_context&.targeting_key
+        # Set from targeting_key; may be overridden by contextId in flag metadata below
         attributes[CONTEXT_ID_KEY] = targeting_key if targeting_key
 
         if evaluation_details
@@ -57,7 +58,7 @@ module OpenFeature
           extract_metadata(evaluation_details.flag_metadata, attributes)
         end
 
-        EvaluationEvent.new(name: EVENT_NAME, attributes: attributes)
+        EvaluationEvent.new(name: EVENT_NAME, attributes: attributes.freeze)
       end
 
       def extract_metadata(flag_metadata, attributes)

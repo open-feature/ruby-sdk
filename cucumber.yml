@@ -1,0 +1,2 @@
+default: spec/open-feature-spec/specification/assets/gherkin --require features --tags "not @deprecated" --publish-quiet
+deprecated: spec/open-feature-spec/specification/assets/gherkin --require features --publish-quiet

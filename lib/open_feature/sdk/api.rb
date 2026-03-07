@@ -54,6 +54,11 @@ module OpenFeature
         Client.new(provider: Provider::NoOpProvider.new, evaluation_context:)
       end
 
+      def provider_metadata(domain: nil)
+        prov = provider(domain: domain)
+        prov.metadata if prov&.respond_to?(:metadata)
+      end
+
       def add_handler(event_type, handler)
         configuration.add_handler(event_type, handler)
       end

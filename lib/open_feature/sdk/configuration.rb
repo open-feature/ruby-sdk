@@ -93,7 +93,6 @@ module OpenFeature
 
         providers_to_shutdown.each do |prov|
           # Spec 1.7.9: Set provider state to NOT_READY before shutdown
-          @provider_state_registry.update_state_from_event(prov, ProviderEvent::PROVIDER_READY)
           @provider_state_registry.set_initial_state(prov, ProviderState::NOT_READY)
           prov.shutdown if prov.respond_to?(:shutdown)
         rescue => e
@@ -114,6 +113,9 @@ module OpenFeature
         @provider_mutex.synchronize do
           @providers.clear
         end
+        @hooks.clear
+        @evaluation_context = nil
+        @transaction_context_propagator = nil
       end
 
       def set_provider_internal(provider, domain:, wait_for_init:)

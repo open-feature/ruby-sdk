@@ -370,6 +370,88 @@ RSpec.describe "Flag Evaluation API" do
 
         expect(OpenFeature::SDK.provider).to be_nil
       end
+
+      specify "After shutdown, hooks are cleared." do
+        hook = Class.new { include OpenFeature::SDK::Hooks::Hook }.new
+        OpenFeature::SDK.add_hooks(hook)
+        expect(OpenFeature::SDK.hooks).not_to be_empty
+
+        OpenFeature::SDK.shutdown
+
+        expect(OpenFeature::SDK.hooks).to be_empty
+      end
+
+      specify "After shutdown, evaluation context is cleared." do
+        OpenFeature::SDK.configure do |config|
+          config.evaluation_context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "user-1")
+        end
+        expect(OpenFeature::SDK.evaluation_context).not_to be_nil
+
+        OpenFeature::SDK.shutdown
+
+        expect(OpenFeature::SDK.evaluation_context).to be_nil
+      end
+
+      specify "After shutdown, transaction context propagator is cleared." do
+        propagator = OpenFeature::SDK::ThreadLocalTransactionContextPropagator.new
+        OpenFeature::SDK.set_transaction_context_propagator(propagator)
+        expect(OpenFeature::SDK.configuration.transaction_context_propagator).not_to be_nil
+
+        OpenFeature::SDK.shutdown
+
+        expect(OpenFeature::SDK.configuration.transaction_context_propagator).to be_nil
+      end
+    end
+  end
+
+  context "1.4 - Flag Evaluation" do
+    context "Requirement 1.4.10" do
+      specify "client must not throw exceptions even when no hooks are registered and provider raises" do
+        error_provider = Class.new do
+          def metadata
+            OpenFeature::SDK::Provider::ProviderMetadata.new(name: "Error Provider")
+          end
+
+          def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
+            raise "provider internal error"
+          end
+
+          def fetch_string_value(flag_key:, default_value:, evaluation_context: nil)
+            raise "provider internal error"
+          end
+
+          def fetch_number_value(flag_key:, default_value:, evaluation_context: nil)
+            raise "provider internal error"
+          end
+
+          def fetch_integer_value(flag_key:, default_value:, evaluation_context: nil)
+            raise "provider internal error"
+          end
+
+          def fetch_float_value(flag_key:, default_value:, evaluation_context: nil)
+            raise "provider internal error"
+          end
+
+          def fetch_object_value(flag_key:, default_value:, evaluation_context: nil)
+            raise "provider internal error"
+          end
+        end.new
+
+        OpenFeature::SDK.set_provider_and_wait(error_provider)
+        client = OpenFeature::SDK.build_client
+
+        # Ensure no hooks are registered (fast path)
+        OpenFeature::SDK.hooks.clear
+
+        result = nil
+        expect {
+          result = client.fetch_boolean_details(flag_key: "flag", default_value: false)
+        }.not_to raise_error
+
+        expect(result.value).to eq(false)
+        expect(result.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+        expect(result.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+      end
     end
   end
 
@@ -466,6 +548,62 @@ RSpec.describe "Flag Evaluation API" do
         client.fetch_string_value(flag_key: "flag", default_value: "default", hooks: [hook])
 
         expect(call_log).to include("error", "finally")
+      end
+    end
+  end
+
+  context "1.7 - Provider Lifecycle (shutdown)" do
+    context "Requirement 1.7.9" do
+      specify "shutdown must not emit PROVIDER_READY before transitioning to NOT_READY" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        states_observed = []
+        handler = ->(event_details) { states_observed << :ready }
+
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
+
+        # Clear any immediate handler invocation from registration
+        states_observed.clear
+
+        OpenFeature::SDK.shutdown
+
+        expect(states_observed).not_to include(:ready)
+      end
+    end
+  end
+
+  context "1.1 - API Metadata" do
+    context "Requirement 1.1.5" do
+      specify "The API must provide a function for retrieving the metadata of the configured provider" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        expect(OpenFeature::SDK).to respond_to(:provider_metadata)
+        expect(OpenFeature::SDK.provider_metadata.name).to eq("In-memory Provider")
+      end
+
+      specify "provider_metadata accepts a domain parameter" do
+        default_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        domain_provider = OpenFeature::SDK::Provider::NoOpProvider.new
+
+        OpenFeature::SDK.set_provider_and_wait(default_provider)
+        OpenFeature::SDK.set_provider_and_wait(domain_provider, domain: "my-domain")
+
+        expect(OpenFeature::SDK.provider_metadata(domain: "my-domain").name).to eq("No-op Provider")
+      end
+
+      specify "provider_metadata falls back to default provider when domain has no binding" do
+        default_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(default_provider)
+
+        expect(OpenFeature::SDK.provider_metadata(domain: "unknown").name).to eq("In-memory Provider")
+      end
+
+      specify "provider_metadata returns nil when no provider is configured" do
+        OpenFeature::SDK.shutdown
+
+        expect(OpenFeature::SDK.provider_metadata).to be_nil
       end
     end
   end

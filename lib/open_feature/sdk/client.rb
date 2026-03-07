@@ -97,7 +97,17 @@ module OpenFeature
             return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
           end
 
-          return evaluate_flag(type: type, flag_key: flag_key, default_value: default_value, evaluation_context: built_context)
+          begin
+            return evaluate_flag(type: type, flag_key: flag_key, default_value: default_value, evaluation_context: built_context)
+          rescue => e
+            resolution = Provider::ResolutionDetails.new(
+              value: default_value,
+              error_code: Provider::ErrorCode::GENERAL,
+              reason: Provider::Reason::ERROR,
+              error_message: e.message
+            )
+            return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
+          end
         end
 
         hook_context = Hooks::HookContext.new(

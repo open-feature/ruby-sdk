@@ -234,6 +234,30 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
         expect(result.value).to eq(false) # default value
       end
 
+      it "runs error hooks instead of after hooks when evaluation returns error_code" do
+        call_log = []
+        hook = recording_hook("h1", call_log)
+
+        error_details = OpenFeature::SDK::EvaluationDetails.new(
+          flag_key: "test-flag",
+          resolution_details: OpenFeature::SDK::Provider::ResolutionDetails.new(
+            value: false,
+            error_code: OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND,
+            reason: OpenFeature::SDK::Provider::Reason::ERROR,
+            error_message: "flag not found"
+          )
+        )
+
+        result = executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints) do |_hctx|
+          call_log << "evaluate"
+          error_details
+        end
+
+        expect(call_log).to eq(["h1:before", "evaluate", "h1:error", "h1:finally"])
+        expect(result.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
+        expect(result.value).to eq(false)
+      end
+
       it "runs error hooks when evaluation block raises" do
         call_log = []
         hook = recording_hook("h1", call_log)

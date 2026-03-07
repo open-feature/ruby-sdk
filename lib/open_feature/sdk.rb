@@ -2,6 +2,8 @@
 
 require_relative "sdk/version"
 require_relative "sdk/api"
+require_relative "sdk/transaction_context_propagator"
+require_relative "sdk/thread_local_transaction_context_propagator"
 
 module OpenFeature
   # TODO: Add documentation

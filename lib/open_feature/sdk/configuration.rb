@@ -17,7 +17,7 @@ module OpenFeature
     class Configuration
       extend Forwardable
 
-      attr_accessor :evaluation_context, :hooks
+      attr_accessor :evaluation_context, :hooks, :transaction_context_propagator
       attr_reader :logger
 
       def initialize

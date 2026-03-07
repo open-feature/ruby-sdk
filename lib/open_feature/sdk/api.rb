@@ -70,6 +70,15 @@ module OpenFeature
         configuration.logger = new_logger
       end
 
+      def set_transaction_context_propagator(propagator)
+        configuration.transaction_context_propagator = propagator
+      end
+
+      def set_transaction_context(evaluation_context)
+        propagator = configuration.transaction_context_propagator
+        propagator&.set_transaction_context(evaluation_context)
+      end
+
       def shutdown
         configuration.shutdown
       end

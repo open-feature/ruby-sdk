@@ -53,9 +53,8 @@ end
 
 When("the flag was evaluated with details") do
   evaluation_context = @context ? OpenFeature::SDK::EvaluationContext.new(**@context.transform_keys(&:to_sym)) : nil
-  method_name = :"fetch_#{resolve_sdk_type(@flag_type)}_details"
   @evaluation_details = @client.send(
-    method_name,
+    :"fetch_#{@flag_type}_details",
     flag_key: @flag_key,
     default_value: @default_value,
     evaluation_context: evaluation_context,
@@ -105,9 +104,8 @@ Given("evaluation options containing specific hooks") do
 end
 
 When("the flag was evaluated with details using the evaluation options") do
-  method_name = :"fetch_#{resolve_sdk_type(@flag_type)}_details"
   @evaluation_details = @client.send(
-    method_name,
+    :"fetch_#{@flag_type}_details",
     flag_key: @flag_key,
     default_value: @default_value,
     hooks: @invocation_hooks || []
@@ -147,9 +145,8 @@ end
 
 When("the flag was evaluated with details asynchronously") do
   thread = Thread.new do
-    method_name = :"fetch_#{resolve_sdk_type(@flag_type)}_details"
     @client.send(
-      method_name,
+      :"fetch_#{@flag_type}_details",
       flag_key: @flag_key,
       default_value: @default_value
     )
@@ -236,17 +233,6 @@ module EvaluationHelpers
       value.downcase == "true"
     else
       value
-    end
-  end
-
-  def resolve_sdk_type(type)
-    case type.downcase
-    when "boolean" then "boolean"
-    when "string" then "string"
-    when "integer" then "integer"
-    when "float" then "float"
-    when "object" then "object"
-    else type.downcase
     end
   end
 end

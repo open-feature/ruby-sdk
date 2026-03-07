@@ -175,5 +175,122 @@ RSpec.describe OpenFeature::SDK::Telemetry do
         )
       end
     end
+
+    context "flag metadata" do
+      it "ignores nil flag_metadata" do
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
+          value: true,
+          variant: "on"
+        )
+        details = OpenFeature::SDK::EvaluationDetails.new(
+          flag_key: "my-flag",
+          resolution_details: resolution
+        )
+
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: details
+        )
+
+        expect(event.attributes).not_to have_key("feature_flag.set.id")
+        expect(event.attributes).not_to have_key("feature_flag.version")
+      end
+
+      it "ignores empty flag_metadata" do
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
+          value: true,
+          variant: "on",
+          flag_metadata: {}
+        )
+        details = OpenFeature::SDK::EvaluationDetails.new(
+          flag_key: "my-flag",
+          resolution_details: resolution
+        )
+
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: details
+        )
+
+        expect(event.attributes).not_to have_key("feature_flag.set.id")
+        expect(event.attributes).not_to have_key("feature_flag.version")
+      end
+
+      it "ignores unknown metadata keys" do
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
+          value: true,
+          variant: "on",
+          flag_metadata: {"customKey" => "custom-value", "anotherKey" => 42}
+        )
+        details = OpenFeature::SDK::EvaluationDetails.new(
+          flag_key: "my-flag",
+          resolution_details: resolution
+        )
+
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: details
+        )
+
+        expect(event.attributes).not_to have_key("customKey")
+        expect(event.attributes).not_to have_key("anotherKey")
+      end
+    end
+
+    context "context ID precedence" do
+      it "uses metadata contextId over targeting_key" do
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: evaluation_details
+        )
+
+        # flag_metadata has contextId "ctx-456", targeting_key is "user-123"
+        expect(event.attributes["feature_flag.context.id"]).to eq("ctx-456")
+      end
+
+      it "falls back to targeting_key when no contextId in metadata" do
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
+          value: true,
+          variant: "on",
+          flag_metadata: {"flagSetId" => "set-1"}
+        )
+        details = OpenFeature::SDK::EvaluationDetails.new(
+          flag_key: "my-flag",
+          resolution_details: resolution
+        )
+
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: details
+        )
+
+        expect(event.attributes["feature_flag.context.id"]).to eq("user-123")
+      end
+
+      it "omits context ID when neither targeting_key nor contextId available" do
+        bare_context = OpenFeature::SDK::EvaluationContext.new(env: "prod")
+        bare_hook_context = OpenFeature::SDK::Hooks::HookContext.new(
+          flag_key: "my-flag",
+          flag_value_type: :boolean,
+          default_value: false,
+          evaluation_context: bare_context
+        )
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
+          value: true,
+          variant: "on"
+        )
+        details = OpenFeature::SDK::EvaluationDetails.new(
+          flag_key: "my-flag",
+          resolution_details: resolution
+        )
+
+        event = described_class.create_evaluation_event(
+          hook_context: bare_hook_context,
+          evaluation_details: details
+        )
+
+        expect(event.attributes).not_to have_key("feature_flag.context.id")
+      end
+    end
   end
 end

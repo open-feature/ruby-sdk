@@ -94,5 +94,37 @@ RSpec.describe OpenFeature::SDK::Telemetry do
         expect(event.attributes).not_to have_key("feature_flag.result.variant")
       end
     end
+
+    context "enum downcasing" do
+      it "downcases reason to OTel convention" do
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: evaluation_details
+        )
+
+        expect(event.attributes["feature_flag.result.reason"]).to eq("targeting_match")
+      end
+
+      it "downcases error_code to OTel convention" do
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
+          value: false,
+          reason: "ERROR",
+          error_code: "FLAG_NOT_FOUND",
+          error_message: "Flag not found"
+        )
+        details = OpenFeature::SDK::EvaluationDetails.new(
+          flag_key: "missing-flag",
+          resolution_details: resolution
+        )
+
+        event = described_class.create_evaluation_event(
+          hook_context: hook_context,
+          evaluation_details: details
+        )
+
+        expect(event.attributes["error.type"]).to eq("flag_not_found")
+        expect(event.attributes["feature_flag.result.reason"]).to eq("error")
+      end
+    end
   end
 end

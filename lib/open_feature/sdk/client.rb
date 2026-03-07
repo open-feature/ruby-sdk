@@ -49,11 +49,7 @@ module OpenFeature
       def track(tracking_event_name, evaluation_context: nil, tracking_event_details: nil)
         return unless @provider.respond_to?(:track)
 
-        built_context = EvaluationContextBuilder.new.call(
-          api_context: OpenFeature::SDK.evaluation_context,
-          client_context: self.evaluation_context,
-          invocation_context: evaluation_context
-        )
+        built_context = build_evaluation_context(evaluation_context)
 
         @provider.track(tracking_event_name, evaluation_context: built_context, tracking_event_details: tracking_event_details)
       end
@@ -86,11 +82,7 @@ module OpenFeature
           end
         end
 
-        built_context = EvaluationContextBuilder.new.call(
-          api_context: OpenFeature::SDK.evaluation_context,
-          client_context: self.evaluation_context,
-          invocation_context: evaluation_context
-        )
+        built_context = build_evaluation_context(evaluation_context)
 
         # Assemble ordered hooks: API → Client → Invocation → Provider (spec 4.4.2)
         provider_hooks = @provider.respond_to?(:hooks) ? Array(@provider.hooks) : []
@@ -146,6 +138,18 @@ module OpenFeature
         when ProviderState::NOT_READY then Provider::ErrorCode::PROVIDER_NOT_READY
         when ProviderState::FATAL then Provider::ErrorCode::PROVIDER_FATAL
         end
+      end
+
+      def build_evaluation_context(invocation_context)
+        propagator = OpenFeature::SDK.configuration.transaction_context_propagator
+        transaction_context = propagator&.get_transaction_context
+
+        EvaluationContextBuilder.new.call(
+          api_context: OpenFeature::SDK.evaluation_context,
+          transaction_context: transaction_context,
+          client_context: evaluation_context,
+          invocation_context: invocation_context
+        )
       end
 
       def validate_default_value_type(type, default_value)

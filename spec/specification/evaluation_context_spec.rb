@@ -68,19 +68,93 @@ RSpec.describe "Evaluation Context" do
       end
     end
 
-    # TODO: We currently don't support transaction propogation and hooks
-    # We'll want to fully implement this requirement once those are supported
     specify "Requirement 3.2.3 - Evaluation context MUST be merged in the order: API (global; lowest precedence) -> transaction -> client -> invocation -> before hooks (highest precedence), with duplicate values being overwritten." do
       api_context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "api")
+      transaction_context = OpenFeature::SDK::EvaluationContext.new("targeting_key" => "transaction", "transaction-related" => "field")
       client_context = OpenFeature::SDK::EvaluationContext.new("targeting_key" => "client", "client-related" => "field")
       invocation_context = OpenFeature::SDK::EvaluationContext.new("targeting_key" => "invocation", "invocation-related" => "field")
 
-      OpenFeature::SDK.configure { |c| c.evaluation_context = api_context }
+      propagator = OpenFeature::SDK::ThreadLocalTransactionContextPropagator.new
+      OpenFeature::SDK.configure do |c|
+        c.evaluation_context = api_context
+        c.transaction_context_propagator = propagator
+      end
+      propagator.set_transaction_context(transaction_context)
+
       client = OpenFeature::SDK.build_client(evaluation_context: client_context)
 
-      expect_any_instance_of(OpenFeature::SDK::EvaluationContextBuilder).to receive(:call).with(api_context:, client_context:, invocation_context:).and_call_original
+      expect_any_instance_of(OpenFeature::SDK::EvaluationContextBuilder).to receive(:call).with(
+        api_context: api_context,
+        transaction_context: transaction_context,
+        client_context: client_context,
+        invocation_context: invocation_context
+      ).and_call_original
 
       client.fetch_boolean_value(flag_key: "testing", default_value: true, evaluation_context: invocation_context)
+
+      propagator.set_transaction_context(nil)
+    end
+  end
+
+  context "3.3 Transaction Context Propagation" do
+    after do
+      OpenFeature::SDK.configure { |c| c.transaction_context_propagator = nil }
+    end
+
+    context "Requirement 3.3.1.1" do
+      specify "The API SHOULD have a method for setting a transaction context propagator." do
+        propagator = OpenFeature::SDK::ThreadLocalTransactionContextPropagator.new
+        OpenFeature::SDK.set_transaction_context_propagator(propagator)
+
+        expect(OpenFeature::SDK.configuration.transaction_context_propagator).to eq(propagator)
+      end
+    end
+
+    context "Condition 3.3.1.2 - A transaction context propagator is configured." do
+      let(:propagator) { OpenFeature::SDK::ThreadLocalTransactionContextPropagator.new }
+
+      before do
+        OpenFeature::SDK.set_transaction_context_propagator(propagator)
+      end
+
+      context "Conditional Requirement 3.3.1.2.1" do
+        specify "The API MUST have a method for setting the evaluation context of the transaction context propagator for the current transaction." do
+          context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "txn-user")
+          OpenFeature::SDK.set_transaction_context(context)
+
+          expect(propagator.get_transaction_context).to eq(context)
+
+          propagator.set_transaction_context(nil)
+        end
+      end
+    end
+
+    context "Requirement 3.3.1.2.2" do
+      specify "A transaction context propagator MUST have a method for setting the evaluation context of the current transaction." do
+        propagator = OpenFeature::SDK::ThreadLocalTransactionContextPropagator.new
+        context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "txn-user")
+
+        propagator.set_transaction_context(context)
+
+        expect(propagator.get_transaction_context).to eq(context)
+
+        propagator.set_transaction_context(nil)
+      end
+    end
+
+    context "Requirement 3.3.1.2.3" do
+      specify "A transaction context propagator MUST have a method for getting the evaluation context of the current transaction." do
+        propagator = OpenFeature::SDK::ThreadLocalTransactionContextPropagator.new
+
+        expect(propagator.get_transaction_context).to be_nil
+
+        context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "txn-user")
+        propagator.set_transaction_context(context)
+
+        expect(propagator.get_transaction_context).to eq(context)
+
+        propagator.set_transaction_context(nil)
+      end
     end
   end
 end

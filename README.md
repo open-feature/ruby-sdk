@@ -101,12 +101,12 @@ object = client.fetch_object_value(flag_key: 'object_value', default_value: { na
 | ✅      | [Providers](#providers)                                             | Integrate with a commercial, open source, or in-house feature management tool.                                                                               |
 | ✅      | [Targeting](#targeting)                                             | Contextually-aware flag evaluation using [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context).                           |
 | ✅      | [Hooks](#hooks)                                                     | Add functionality to various stages of the flag evaluation life-cycle.                                                                                       |
-| ❌      | [Logging](#logging)                                                 | Integrate with popular logging packages.                                                                                                                     |
+| ✅      | [Logging](#logging)                                                 | Integrate with popular logging packages.                                                                                                                     |
 | ✅      | [Domains](#domains)                                                 | Logically bind clients with providers.                                                                                                                       |
 | ✅      | [Eventing](#eventing)                                               | React to state changes in the provider or flag management system.                                                                                            |
 | ✅      | [Shutdown](#shutdown)                                               | Gracefully clean up a provider during application shutdown.                                                                                                  |
 | ✅      | [Tracking](#tracking)                                               | Associate user actions with feature flag evaluations for experimentation.                                                                                    |
-| ❌      | [Transaction Context Propagation](#transaction-context-propagation) | Set a specific [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context) for a transaction (e.g. an HTTP request or a thread) |
+| ✅      | [Transaction Context Propagation](#transaction-context-propagation) | Set a specific [evaluation context](https://openfeature.dev/docs/reference/concepts/evaluation-context) for a transaction (e.g. an HTTP request or a thread) |
 | ✅      | [Extending](#extending)                                             | Extend OpenFeature with custom providers and hooks.                                                                                                          |
 
 <sub>Implemented: ✅ | In-progress: ⚠️ | Not implemented yet: ❌</sub>
@@ -247,9 +247,27 @@ client.fetch_boolean_value(
 
 ### Logging
 
-Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/148) to work on.
+The SDK includes a built-in `LoggingHook` that provides structured log output for flag evaluations. It logs at the `before`, `after`, and `error` stages of the hook lifecycle.
 
-<!-- TODO: talk about logging config and include a code example -->
+```ruby
+# Use the SDK's default logger (from Configuration)
+OpenFeature::SDK.hooks << OpenFeature::SDK::Hooks::LoggingHook.new
+
+# Or provide your own logger
+logger = Logger.new($stdout)
+OpenFeature::SDK.hooks << OpenFeature::SDK::Hooks::LoggingHook.new(logger: logger)
+
+# Optionally include evaluation context in log output
+OpenFeature::SDK.hooks << OpenFeature::SDK::Hooks::LoggingHook.new(
+  logger: logger,
+  include_evaluation_context: true
+)
+```
+
+Log output uses a structured key=value format:
+- **before** (DEBUG): `stage=before domain=my-domain provider_name=my-provider flag_key=my-flag default_value=false`
+- **after** (DEBUG): includes `reason`, `variant`, and `value`
+- **error** (ERROR): includes `error_code` and `error_message`
 
 ### Domains
 
@@ -361,12 +379,44 @@ Check the documentation for your [provider](#providers) for more information.
 
 ### Transaction Context Propagation
 
-Coming Soon! [Issue available](https://github.com/open-feature/ruby-sdk/issues/150) to be worked on.
+Transaction context is a container for transaction-specific evaluation context (e.g. user id, user agent, IP).
+Transaction context can be set where specific data is available (e.g. an auth service or request handler) and by using the transaction context propagator it will automatically be applied to all flag evaluations within a transaction (e.g. a request or thread).
 
-<!-- Transaction context is a container for transaction-specific evaluation context (e.g. user id, user agent, IP).
-Transaction context can be set where specific data is available (e.g. an auth service or request handler) and by using the transaction context propagator it will automatically be applied to all flag evaluations within a transaction (e.g. a request or thread). -->
+The SDK ships with a `ThreadLocalTransactionContextPropagator` that stores context in `Thread.current`:
 
-<!-- TODO: code example for global shutdown -->
+```ruby
+# Set up the propagator
+OpenFeature::SDK.set_transaction_context_propagator(
+  OpenFeature::SDK::ThreadLocalTransactionContextPropagator.new
+)
+
+# Set transaction context (e.g. in a request middleware)
+OpenFeature::SDK.set_transaction_context(
+  OpenFeature::SDK::EvaluationContext.new(targeting_key: "user-123", "email" => "user@example.com")
+)
+
+# Transaction context is automatically merged during flag evaluation.
+# Merge precedence: invocation > client > transaction > API (global)
+client = OpenFeature::SDK.build_client
+client.fetch_boolean_value(flag_key: "my-flag", default_value: false)
+```
+
+You can implement a custom propagator by including the `TransactionContextPropagator` module:
+
+```ruby
+class MyRequestScopedPropagator
+  include OpenFeature::SDK::TransactionContextPropagator
+
+  def set_transaction_context(evaluation_context)
+    # Store context in your request-scoped storage
+    RequestStore[:openfeature_context] = evaluation_context
+  end
+
+  def get_transaction_context
+    RequestStore[:openfeature_context]
+  end
+end
+```
 
 ## Extending
 

@@ -9,7 +9,7 @@ group :development, :test do
   gem "debug"
   gem "markly"
   gem "rake", "~> 13.0"
-  gem "rspec", "~> 3.12.0"
+  gem "rspec", "~> 3.13.0"
   gem "standard"
   gem "standard-performance"
   gem "simplecov", "~> 0.22.0"

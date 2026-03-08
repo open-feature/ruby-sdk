@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.4"
+          ruby-version: "3.4.8"
       - run: bundle install
       - name: Standard
         run: bundle exec rake standard
@@ -60,7 +60,7 @@ jobs:
           submodules: true
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.4"
+          ruby-version: "3.4.8"
       - run: bundle install
       - name: Cucumber
         run: bundle exec cucumber
@@ -71,7 +71,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.4"
+          ruby-version: "3.4.8"
       - name: Bundle Audit
         run: bundle lock && gem install bundler-audit && bundle-audit check --update
   # check the status of other jobs, so we can have a single job dependency for branch protection

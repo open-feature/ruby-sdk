@@ -9,16 +9,17 @@ Gem::Specification.new do |spec|
   spec.email = ["cncf-openfeature-contributors@lists.cncf.io"]
 
   spec.summary = "OpenFeature SDK for Ruby"
-  spec.description = "Ruby SDK for an the specifications for the open standard of feature flag management"
-  spec.homepage = "https://github.com/open-feature/openfeature-ruby"
+  spec.description = "Ruby SDK for the OpenFeature specification, an open standard for feature flag management"
+  spec.homepage = "https://github.com/open-feature/ruby-sdk"
   spec.license = "Apache-2.0"
   spec.required_ruby_version = ">= 3.4"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/open-feature/openfeature-ruby"
-  spec.metadata["changelog_uri"] = "https://github.com/open-feature/openfeature-ruby/blob/main/CHANGELOG.md"
-  spec.metadata["bug_tracker_uri"] = "https://github.com/open-feature/openfeature-ruby/issues"
-  spec.metadata["documentation_uri"] = "https://github.com/open-feature/openfeature-ruby/README.md"
+  spec.metadata["source_code_uri"] = "https://github.com/open-feature/ruby-sdk"
+  spec.metadata["changelog_uri"] = "https://github.com/open-feature/ruby-sdk/blob/main/CHANGELOG.md"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/open-feature/ruby-sdk/issues"
+  spec.metadata["documentation_uri"] = "https://github.com/open-feature/ruby-sdk#readme"
+  spec.metadata["rubygems_mfa_required"] = "true"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -30,14 +31,4 @@ Gem::Specification.new do |spec|
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-
-  spec.add_development_dependency "debug"
-  spec.add_development_dependency "markly"
-  spec.add_development_dependency "rake", "~> 13.0"
-  spec.add_development_dependency "rspec", "~> 3.12.0"
-  spec.add_development_dependency "standard"
-  spec.add_development_dependency "standard-performance"
-  spec.add_development_dependency "simplecov", "~> 0.22.0"
-  spec.add_development_dependency "simplecov-cobertura", "~> 3.0"
-  spec.add_development_dependency "timecop", "~> 0.9.10"
 end

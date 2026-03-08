@@ -7,7 +7,7 @@ You can contribute to this project from a Windows, macOS or Linux machine.
 On all platforms, the minimum requirements are:
 
 * Git client and command line tools.
-* Ruby 3.0 or higher
+* Ruby 3.4 or higher
 
 ## Pull Request
 
@@ -49,6 +49,20 @@ To run unit tests and other checks:
 ```bash
 bundle exec rake
 ```
+
+#### Spec conformance tests (Gherkin)
+
+The project includes Gherkin-based conformance tests that verify compliance with the OpenFeature specification:
+
+```bash
+bundle exec cucumber
+```
+
+#### Linting
+
+This project uses [Standard Ruby](https://github.com/standardrb/standard) for code style enforcement.
+Run `bundle exec standardrb` to check, or `bundle exec standardrb --fix` to auto-fix.
+Do not run `bundle exec rubocop` directly, as a stale RuboCop server may apply different rules.
 
 ### How to Receive Comments
 

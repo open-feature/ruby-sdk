@@ -22,6 +22,15 @@
   </a>
 
   <!-- x-release-please-end -->
+  <a href="https://github.com/open-feature/ruby-sdk/actions/workflows/main.yml">
+    <img alt="Build" src="https://img.shields.io/github/actions/workflow/status/open-feature/ruby-sdk/main.yml?style=for-the-badge" />
+  </a>
+  <a href="https://rubygems.org/gems/openfeature-sdk">
+    <img alt="Gem Version" src="https://img.shields.io/gem/v/openfeature-sdk?style=for-the-badge&color=red" />
+  </a>
+  <a href="https://codecov.io/gh/open-feature/ruby-sdk">
+    <img alt="Code Coverage" src="https://img.shields.io/codecov/c/github/open-feature/ruby-sdk?style=for-the-badge" />
+  </a>
   <br/>
   <a href="https://bestpractices.coreinfrastructure.org/projects/9337">
     <img alt="CII Best Practices" src="https://bestpractices.coreinfrastructure.org/projects/9337/badge" />
@@ -40,6 +49,8 @@
 | ------------ | --------------------- |
 | Ruby 3.4.x   | Windows, MacOS, Linux |
 | Ruby 4.0.x   | Windows, MacOS, Linux |
+
+This project supports all Ruby versions in active maintenance per the [Ruby maintenance schedule](https://www.ruby-lang.org/en/downloads/branches/).
 
 ### Install
 
@@ -115,6 +126,16 @@ object = client.fetch_object_value(flag_key: 'object_value', default_value: { na
 
 [Providers](https://openfeature.dev/docs/reference/concepts/provider) are an abstraction between a flag management system and the OpenFeature SDK.
 Look [here](https://openfeature.dev/ecosystem?instant_search%5BrefinementList%5D%5Btype%5D%5B0%5D=Provider&instant_search%5BrefinementList%5D%5Btechnology%5D%5B0%5D=Ruby) for a complete list of available providers.
+
+#### Known Providers
+
+| Provider | Package |
+|----------|---------|
+| flagd | [openfeature-flagd-provider](https://rubygems.org/gems/openfeature-flagd-provider) |
+| Flipt | [openfeature-flipt-provider](https://rubygems.org/gems/openfeature-flipt-provider) |
+| Flagsmith | [openfeature-flagsmith-provider](https://rubygems.org/gems/openfeature-flagsmith-provider) |
+| GO Feature Flag | [openfeature-go-feature-flag-provider](https://rubygems.org/gems/openfeature-go-feature-flag-provider) |
+
 If the provider you're looking for hasn't been created yet, see the [develop a provider](#develop-a-provider) section to learn how to build it yourself.
 
 Once you've added a provider as a dependency, it can be registered with OpenFeature like this:

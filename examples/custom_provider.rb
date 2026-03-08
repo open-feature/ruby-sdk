@@ -25,6 +25,8 @@ class MyProvider
     )
   end
 
+  # The remaining methods return the default value for brevity.
+  # A real provider would look up each flag_key in its flag management system.
   def fetch_string_value(flag_key:, default_value:, evaluation_context: nil)
     OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
   end

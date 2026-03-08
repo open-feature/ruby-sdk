@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.4.8"
+          ruby-version: "3.4"
       - run: bundle install
       - name: Standard
         run: bundle exec rake standard
@@ -72,9 +72,8 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.4"
-      - run: bundle install
       - name: Bundle Audit
-        run: gem install bundler-audit && bundle-audit check --update
+        run: bundle lock && gem install bundler-audit && bundle-audit check --update
   # check the status of other jobs, so we can have a single job dependency for branch protection
   # https://github.com/community/community/discussions/4324#discussioncomment-3477871
   status:

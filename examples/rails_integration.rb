@@ -39,6 +39,9 @@
 #       )
 #     )
 #     @app.call(env)
+#   ensure
+#     # Clear context to prevent leakage in threaded servers (e.g. Puma)
+#     OpenFeature::SDK.set_transaction_context(nil)
 #   end
 # end
 

@@ -14,3 +14,6 @@ Gemfile.lock
 
 # IDEs
 .cursor/
+
+# Claude plans
+docs/plans/

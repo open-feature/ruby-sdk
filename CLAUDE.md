@@ -8,11 +8,13 @@ This is the official OpenFeature SDK for Ruby — an implementation of the [Open
 
 ## Commands
 
+- **Install dependencies:** `bundle install`
 - **Run all tests:** `bundle exec rspec`
 - **Run a single test file:** `bundle exec rspec spec/open_feature/sdk/client_spec.rb`
 - **Run a specific test by line:** `bundle exec rspec spec/open_feature/sdk/client_spec.rb:43`
 - **Lint:** `bundle exec standardrb`
 - **Lint with autofix:** `bundle exec standardrb --fix`
+- **Type check:** `bundle exec steep check`
 - **Default rake (tests + lint):** `bundle exec rake`
 
 Note: Linting uses [Standard Ruby](https://github.com/standardrb/standard) (configured via the `standard` gem), which enforces double-quoted strings and its own opinionated style. There is no `.rubocop.yml` — Standard manages RuboCop configuration internally. Do not use `bundle exec rubocop` directly as a stale RuboCop server may apply different rules; always use `bundle exec standardrb`.
@@ -47,5 +49,6 @@ Providers can be registered for specific domains. `Configuration#provider(domain
 
 - All `.rb` files must have `# frozen_string_literal: true` as the first line.
 - Tests live under `spec/` and mirror the `lib/` structure. `spec/specification/` contains tests mapped to OpenFeature spec requirements.
+- RBS type signatures live under `sig/` and mirror the `lib/` structure. When changing any file under `lib/`, always update the corresponding `.rbs` file under `sig/` to reflect the new or modified method signatures, constants, or class structure. Run `bundle exec steep check` to verify type correctness after changes.
 - Always sign git commits using the `-S` flag.
 - Always include DCO sign-off in commits using the `-s` flag (i.e., `git commit -s -S`). This adds a `Signed-off-by` trailer required by the project's CI.

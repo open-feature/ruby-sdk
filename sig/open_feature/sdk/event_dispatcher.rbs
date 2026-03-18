@@ -18,7 +18,7 @@ module OpenFeature
     end
 
     interface _ToProc
-      def call: (untyped) -> untyped
+      def call: (Hash[Symbol, untyped]) -> void
     end
   end
 end

@@ -1,0 +1,13 @@
+module OpenFeature
+  module SDK
+    module ProviderState
+      NOT_READY: String
+      READY: String
+      ERROR: String
+      STALE: String
+      FATAL: String
+
+      ALL_STATES: Array[String]
+    end
+  end
+end

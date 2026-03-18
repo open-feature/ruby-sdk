@@ -1,0 +1,22 @@
+module OpenFeature
+  module SDK
+    class ProviderStateRegistry
+      def initialize: () -> void
+
+      def set_initial_state: (untyped provider, ?String state) -> void
+      def update_state_from_event: (untyped provider, String event_type, ?Hash[Symbol, untyped]? event_details) -> String
+      def get_state: (untyped provider) -> String
+      def get_details: (untyped provider) -> Hash[Symbol, untyped]
+      def remove_provider: (untyped provider) -> void
+      def tracked?: (untyped provider) -> bool
+      def ready?: (untyped provider) -> bool
+      def error?: (untyped provider) -> bool
+      def clear: () -> void
+
+      private
+
+      def state_from_event: (String event_type, ?Hash[Symbol, untyped]? event_details) -> String?
+      def state_from_error_event: (Hash[Symbol, untyped]? event_details) -> String
+    end
+  end
+end

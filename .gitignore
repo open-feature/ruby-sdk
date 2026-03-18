@@ -17,3 +17,6 @@ Gemfile.lock
 
 # Claude plans
 docs/plans/
+
+# RBS collection cache
+.gem_rbs_collection/

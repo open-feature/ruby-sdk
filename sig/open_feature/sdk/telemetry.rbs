@@ -1,0 +1,29 @@
+module OpenFeature
+  module SDK
+    module Telemetry
+      EVENT_NAME: String
+
+      FLAG_KEY: String
+      CONTEXT_ID_KEY: String
+      ERROR_MESSAGE_KEY: String
+      ERROR_TYPE_KEY: String
+      PROVIDER_NAME_KEY: String
+      RESULT_REASON_KEY: String
+      RESULT_VALUE_KEY: String
+      RESULT_VARIANT_KEY: String
+      FLAG_SET_ID_KEY: String
+      VERSION_KEY: String
+
+      METADATA_KEY_MAP: Hash[String, String]
+
+      class EvaluationEvent < Struct[untyped]
+        attr_accessor name: String
+        attr_accessor attributes: Hash[String, untyped]
+
+        def initialize: (?name: String, ?attributes: Hash[String, untyped]) -> void
+      end
+
+      def self.create_evaluation_event: (hook_context: Hooks::HookContext, evaluation_details: EvaluationDetails?) -> EvaluationEvent
+    end
+  end
+end

@@ -1,0 +1,7 @@
+module OpenFeature
+  module SDK
+    class EvaluationContextBuilder
+      def call: (api_context: EvaluationContext?, client_context: EvaluationContext?, invocation_context: EvaluationContext?, ?transaction_context: EvaluationContext?) -> EvaluationContext?
+    end
+  end
+end

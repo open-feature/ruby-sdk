@@ -1,0 +1,10 @@
+module OpenFeature
+  module SDK
+    class TrackingEventDetails
+      attr_reader value: Numeric?
+      attr_reader fields: Hash[String, untyped]
+
+      def initialize: (?value: Numeric?, **untyped fields) -> void
+    end
+  end
+end

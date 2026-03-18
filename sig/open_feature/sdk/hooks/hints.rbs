@@ -1,0 +1,30 @@
+module OpenFeature
+  module SDK
+    module Hooks
+      class Hints
+        ALLOWED_TYPES: Array[Class]
+
+        def initialize: (?Hash[String | Symbol, untyped] hash) -> void
+
+        def []: (String | Symbol key) -> untyped
+        def fetch: (String | Symbol key, ?untyped default) -> untyped
+               | (String | Symbol key) { (String | Symbol) -> untyped } -> untyped
+        def key?: (String | Symbol key) -> bool
+        def each: () { (String | Symbol, untyped) -> void } -> Hash[String | Symbol, untyped]
+                | () -> Enumerator[[String | Symbol, untyped], Hash[String | Symbol, untyped]]
+        def size: () -> Integer
+        def empty?: () -> bool
+        def keys: () -> Array[String | Symbol]
+        def values: () -> Array[untyped]
+        def freeze: () -> self
+        def frozen?: () -> bool
+        def to_hash: () -> Hash[String | Symbol, untyped]
+
+        private
+
+        def assert_allowed_key: (untyped key) -> void
+        def assert_allowed_value: (untyped value) -> void
+      end
+    end
+  end
+end

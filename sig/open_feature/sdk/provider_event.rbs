@@ -1,0 +1,12 @@
+module OpenFeature
+  module SDK
+    module ProviderEvent
+      PROVIDER_READY: String
+      PROVIDER_ERROR: String
+      PROVIDER_CONFIGURATION_CHANGED: String
+      PROVIDER_STALE: String
+
+      ALL_EVENTS: Array[String]
+    end
+  end
+end

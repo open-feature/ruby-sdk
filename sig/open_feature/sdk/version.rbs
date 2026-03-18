@@ -1,0 +1,5 @@
+module OpenFeature
+  module SDK
+    VERSION: String
+  end
+end

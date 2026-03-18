@@ -1,0 +1,16 @@
+module OpenFeature
+  module SDK
+    module Provider
+      module ErrorCode
+        PROVIDER_NOT_READY: String
+        FLAG_NOT_FOUND: String
+        PARSE_ERROR: String
+        TYPE_MISMATCH: String
+        TARGETING_KEY_MISSING: String
+        INVALID_CONTEXT: String
+        PROVIDER_FATAL: String
+        GENERAL: String
+      end
+    end
+  end
+end

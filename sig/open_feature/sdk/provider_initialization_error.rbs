@@ -1,0 +1,11 @@
+module OpenFeature
+  module SDK
+    class ProviderInitializationError < StandardError
+      attr_reader provider: untyped
+      attr_reader original_error: Exception?
+      attr_reader error_code: String
+
+      def initialize: (String message, ?provider: untyped, ?original_error: Exception?, ?error_code: String) -> void
+    end
+  end
+end

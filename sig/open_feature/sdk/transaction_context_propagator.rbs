@@ -1,0 +1,11 @@
+module OpenFeature
+  module SDK
+    interface _TransactionContextPropagator
+      def set_transaction_context: (EvaluationContext evaluation_context) -> void
+      def get_transaction_context: () -> EvaluationContext?
+    end
+
+    module TransactionContextPropagator : _TransactionContextPropagator
+    end
+  end
+end

@@ -19,4 +19,11 @@ task :cucumber do
   sh "bundle exec cucumber"
 end
 
+begin
+  require "steep/rake_task"
+  Steep::RakeTask.new
+rescue LoadError
+  # Steep not available
+end
+
 task default: %i[spec standard]

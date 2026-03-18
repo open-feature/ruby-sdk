@@ -1,0 +1,49 @@
+module OpenFeature
+  module SDK
+    class Client
+      TYPE_CLASS_MAP: Hash[Symbol, Array[Class]]
+      RESULT_TYPE: Array[Symbol]
+      SUFFIXES: Array[Symbol]
+      EMPTY_HINTS: Hooks::Hints
+
+      attr_reader metadata: ClientMetadata
+      attr_reader evaluation_context: EvaluationContext?
+      attr_accessor hooks: Array[untyped]
+
+      def initialize: (provider: untyped, ?domain: String?, ?evaluation_context: EvaluationContext?) -> void
+
+      def add_hooks: (*Array[untyped] new_hooks) -> void
+
+      def provider_status: () -> String
+
+      def add_handler: (String event_type, ?_ToProc? handler) ?{ (Hash[Symbol, untyped]) -> void } -> void
+      def remove_handler: (String event_type, ?_ToProc? handler) ?{ (Hash[Symbol, untyped]) -> void } -> void
+
+      def track: (String tracking_event_name, ?evaluation_context: EvaluationContext?, ?tracking_event_details: TrackingEventDetails?) -> void
+
+      # Dynamically generated fetch_*_value methods (6 types)
+      def fetch_boolean_value: (flag_key: String, default_value: bool, ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> bool
+      def fetch_string_value: (flag_key: String, default_value: String, ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> String
+      def fetch_number_value: (flag_key: String, default_value: Numeric, ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> Numeric
+      def fetch_integer_value: (flag_key: String, default_value: Integer, ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> Integer
+      def fetch_float_value: (flag_key: String, default_value: Float, ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> Float
+      def fetch_object_value: (flag_key: String, default_value: Array[untyped] | Hash[untyped, untyped], ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> (Array[untyped] | Hash[untyped, untyped])
+
+      # Dynamically generated fetch_*_details methods (6 types)
+      def fetch_boolean_details: (flag_key: String, default_value: bool, ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> EvaluationDetails
+      def fetch_string_details: (flag_key: String, default_value: String, ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> EvaluationDetails
+      def fetch_number_details: (flag_key: String, default_value: Numeric, ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> EvaluationDetails
+      def fetch_integer_details: (flag_key: String, default_value: Integer, ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> EvaluationDetails
+      def fetch_float_details: (flag_key: String, default_value: Float, ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> EvaluationDetails
+      def fetch_object_details: (flag_key: String, default_value: Array[untyped] | Hash[untyped, untyped], ?evaluation_context: EvaluationContext?, ?hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> EvaluationDetails
+
+      private
+
+      def fetch_details: (type: Symbol, flag_key: String, default_value: untyped, ?evaluation_context: EvaluationContext?, ?invocation_hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> EvaluationDetails?
+      def evaluate_flag: (type: Symbol, flag_key: String, default_value: untyped, evaluation_context: EvaluationContext?) -> EvaluationDetails
+      def short_circuit_error_code: (String state) -> String?
+      def build_evaluation_context: (EvaluationContext? invocation_context) -> EvaluationContext?
+      def validate_default_value_type: (Symbol type, untyped default_value) -> void
+    end
+  end
+end

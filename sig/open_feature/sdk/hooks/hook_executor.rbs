@@ -1,0 +1,20 @@
+module OpenFeature
+  module SDK
+    module Hooks
+      class HookExecutor
+        def initialize: (?logger: untyped?) -> void
+
+        def run_short_circuit: (ordered_hooks: Array[untyped], hook_context: HookContext, hints: Hints, evaluation_details: EvaluationDetails) -> void
+
+        def execute: (ordered_hooks: Array[untyped], hook_context: HookContext, hints: Hints) { (HookContext) -> EvaluationDetails } -> EvaluationDetails?
+
+        private
+
+        def run_before_hooks: (Array[untyped] hooks, HookContext hook_context, Hints hints) -> void
+        def run_after_hooks: (Array[untyped] hooks, HookContext hook_context, EvaluationDetails evaluation_details, Hints hints) -> void
+        def run_error_hooks: (Array[untyped] hooks, HookContext hook_context, Exception exception, Hints hints) -> void
+        def run_finally_hooks: (Array[untyped] hooks, HookContext hook_context, EvaluationDetails? evaluation_details, Hints hints) -> void
+      end
+    end
+  end
+end

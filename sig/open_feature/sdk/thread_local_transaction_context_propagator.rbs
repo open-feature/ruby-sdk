@@ -1,0 +1,12 @@
+module OpenFeature
+  module SDK
+    class ThreadLocalTransactionContextPropagator
+      include TransactionContextPropagator
+
+      THREAD_KEY: Symbol
+
+      def set_transaction_context: (EvaluationContext evaluation_context) -> void
+      def get_transaction_context: () -> EvaluationContext?
+    end
+  end
+end

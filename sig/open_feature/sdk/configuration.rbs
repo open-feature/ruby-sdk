@@ -1,0 +1,43 @@
+module OpenFeature
+  module SDK
+    class Configuration
+      extend Forwardable
+
+      attr_accessor evaluation_context: EvaluationContext?
+      attr_accessor hooks: Array[untyped]
+      attr_accessor transaction_context_propagator: _TransactionContextPropagator?
+      attr_reader logger: untyped?
+
+      def initialize: () -> void
+
+      def add_hooks: (*Array[untyped] new_hooks) -> void
+      def provider: (?domain: String?) -> untyped?
+      def logger=: (untyped? new_logger) -> void
+
+      def add_handler: (String event_type, _ToProc handler) -> void
+      def remove_handler: (String event_type, _ToProc handler) -> void
+
+      def add_client_handler: (Client client, String event_type, _ToProc handler) -> void
+      def remove_client_handler: (Client client, String event_type, _ToProc handler) -> void
+
+      def set_provider: (untyped provider, ?domain: String?) -> void
+      def set_provider_and_wait: (untyped provider, ?domain: String?) -> void
+
+      def provider_state: (untyped provider) -> String
+      def provider_tracked?: (untyped provider) -> bool
+
+      def shutdown: () -> void
+
+      private
+
+      def reset: () -> void
+      def set_provider_internal: (untyped provider, domain: String?, wait_for_init: bool) -> void
+      def init_provider: (untyped provider, EvaluationContext? context, ?raise_on_error: bool) -> void
+      def dispatch_provider_event: (untyped provider, String event_type, ?Hash[Symbol, untyped] details) -> void
+      def extract_provider_name: (untyped provider) -> String
+      def run_handlers_for_provider: (untyped provider, String event_type, Hash[Symbol, untyped] event_details) -> void
+      def run_immediate_handler: (String event_type, _ToProc handler, Client? client) -> void
+      def build_event_details: (untyped provider) -> Hash[Symbol, untyped]
+    end
+  end
+end

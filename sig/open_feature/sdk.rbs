@@ -1,0 +1,22 @@
+module OpenFeature
+  module SDK
+    # Delegated to API.instance via method_missing
+    def self.configure: () { (Configuration) -> void } -> void
+    def self.build_client: (?domain: String?, ?evaluation_context: EvaluationContext?) -> Client
+    def self.configuration: () -> Configuration
+    def self.provider: (?domain: String?) -> untyped?
+    def self.set_provider: (untyped provider, ?domain: String?) -> void
+    def self.set_provider_and_wait: (untyped provider, ?domain: String?) -> void
+    def self.hooks: () -> Array[untyped]
+    def self.add_hooks: (*Array[untyped] new_hooks) -> void
+    def self.evaluation_context: () -> EvaluationContext?
+    def self.add_handler: (String event_type, _ToProc handler) -> void
+    def self.remove_handler: (String event_type, _ToProc handler) -> void
+    def self.logger: () -> untyped?
+    def self.logger=: (untyped? new_logger) -> void
+    def self.set_transaction_context_propagator: (_TransactionContextPropagator propagator) -> void
+    def self.set_transaction_context: (EvaluationContext evaluation_context) -> void
+    def self.shutdown: () -> void
+    def self.provider_metadata: (?domain: String?) -> Provider::ProviderMetadata?
+  end
+end

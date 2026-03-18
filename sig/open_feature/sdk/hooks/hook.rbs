@@ -1,0 +1,19 @@
+module OpenFeature
+  module SDK
+    module Hooks
+      interface _Hook
+        def before: (hook_context: HookContext, hints: Hints) -> EvaluationContext?
+        def after: (hook_context: HookContext, evaluation_details: EvaluationDetails, hints: Hints) -> void
+        def error: (hook_context: HookContext, exception: Exception, hints: Hints) -> void
+        def finally: (hook_context: HookContext, evaluation_details: EvaluationDetails?, hints: Hints) -> void
+      end
+
+      module Hook
+        def before: (hook_context: HookContext, hints: Hints) -> EvaluationContext?
+        def after: (hook_context: HookContext, evaluation_details: EvaluationDetails, hints: Hints) -> nil
+        def error: (hook_context: HookContext, exception: Exception, hints: Hints) -> nil
+        def finally: (hook_context: HookContext, evaluation_details: EvaluationDetails?, hints: Hints) -> nil
+      end
+    end
+  end
+end

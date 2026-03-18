@@ -1,0 +1,24 @@
+module OpenFeature
+  module SDK
+    class EventDispatcher
+      attr_writer logger: untyped?
+
+      def initialize: (?untyped? logger) -> void
+
+      def add_handler: (String event_type, _ToProc handler) -> void
+      def remove_handler: (String event_type, _ToProc handler) -> void
+      def remove_all_handlers: (String event_type) -> void
+      def trigger_event: (String event_type, ?Hash[Symbol, untyped] event_details) -> void
+      def handler_count: (String event_type) -> Integer
+      def clear_all_handlers: () -> void
+
+      private
+
+      def valid_event?: (String event_type) -> bool
+    end
+
+    interface _ToProc
+      def call: (untyped) -> untyped
+    end
+  end
+end

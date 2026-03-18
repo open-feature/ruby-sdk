@@ -1,0 +1,19 @@
+module OpenFeature
+  module SDK
+    class EvaluationContext
+      TARGETING_KEY: String
+
+      attr_reader fields: Hash[String, untyped]
+
+      def initialize: (**untyped fields) -> void
+
+      def targeting_key: () -> untyped
+
+      def field: (String key) -> untyped
+
+      def merge: (EvaluationContext overriding_context) -> EvaluationContext
+
+      def ==: (untyped other) -> bool
+    end
+  end
+end

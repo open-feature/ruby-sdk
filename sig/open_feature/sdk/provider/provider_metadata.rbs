@@ -1,0 +1,11 @@
+module OpenFeature
+  module SDK
+    module Provider
+      class ProviderMetadata < Struct[untyped]
+        attr_accessor name: String?
+
+        def initialize: (?name: String?) -> void
+      end
+    end
+  end
+end

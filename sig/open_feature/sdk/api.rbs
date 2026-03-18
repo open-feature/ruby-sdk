@@ -1,0 +1,35 @@
+module OpenFeature
+  module SDK
+    class API
+      include Singleton
+      extend Forwardable
+
+      def configuration: () -> Configuration
+
+      def configure: () { (Configuration) -> void } -> void
+
+      def build_client: (?domain: String?, ?evaluation_context: EvaluationContext?) -> Client
+
+      def provider_metadata: (?domain: String?) -> Provider::ProviderMetadata?
+
+      # Delegated from Configuration
+      def provider: (?domain: String?) -> untyped?
+      def set_provider: (untyped provider, ?domain: String?) -> void
+      def set_provider_and_wait: (untyped provider, ?domain: String?) -> void
+      def hooks: () -> Array[untyped]
+      def add_hooks: (*Array[untyped] new_hooks) -> void
+      def evaluation_context: () -> EvaluationContext?
+
+      def add_handler: (String event_type, _ToProc handler) -> void
+      def remove_handler: (String event_type, _ToProc handler) -> void
+
+      def logger: () -> untyped?
+      def logger=: (untyped? new_logger) -> void
+
+      def set_transaction_context_propagator: (_TransactionContextPropagator propagator) -> void
+      def set_transaction_context: (EvaluationContext evaluation_context) -> void
+
+      def shutdown: () -> void
+    end
+  end
+end

@@ -1,0 +1,19 @@
+module OpenFeature
+  module SDK
+    class EvaluationDetails < Struct[untyped]
+      extend Forwardable
+
+      attr_accessor flag_key: String
+      attr_accessor resolution_details: Provider::ResolutionDetails
+
+      def initialize: (?flag_key: String, ?resolution_details: Provider::ResolutionDetails) -> void
+
+      def value: () -> untyped
+      def reason: () -> String?
+      def variant: () -> String?
+      def error_code: () -> String?
+      def error_message: () -> String?
+      def flag_metadata: () -> Hash[String, untyped]
+    end
+  end
+end

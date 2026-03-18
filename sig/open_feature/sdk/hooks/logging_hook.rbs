@@ -1,0 +1,25 @@
+module OpenFeature
+  module SDK
+    module Hooks
+      class LoggingHook
+        include Hook
+
+        def initialize: (?logger: untyped?, ?include_evaluation_context: bool) -> void
+
+        def before: (hook_context: HookContext, hints: Hints) -> nil
+        def after: (hook_context: HookContext, evaluation_details: EvaluationDetails, hints: Hints) -> nil
+        def error: (hook_context: HookContext, exception: Exception, hints: Hints) -> nil
+
+        private
+
+        def logger: () -> untyped?
+        def build_before_message: (HookContext hook_context) -> String
+        def build_after_message: (HookContext hook_context, EvaluationDetails evaluation_details) -> String
+        def build_error_message: (HookContext hook_context, Exception exception) -> String
+        def base_parts: (String stage, HookContext hook_context) -> Array[String]
+        def format_context: (EvaluationContext? evaluation_context) -> String
+        def sanitize: (untyped value) -> String
+      end
+    end
+  end
+end

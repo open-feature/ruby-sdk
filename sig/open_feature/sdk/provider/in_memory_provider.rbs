@@ -1,0 +1,35 @@
+module OpenFeature
+  module SDK
+    module Provider
+      class InMemoryProvider
+        include Provider::EventEmitter
+
+        NAME: String
+
+        attr_reader metadata: ProviderMetadata
+
+        def initialize: (?Hash[String, untyped] flags) -> void
+
+        def init: (?EvaluationContext? evaluation_context) -> void
+        def shutdown: () -> void
+
+        def add_flag: (flag_key: String, value: untyped) -> void
+        def update_flags: (Hash[String, untyped] new_flags) -> void
+
+        def fetch_boolean_value: (flag_key: String, default_value: bool, ?evaluation_context: EvaluationContext?) -> ResolutionDetails
+        def fetch_string_value: (flag_key: String, default_value: String, ?evaluation_context: EvaluationContext?) -> ResolutionDetails
+        def fetch_number_value: (flag_key: String, default_value: Numeric, ?evaluation_context: EvaluationContext?) -> ResolutionDetails
+        def fetch_integer_value: (flag_key: String, default_value: Integer, ?evaluation_context: EvaluationContext?) -> ResolutionDetails
+        def fetch_float_value: (flag_key: String, default_value: Float, ?evaluation_context: EvaluationContext?) -> ResolutionDetails
+        def fetch_object_value: (flag_key: String, default_value: Array[untyped] | Hash[untyped, untyped], ?evaluation_context: EvaluationContext?) -> ResolutionDetails
+
+        private
+
+        attr_reader flags: Hash[String, untyped]
+
+        def fetch_value: (flag_key: String, default_value: untyped, evaluation_context: EvaluationContext?) -> ResolutionDetails
+        def emit_provider_changed: (Array[String] flag_keys) -> void
+      end
+    end
+  end
+end

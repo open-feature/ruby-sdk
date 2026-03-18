@@ -1,0 +1,19 @@
+module OpenFeature
+  module SDK
+    module Provider
+      EMPTY_FLAG_METADATA: Hash[String, untyped]
+
+      class ResolutionDetails < Struct[untyped]
+        attr_accessor value: untyped
+        attr_accessor reason: String?
+        attr_accessor variant: String?
+        attr_accessor error_code: String?
+        attr_accessor error_message: String?
+
+        def initialize: (?value: untyped, ?reason: String?, ?variant: String?, ?error_code: String?, ?error_message: String?, ?flag_metadata: Hash[String, untyped]?) -> void
+
+        def flag_metadata: () -> Hash[String, untyped]
+      end
+    end
+  end
+end

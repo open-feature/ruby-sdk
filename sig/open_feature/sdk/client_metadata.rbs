@@ -1,0 +1,11 @@
+module OpenFeature
+  module SDK
+    class ClientMetadata < Struct[untyped]
+      attr_accessor domain: String?
+
+      def initialize: (?domain: String?) -> void
+
+      alias name domain
+    end
+  end
+end

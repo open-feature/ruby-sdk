@@ -1,0 +1,17 @@
+module OpenFeature
+  module SDK
+    module Provider
+      module Reason
+        STATIC: String
+        DEFAULT: String
+        TARGETING_MATCH: String
+        SPLIT: String
+        CACHED: String
+        DISABLED: String
+        UNKNOWN: String
+        STALE: String
+        ERROR: String
+      end
+    end
+  end
+end

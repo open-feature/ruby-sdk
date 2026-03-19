@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.5](https://github.com/open-feature/ruby-sdk/compare/v0.6.4...v0.6.5) (2026-03-18)
+
+
+### Features
+
+* add RBS type signatures with Steep type checking ([#251](https://github.com/open-feature/ruby-sdk/issues/251)) ([506e999](https://github.com/open-feature/ruby-sdk/commit/506e9992e6c8b7222b2ae2eb3b1c2fb3d5d148a6))
+
 ## [0.6.4](https://github.com/open-feature/ruby-sdk/compare/v0.6.3...v0.6.4) (2026-03-07)
 
 

@@ -7,6 +7,7 @@ module OpenFeature
         STATIC = "STATIC"
         DEFAULT = "DEFAULT"
         TARGETING_MATCH = "TARGETING_MATCH"
+        TARGETING_MATCH_SPLIT = "TARGETING_MATCH_SPLIT"
         SPLIT = "SPLIT"
         CACHED = "CACHED"
         DISABLED = "DISABLED"

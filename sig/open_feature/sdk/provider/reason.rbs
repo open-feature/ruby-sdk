@@ -8,6 +8,7 @@ module OpenFeature
         SPLIT: String
         CACHED: String
         DISABLED: String
+        TARGETING_MATCH_SPLIT: String
         UNKNOWN: String
         STALE: String
         ERROR: String

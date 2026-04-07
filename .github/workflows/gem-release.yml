@@ -9,6 +9,8 @@ on:
         type: string
 
 name: Publish Gem
+permissions:
+  contents: read
 jobs:
   gem-release:
     runs-on: ubuntu-latest

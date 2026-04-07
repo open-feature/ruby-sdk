@@ -27,7 +27,13 @@ jobs:
       - run: bundle install
 
       - name: Build Gem
-        run: gem build *.gemspec
+        run: |
+          mapfile -t gemspecs < <(find . -maxdepth 1 -type f -name '*.gemspec' -printf '%f\n' | sort)
+          if [ "${#gemspecs[@]}" -ne 1 ]; then
+            echo "Expected exactly one gemspec in the repository root, found ${#gemspecs[@]}: ${gemspecs[*]}" >&2
+            exit 1
+          fi
+          gem build "${gemspecs[0]}"
 
       - name: Push Gem
         uses: rubygems/release-gem@v1

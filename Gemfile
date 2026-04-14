@@ -19,6 +19,6 @@ group :development, :test do
 end
 
 group :test do
-  gem "cucumber", "~> 10.0"
+  gem "cucumber", "~> 11.0"
   gem "logger"
 end

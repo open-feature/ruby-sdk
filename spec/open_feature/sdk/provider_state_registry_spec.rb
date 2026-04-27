@@ -7,8 +7,8 @@ require "open_feature/sdk/provider_event"
 
 RSpec.describe OpenFeature::SDK::ProviderStateRegistry do
   let(:registry) { described_class.new }
-  let(:provider) { double("Provider", object_id: 12_345) }
-  let(:provider2) { double("Provider2", object_id: 67_890) }
+  let(:provider) { double("Provider") }
+  let(:provider2) { double("Provider2") }
 
   describe "#set_initial_state" do
     it "sets NOT_READY as default state" do

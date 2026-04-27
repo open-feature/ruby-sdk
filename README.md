@@ -70,7 +70,6 @@ gem install openfeature-sdk
 
 ```ruby
 require 'open_feature/sdk'
-require 'json' # For JSON.dump
 
 # API Initialization and configuration
 
@@ -91,7 +90,7 @@ client = OpenFeature::SDK.build_client
 bool_value = client.fetch_boolean_value(flag_key: 'boolean_flag', default_value: false)
 
 # a details method is also available for more information about the flag evaluation
-# see `ResolutionDetails` for more info
+# see `EvaluationDetails` for more info
 bool_details = client.fetch_boolean_details(flag_key: 'boolean_flag', default_value: false)
 
 # fetching string value feature flag

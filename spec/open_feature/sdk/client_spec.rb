@@ -28,6 +28,11 @@ RSpec.describe OpenFeature::SDK::Client do
       expect(client).to respond_to(:metadata)
       expect(client.metadata.domain).to eq(domain)
     end
+
+    it "client metadata is frozen (req 4.2.2.1 — hook context client_metadata must be immutable)" do
+      expect(client.metadata).to be_frozen
+      expect(client.metadata.domain).to be_frozen
+    end
   end
 
   context "Flag evaluation" do

@@ -273,7 +273,6 @@ module OpenFeature
       def init_accepts_evaluation_context?(provider)
         init_parameters(provider).any? do |kind, name|
           next false if name == :domain
-          next true if kind == :keyrest
 
           kind == :opt || kind == :req
         end

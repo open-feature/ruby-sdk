@@ -11,7 +11,8 @@ module OpenFeature
       end
 
       interface _LifecycleProvider
-        def init: (?EvaluationContext? evaluation_context) -> void
+        def init: (?EvaluationContext? evaluation_context, ?domain: String?) -> void
+        def domain_scoped?: () -> bool
         def shutdown: () -> void
         def metadata: () -> ProviderMetadata
       end

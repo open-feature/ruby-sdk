@@ -127,6 +127,8 @@ module OpenFeature
         needs_shutdown = false
 
         @provider_mutex.synchronize do
+          validate_domain_scoped_binding!(provider, domain)
+
           old_provider = @providers[domain]
 
           new_providers = @providers.dup
@@ -134,8 +136,11 @@ module OpenFeature
           @providers = new_providers
 
           # Spec 1.1.2.2: Only initialize if the provider is not already active
-          # (i.e., not already bound to another domain)
-          already_active = @providers.any? { |d, p| d != domain && p.equal?(provider) && @provider_state_registry.tracked?(p) }
+          was_bound_elsewhere = @providers.any? do |d, p|
+            d != domain && p.equal?(provider) && @provider_state_registry.tracked?(p)
+          end
+          was_bound_here = old_provider&.equal?(provider) && @provider_state_registry.tracked?(provider)
+          already_active = was_bound_elsewhere || was_bound_here
           needs_init = !already_active
 
           if needs_init
@@ -163,10 +168,10 @@ module OpenFeature
         # Initialize provider outside the mutex to avoid blocking other operations
         if needs_init
           if wait_for_init
-            init_provider(provider, context_for_init, raise_on_error: true)
+            init_provider(provider, context_for_init, domain: domain, raise_on_error: true)
           else
             Thread.new do
-              init_provider(provider, context_for_init, raise_on_error: false)
+              init_provider(provider, context_for_init, domain: domain, raise_on_error: false)
             end
           end
         elsif wait_for_init
@@ -175,15 +180,8 @@ module OpenFeature
         end
       end
 
-      def init_provider(provider, context, raise_on_error: false)
-        if provider.respond_to?(:init)
-          init_method = provider.method(:init)
-          if init_method.parameters.empty?
-            provider.init
-          else
-            provider.init(context)
-          end
-        end
+      def init_provider(provider, context, domain:, raise_on_error: false)
+        call_init(provider, context, domain)
 
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
       rescue => e
@@ -224,6 +222,83 @@ module OpenFeature
 
       def extract_provider_name(provider)
         provider.respond_to?(:metadata) ? provider.metadata.name : provider.class.name
+      end
+
+      def domain_scoped?(provider)
+        return false unless declares_domain_scoped?(provider)
+
+        provider.domain_scoped?
+      end
+
+      def declares_domain_scoped?(provider)
+        class_declares_method?(provider.class, :domain_scoped?)
+      end
+
+      def provider_bindings(provider)
+        @providers.select { |_, p| p.equal?(provider) }.keys
+      end
+
+      def validate_domain_scoped_binding!(provider, domain)
+        return unless domain_scoped?(provider)
+
+        bindings = provider_bindings(provider)
+        return if bindings.empty?
+        return if bindings.include?(domain)
+
+        raise ArgumentError, "Cannot bind domain-scoped provider to more than one domain"
+      end
+
+      def call_init(provider, context, domain)
+        return unless provider.respond_to?(:init)
+
+        if init_accepts_domain?(provider)
+          if init_accepts_evaluation_context?(provider)
+            provider.init(context, domain: domain)
+          else
+            provider.init(domain: domain)
+          end
+        elsif init_accepts_evaluation_context?(provider)
+          provider.init(context)
+        else
+          provider.init
+        end
+      end
+
+      def init_accepts_domain?(provider)
+        init_parameters(provider).any? do |kind, name|
+          name == :domain || kind == :keyrest
+        end
+      end
+
+      def init_accepts_evaluation_context?(provider)
+        init_parameters(provider).any? do |kind, name|
+          next false if name == :domain
+
+          kind == :opt || kind == :req
+        end
+      end
+
+      def init_parameters(provider)
+        method = instance_method_on_class(provider.class, :init)
+        method&.parameters || []
+      end
+
+      def instance_method_on_class(klass, method_name)
+        while klass && klass != Object
+          if klass.method_defined?(method_name, false)
+            return klass.instance_method(method_name)
+          end
+          klass = klass.superclass
+        end
+        nil
+      end
+
+      def class_declares_method?(klass, method_name)
+        while klass && klass != Object
+          return true if klass.method_defined?(method_name, false)
+          klass = klass.superclass
+        end
+        false
       end
 
       def run_handlers_for_provider(provider, event_type, event_details)

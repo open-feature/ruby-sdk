@@ -278,6 +278,64 @@ RSpec.describe OpenFeature::SDK::Configuration do
 
       expect(provider.init_called).to be true
     end
+
+    it "passes domain to init when init accepts evaluation context and domain" do
+      provider = Class.new do
+        attr_reader :init_domain, :init_context
+
+        def init(evaluation_context = nil, domain: nil)
+          @init_context = evaluation_context
+          @init_domain = domain
+        end
+
+        def metadata
+          OpenFeature::SDK::Provider::ProviderMetadata.new(name: "DomainAwareProvider")
+        end
+      end.new
+
+      context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "user")
+      configuration.evaluation_context = context
+      configuration.set_provider_and_wait(provider, domain: "billing")
+
+      expect(provider.init_context).to eq(context)
+      expect(provider.init_domain).to eq("billing")
+    end
+
+    it "passes domain to init when init only accepts domain" do
+      provider = Class.new do
+        attr_reader :init_domain
+
+        def init(domain: nil)
+          @init_domain = domain
+        end
+
+        def metadata
+          OpenFeature::SDK::Provider::ProviderMetadata.new(name: "DomainOnlyProvider")
+        end
+      end.new
+
+      configuration.set_provider_and_wait(provider, domain: "billing")
+
+      expect(provider.init_domain).to eq("billing")
+    end
+
+    it "passes domain to init when init accepts keyword rest" do
+      provider = Class.new do
+        attr_reader :init_kwargs
+
+        def init(**kwargs)
+          @init_kwargs = kwargs
+        end
+
+        def metadata
+          OpenFeature::SDK::Provider::ProviderMetadata.new(name: "KwargsProvider")
+        end
+      end.new
+
+      configuration.set_provider_and_wait(provider, domain: "billing")
+
+      expect(provider.init_kwargs[:domain]).to eq("billing")
+    end
   end
 
   describe "event handler error logging" do

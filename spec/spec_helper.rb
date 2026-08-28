@@ -1,6 +1,17 @@
 # frozen_string_literal: true
 
 require "simplecov"
+require "simplecov-cobertura"
+
+SimpleCov.start do
+  skip "/spec/"
+  minimum_coverage 90
+  if ENV["CI"] == "true"
+    formatter SimpleCov::Formatter::CoberturaFormatter
+  else
+    formatter SimpleCov::Formatter::HTMLFormatter
+  end
+end
 
 require "open_feature/sdk"
 

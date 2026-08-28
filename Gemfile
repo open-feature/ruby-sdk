@@ -13,7 +13,7 @@ group :development, :test do
   gem "standard"
   gem "standard-performance"
   gem "simplecov", "~> 1.1.0"
-  gem "simplecov-cobertura", "~> 3.0"
+  gem "simplecov-cobertura", "~> 4.0"
   gem "steep", "~> 2.0"
   gem "timecop", "~> 0.9.10"
 end

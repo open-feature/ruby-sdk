@@ -42,7 +42,6 @@ GEM
       irb (~> 1.10)
       reline (>= 0.3.8)
     diff-lcs (1.6.2)
-    docile (1.4.1)
     erb (6.0.4)
     ffi (1.17.4)
     fileutils (1.8.0)
@@ -126,15 +125,10 @@ GEM
       rubocop-ast (>= 1.47.1, < 2.0)
     ruby-progressbar (1.13.0)
     securerandom (0.4.1)
-    simplecov (0.22.0)
-      docile (~> 1.1)
-      simplecov-html (~> 0.11)
-      simplecov_json_formatter (~> 0.1)
-    simplecov-cobertura (3.1.0)
+    simplecov (1.1.1)
+    simplecov-cobertura (4.0.0)
       rexml
-      simplecov (~> 0.19)
-    simplecov-html (0.13.2)
-    simplecov_json_formatter (0.1.4)
+      simplecov (~> 1.0)
     standard (1.56.0)
       language_server-protocol (~> 3.17.0.2)
       lint_roller (~> 1.0)
@@ -203,8 +197,8 @@ DEPENDENCIES
   openfeature-sdk!
   rake (~> 13.0)
   rspec (~> 3.13.0)
-  simplecov (~> 0.22.0)
-  simplecov-cobertura (~> 3.0)
+  simplecov (~> 1.1.0)
+  simplecov-cobertura (~> 4.0)
   standard
   standard-performance
   steep (~> 2.0)

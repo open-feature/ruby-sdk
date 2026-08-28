@@ -28,7 +28,7 @@ jobs:
       BUNDLE_GEMFILE: Gemfile
 
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
@@ -47,7 +47,7 @@ jobs:
     name: Standard
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "4.0.6"
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Gherkin Conformance
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           submodules: true
       - uses: ruby/setup-ruby@v1
@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Type Check
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "4.0.6"
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Security Audit
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "4.0.6"

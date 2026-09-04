@@ -192,6 +192,22 @@ RSpec.describe OpenFeature::SDK::Client do
             expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
           end
         end
+
+        it "does not mutate the provider's ResolutionDetails on type mismatch" do
+          original = OpenFeature::SDK::Provider::ResolutionDetails.new(
+            value: "not_a_boolean",
+            reason: OpenFeature::SDK::Provider::Reason::STATIC
+          )
+          caching_provider = instance_double(OpenFeature::SDK::Provider::NoOpProvider)
+          allow(caching_provider).to receive(:fetch_boolean_value).and_return(original)
+
+          caching_client = described_class.new(provider: caching_provider)
+          caching_client.fetch_boolean_details(flag_key: "flag", default_value: false)
+
+          expect(original.value).to eq("not_a_boolean")
+          expect(original.error_code).to be_nil
+          expect(original.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
+        end
       end
     end
 

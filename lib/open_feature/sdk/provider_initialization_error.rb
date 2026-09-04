@@ -21,8 +21,8 @@ module OpenFeature
       # @param message [String] the error message
       # @param provider [Object] the provider that failed to initialize
       # @param original_error [Exception] the original error that caused the failure
-      # @param error_code [String] the OpenFeature error code (defaults to PROVIDER_FATAL)
-      def initialize(message, provider: nil, original_error: nil, error_code: Provider::ErrorCode::PROVIDER_FATAL)
+      # @param error_code [String] the OpenFeature error code (defaults to GENERAL)
+      def initialize(message, provider: nil, original_error: nil, error_code: Provider::ErrorCode::GENERAL)
         super(message)
         @provider = provider
         @original_error = original_error

@@ -23,7 +23,7 @@ module OpenFeature
       # * <tt>fetch_object_value</tt> - Retrieve feature flag object value
       #
       class NoOpProvider
-        REASON_NO_OP = "No-op"
+        REASON_NO_OP = Reason::DEFAULT
         NAME = "No-op Provider"
 
         attr_reader :metadata

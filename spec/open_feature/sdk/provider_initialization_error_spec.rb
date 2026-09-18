@@ -29,8 +29,8 @@ RSpec.describe OpenFeature::SDK::ProviderInitializationError do
         expect(error).to be_a(StandardError)
       end
 
-      it "sets the error code to PROVIDER_FATAL by default" do
-        expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
+      it "sets the error code to GENERAL by default" do
+        expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
       end
     end
 
@@ -49,8 +49,8 @@ RSpec.describe OpenFeature::SDK::ProviderInitializationError do
         expect(error.original_error).to be_nil
       end
 
-      it "sets the error code to PROVIDER_FATAL by default" do
-        expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
+      it "sets the error code to GENERAL by default" do
+        expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
       end
     end
 

@@ -148,12 +148,15 @@ RSpec.describe OpenFeature::SDK::Hooks::LoggingHook do
     end
 
     it "uses error_code from exception when available" do
-      error_with_code = OpenFeature::SDK::ProviderInitializationError.new("init failed")
+      error_with_code = OpenFeature::SDK::ProviderInitializationError.new(
+        "init failed",
+        error_code: "CUSTOM_ERROR_CODE"
+      )
       hook = described_class.new(logger: logger)
 
       expect(logger).to receive(:error) do |&block|
         message = block.call
-        expect(message).to include("error_code=PROVIDER_FATAL")
+        expect(message).to include("error_code=CUSTOM_ERROR_CODE")
       end
 
       hook.error(hook_context: hook_context, exception: error_with_code, hints: hints)

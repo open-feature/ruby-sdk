@@ -155,10 +155,11 @@ module OpenFeature
         )
 
         if TYPE_CLASS_MAP[type].none? { |klass| resolution_details.value.is_a?(klass) }
-          resolution_details.value = default_value
-          resolution_details.error_code = Provider::ErrorCode::TYPE_MISMATCH
-          resolution_details.reason = Provider::Reason::ERROR
-          resolution_details.variant = nil
+          resolution_details = Provider::ResolutionDetails.new(
+            value: default_value,
+            error_code: Provider::ErrorCode::TYPE_MISMATCH,
+            reason: Provider::Reason::ERROR
+          )
         end
 
         EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution_details)

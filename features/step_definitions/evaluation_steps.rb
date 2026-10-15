@@ -17,11 +17,8 @@ Given(/^a (stable|not ready|error|fatal|stale) provider$/) do |status|
     when "stale" then OpenFeature::SDK::ProviderState::STALE
     end
 
-    registry = OpenFeature::SDK.configuration.send(:instance_variable_get, :@provider_state_registry)
-    registry.send(:instance_variable_get, :@mutex).synchronize do
-      states = registry.send(:instance_variable_get, :@states)
-      states[provider.object_id] = {state: state, details: {}}
-    end
+    registry = OpenFeature::SDK.configuration.instance_variable_get(:@provider_state_registry)
+    registry.set_initial_state(provider, state)
 
     @provider = provider
   end

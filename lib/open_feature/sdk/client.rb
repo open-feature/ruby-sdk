@@ -102,7 +102,7 @@ module OpenFeature
           rescue => e
             resolution = Provider::ResolutionDetails.new(
               value: default_value,
-              error_code: Provider::ErrorCode::GENERAL,
+              error_code: EvaluationError.code_for(e),
               reason: Provider::Reason::ERROR,
               error_message: e.message
             )

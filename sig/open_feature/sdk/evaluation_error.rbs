@@ -1,0 +1,11 @@
+module OpenFeature
+  module SDK
+    class EvaluationError < StandardError
+      attr_reader error_code: String
+
+      def initialize: (?String? message, ?error_code: String) -> void
+
+      def self.code_for: (Exception exception) -> String
+    end
+  end
+end

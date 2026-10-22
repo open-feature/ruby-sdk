@@ -450,6 +450,8 @@ class MyProvider
 
   def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
     # Retrieve a boolean value from provider source
+    # To signal an error, return ResolutionDetails with an error_code, or raise
+    # OpenFeature::SDK::EvaluationError.new("message", error_code: OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
   end
 
   def fetch_string_value(flag_key:, default_value:, evaluation_context: nil)

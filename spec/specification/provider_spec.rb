@@ -84,6 +84,18 @@ RSpec.describe "Provider" do
         expect(state).to eq(OpenFeature::SDK::ProviderState::ERROR)
       end
 
+      specify "An init error whose error_code reader raises still becomes a GENERAL ProviderInitializationError" do
+        error_class = Class.new(StandardError) { def error_code = raise("broken reader") }
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        allow(provider).to receive(:init).and_raise(error_class.new("init failed"))
+
+        expect do
+          OpenFeature::SDK.set_provider_and_wait(provider)
+        end.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
+          expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+        end
+      end
+
       specify "Provider initialization errors should prevent the provider from being used" do
         # Store the old provider
         OpenFeature::SDK.provider
@@ -99,6 +111,51 @@ RSpec.describe "Provider" do
 
         # The failing provider should remain in place (with error state)
         expect(OpenFeature::SDK.provider).to eq(failing_provider)
+      end
+    end
+  end
+
+  context "2.2 - Flag Value Resolution" do
+    context "Requirement 2.2.7" do
+      let(:raising_provider_class) do
+        Class.new do
+          def initialize(error)
+            @error = error
+          end
+
+          def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
+            raise @error
+          end
+        end
+      end
+
+      after { OpenFeature::SDK.configuration.send(:reset) }
+
+      def fetch_with(error, with_hook:)
+        OpenFeature::SDK.set_provider_and_wait(raising_provider_class.new(error))
+        client = OpenFeature::SDK.build_client
+        client.hooks << Class.new { include OpenFeature::SDK::Hooks::Hook }.new if with_hook
+        client.fetch_boolean_details(flag_key: "flag", default_value: false)
+      end
+
+      [false, true].each do |with_hook|
+        context(with_hook ? "with a hook registered" : "without hooks") do
+          specify "a provider raising EvaluationError reports its error code and message" do
+            error = OpenFeature::SDK::EvaluationError.new("missing", error_code: OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
+            details = fetch_with(error, with_hook:)
+
+            expect(details.error_code).to eq("FLAG_NOT_FOUND")
+            expect(details.error_message).to eq("missing")
+            expect(details.reason).to eq("ERROR")
+            expect(details.value).to be(false)
+          end
+
+          specify "an exception whose error_code reader raises reports GENERAL instead of escaping" do
+            error_class = Class.new(StandardError) { def error_code = raise("broken reader") }
+
+            expect(fetch_with(error_class.new("bad"), with_hook:).error_code).to eq("GENERAL")
+          end
+        end
       end
     end
   end

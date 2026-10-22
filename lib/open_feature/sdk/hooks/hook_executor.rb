@@ -61,7 +61,7 @@ module OpenFeature
               flag_key: hook_context.flag_key,
               resolution_details: Provider::ResolutionDetails.new(
                 value: hook_context.default_value,
-                error_code: Provider::ErrorCode::GENERAL,
+                error_code: (e.respond_to?(:error_code) && e.error_code) || Provider::ErrorCode::GENERAL,
                 reason: Provider::Reason::ERROR,
                 error_message: e.message
               )

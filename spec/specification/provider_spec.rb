@@ -102,4 +102,59 @@ RSpec.describe "Provider" do
       end
     end
   end
+
+  context "2.2 - Flag Value Resolution" do
+    context "Requirement 2.2.7" do
+      let(:raising_provider_class) do
+        Class.new do
+          def initialize(error)
+            @error = error
+          end
+
+          def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
+            raise @error
+          end
+        end
+      end
+
+      after { OpenFeature::SDK.configuration.send(:reset) }
+
+      def fetch_with(error, with_hook:)
+        OpenFeature::SDK.set_provider_and_wait(raising_provider_class.new(error))
+        client = OpenFeature::SDK.build_client
+        client.hooks << Class.new { include OpenFeature::SDK::Hooks::Hook }.new if with_hook
+        client.fetch_boolean_details(flag_key: "flag", default_value: false)
+      end
+
+      [false, true].each do |with_hook|
+        context(with_hook ? "with a hook registered" : "without hooks") do
+          specify "a provider raising EvaluationError reports its error code and message" do
+            error = OpenFeature::SDK::EvaluationError.new("missing", error_code: OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
+            details = fetch_with(error, with_hook:)
+
+            expect(details.error_code).to eq("FLAG_NOT_FOUND")
+            expect(details.error_message).to eq("missing")
+            expect(details.reason).to eq("ERROR")
+            expect(details.value).to be(false)
+          end
+
+          specify "any exception exposing error_code is honored" do
+            error_class = Class.new(StandardError) { def error_code = "PARSE_ERROR" }
+
+            expect(fetch_with(error_class.new("bad"), with_hook:).error_code).to eq("PARSE_ERROR")
+          end
+
+          specify "an exception whose error_code is nil reports GENERAL" do
+            error_class = Class.new(StandardError) { def error_code = nil }
+
+            expect(fetch_with(error_class.new("bad"), with_hook:).error_code).to eq("GENERAL")
+          end
+
+          specify "a plain StandardError reports GENERAL" do
+            expect(fetch_with(StandardError.new("plain"), with_hook:).error_code).to eq("GENERAL")
+          end
+        end
+      end
+    end
+  end
 end

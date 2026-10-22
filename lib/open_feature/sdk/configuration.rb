@@ -89,11 +89,17 @@ module OpenFeature
       end
 
       def shutdown
-        providers_to_shutdown = @provider_mutex.synchronize { @providers.values.uniq(&:object_id) }
+        # Unbind before shutting down so events that arrive mid-shutdown are dropped
+        providers_to_shutdown = @provider_mutex.synchronize do
+          bound = @providers.values.uniq(&:object_id)
+          @providers = {}
+          bound
+        end
 
         providers_to_shutdown.each do |prov|
           # Spec 1.7.6: Set provider state to NOT_READY before shutdown
           @provider_state_registry.set_initial_state(prov, ProviderState::NOT_READY)
+          prov.send(:detach) if prov.is_a?(Provider::EventEmitter)
           prov.shutdown if prov.respond_to?(:shutdown)
         rescue => e
           @logger&.warn("Error shutting down provider #{prov&.class&.name || "unknown"}: #{e.message}")
@@ -145,9 +151,11 @@ module OpenFeature
 
           # Spec 1.1.2.3: Only shutdown old provider if it's no longer bound to any domain
           if old_provider && !old_provider.equal?(provider)
-            still_bound = @providers.any? { |_, p| p.equal?(old_provider) }
-            needs_shutdown = !still_bound
-            @provider_state_registry.remove_provider(old_provider) unless still_bound
+            needs_shutdown = !provider_bound?(old_provider)
+            if needs_shutdown
+              @provider_state_registry.remove_provider(old_provider)
+              old_provider.send(:detach) if old_provider.is_a?(Provider::EventEmitter)
+            end
           end
         end
 
@@ -205,7 +213,12 @@ module OpenFeature
       end
 
       def dispatch_provider_event(provider, event_type, details = {})
-        @provider_state_registry.update_state_from_event(provider, event_type, details)
+        # Under the replacement lock, so a late event can't re-track a replaced or shut-down provider
+        @provider_mutex.synchronize do
+          return unless provider_bound?(provider)
+
+          @provider_state_registry.update_state_from_event(provider, event_type, details)
+        end
 
         provider_name = extract_provider_name(provider)
 
@@ -217,6 +230,10 @@ module OpenFeature
       end
 
       private
+
+      def provider_bound?(provider)
+        @providers.each_value.any? { |p| p.equal?(provider) }
+      end
 
       def extract_provider_name(provider)
         provider.respond_to?(:metadata) ? provider.metadata.name : provider.class.name

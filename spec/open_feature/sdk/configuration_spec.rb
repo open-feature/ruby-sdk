@@ -282,18 +282,19 @@ RSpec.describe OpenFeature::SDK::Configuration do
 
   describe "event handler error logging" do
     it "logs error when event handler fails and logger is present" do
-      logger = double("Logger")
-      configuration.logger = logger
+      provider = OpenFeature::SDK::Provider::NoOpProvider.new
+      configuration.set_provider_and_wait(provider)
 
       failing_handler = proc { |_| raise StandardError, "Handler failed" }
 
       configuration.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, failing_handler)
 
+      logger = double("Logger")
+      configuration.logger = logger
+
       expect(logger).to receive(:warn).with(/Event handler failed for/)
 
-      configuration.send(:dispatch_provider_event,
-        OpenFeature::SDK::Provider::NoOpProvider.new,
-        OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+      configuration.send(:dispatch_provider_event, provider, OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
     end
   end
 

@@ -94,6 +94,7 @@ module OpenFeature
         providers_to_shutdown.each do |prov|
           # Spec 1.7.9: Set provider state to NOT_READY before shutdown
           @provider_state_registry.set_initial_state(prov, ProviderState::NOT_READY)
+          prov.send(:detach) if prov.is_a?(Provider::EventEmitter)
           prov.shutdown if prov.respond_to?(:shutdown)
         rescue => e
           @logger&.warn("Error shutting down provider #{prov&.class&.name || "unknown"}: #{e.message}")

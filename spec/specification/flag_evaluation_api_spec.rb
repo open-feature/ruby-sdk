@@ -428,6 +428,22 @@ RSpec.describe "Flag Evaluation API" do
         OpenFeature::SDK.shutdown
       end
 
+      specify "After shutdown, providers are detached and their events are ignored" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        OpenFeature::SDK.shutdown
+        received = []
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, ->(details) { received << details })
+
+        provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+
+        expect(received).to be_empty
+        expect(provider.configuration_attached?).to be(false)
+        expect(OpenFeature::SDK.configuration.provider_tracked?(provider)).to be(false)
+      ensure
+        OpenFeature::SDK.configuration.send(:reset)
+      end
+
       specify "After shutdown, providers are cleared." do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         OpenFeature::SDK.set_provider_and_wait(provider)

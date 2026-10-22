@@ -6,5 +6,12 @@
     "security:minimumReleaseAgeNpm"
   ],
   "semanticCommits": "enabled",
-  "platformAutomerge": true
+  "platformAutomerge": true,
+  "packageRules": [
+    {
+      "description": "The spec submodule is pinned to release tags and bumped by hand",
+      "matchManagers": ["git-submodules"],
+      "enabled": false
+    }
+  ]
 }

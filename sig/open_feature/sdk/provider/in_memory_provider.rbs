@@ -9,7 +9,7 @@ module OpenFeature
         class Flag < Struct[untyped]
           attr_accessor variants: Hash[String, untyped]?
           attr_accessor default_variant: String?
-          attr_accessor context_evaluator: ^(EvaluationContext?) -> String?
+          attr_accessor context_evaluator: (^(EvaluationContext?) -> String?)?
           attr_accessor flag_metadata: Hash[String, untyped]?
           attr_accessor disabled: bool?
 

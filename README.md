@@ -157,9 +157,6 @@ rescue OpenFeature::SDK::ProviderInitializationError => e
   puts "Original error: #{e.original_error}"
 end
 
-# With custom timeout (default is 30 seconds)
-OpenFeature::SDK.set_provider_and_wait(my_provider, timeout: 60)
-
 # Domain-specific provider
 OpenFeature::SDK.set_provider_and_wait(my_provider, domain: "feature-flags")
 

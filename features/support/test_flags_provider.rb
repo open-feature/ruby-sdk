@@ -5,14 +5,13 @@
 def build_test_flags(json)
   json.to_h do |key, flag|
     expression = flag["contextEvaluator"]
-    in_memory_flag = OpenFeature::SDK::Provider::InMemoryProvider::Flag.new(
+    [key, OpenFeature::SDK::Provider::InMemoryProvider::Flag.new(
       variants: flag["variants"],
       default_variant: flag["defaultVariant"],
       context_evaluator: expression && ->(evaluation_context) { evaluate_test_flag_expression(expression, evaluation_context) },
-      flag_metadata: flag["flagMetadata"]&.freeze,
+      flag_metadata: flag["flagMetadata"],
       disabled: flag["disabled"]
-    )
-    [key, in_memory_flag]
+    )]
   end
 end
 
@@ -23,7 +22,7 @@ end
 def evaluate_test_flag_expression(expression, evaluation_context)
   return "" unless evaluation_context
 
-  ctx = evaluation_context.fields.dup
+  ctx = evaluation_context.fields
 
   case expression
   when /\A(\w+)\s*==\s*'([^']*)'\s*\?\s*'([^']*)'\s*:\s*'([^']*)'\z/

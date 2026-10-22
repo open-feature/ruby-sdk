@@ -85,23 +85,21 @@ module OpenFeature
         end
 
         def resolve_variant_flag(flag, default_value, evaluation_context)
-          metadata = flag.flag_metadata
-          return ResolutionDetails.new(value: default_value, reason: Reason::DISABLED, flag_metadata: metadata) if flag.disabled
+          flag_metadata = flag.flag_metadata
+          return ResolutionDetails.new(value: default_value, reason: Reason::DISABLED, flag_metadata:) if flag.disabled
 
-          variants = flag.variants || {}
+          variants = flag.variants.to_h
           unless variants.key?(flag.default_variant)
-            return ResolutionDetails.new(value: default_value, error_code: ErrorCode::PARSE_ERROR, reason: Reason::ERROR, flag_metadata: metadata)
+            return ResolutionDetails.new(value: default_value, error_code: ErrorCode::PARSE_ERROR, reason: Reason::ERROR, flag_metadata:)
           end
 
-          if flag.context_evaluator
-            variant = flag.context_evaluator.call(evaluation_context)
-            if variants.key?(variant)
-              return ResolutionDetails.new(value: variants[variant], variant: variant, reason: Reason::TARGETING_MATCH, flag_metadata: metadata)
-            end
+          matched = flag.context_evaluator&.call(evaluation_context)
+          if variants.key?(matched)
+            return ResolutionDetails.new(value: variants[matched], variant: matched, reason: Reason::TARGETING_MATCH, flag_metadata:)
           end
 
           reason = flag.context_evaluator ? Reason::DEFAULT : Reason::STATIC
-          ResolutionDetails.new(value: variants[flag.default_variant], variant: flag.default_variant, reason: reason, flag_metadata: metadata)
+          ResolutionDetails.new(value: variants[flag.default_variant], variant: flag.default_variant, reason:, flag_metadata:)
         end
 
         def emit_provider_changed(flag_keys)

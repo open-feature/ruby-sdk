@@ -150,6 +150,32 @@ RSpec.describe "Flag Evaluation API" do
         expect(ready_names).to eq(["In-memory Provider"])
       end
 
+      specify "an event racing with replacement does not re-track the replaced provider" do
+        old = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(old)
+        registry = OpenFeature::SDK.configuration.instance_variable_get(:@provider_state_registry)
+        checked = Queue.new
+        resume = Queue.new
+        # Pause the event thread after its binding check, before it writes the state
+        allow(registry).to receive(:update_state_from_event).and_wrap_original do |original, provider, *args|
+          if provider.equal?(old)
+            checked << true
+            resume.pop
+          end
+          original.call(provider, *args)
+        end
+
+        emitter = Thread.new { old.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE) }
+        checked.pop
+        replacer = Thread.new { OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new) }
+        # Unsynchronized, replacement finishes here; synchronized, it waits for the event
+        replacer.join(0.2)
+        resume << :go
+
+        expect([emitter, replacer].map { |t| t.join(5) }).to all(be_a(Thread))
+        expect(OpenFeature::SDK.configuration.provider_tracked?(old)).to be(false)
+      end
+
       specify "replacing a NoOpProvider does not raise" do
         OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::NoOpProvider.new)
 
@@ -468,6 +494,26 @@ RSpec.describe "Flag Evaluation API" do
 
         expect(OpenFeature::SDK.configuration.provider_tracked?(slow)).to be(false)
         expect(received).to be_empty
+      end
+
+      specify "During shutdown, an async init that finishes is ignored" do
+        gate = Queue.new
+        slow = slow_init_provider(gate)
+        threads = capture_threads
+        state_during_shutdown = nil
+        slow.define_singleton_method(:shutdown) do
+          gate << :go
+          threads.each { |t| t.join(5) }
+          state_during_shutdown = OpenFeature::SDK.configuration.provider_state(self)
+        end
+        ready_names = []
+
+        OpenFeature::SDK.set_provider(slow)
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(details) { ready_names << details[:provider_name] })
+        OpenFeature::SDK.shutdown
+
+        expect(state_during_shutdown).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+        expect(ready_names).not_to include("Slow Provider")
       end
 
       specify "After shutdown, providers are cleared." do

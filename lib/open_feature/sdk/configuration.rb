@@ -89,7 +89,12 @@ module OpenFeature
       end
 
       def shutdown
-        providers_to_shutdown = @provider_mutex.synchronize { @providers.values.uniq(&:object_id) }
+        # Unbind before shutting down so events that arrive mid-shutdown are dropped
+        providers_to_shutdown = @provider_mutex.synchronize do
+          bound = @providers.values.uniq(&:object_id)
+          @providers = {}
+          bound
+        end
 
         providers_to_shutdown.each do |prov|
           # Spec 1.7.6: Set provider state to NOT_READY before shutdown
@@ -208,10 +213,12 @@ module OpenFeature
       end
 
       def dispatch_provider_event(provider, event_type, details = {})
-        # A late async init can fire after the provider was replaced or shut down
-        return unless provider_bound?(provider)
+        # Under the replacement lock, so a late event can't re-track a replaced or shut-down provider
+        @provider_mutex.synchronize do
+          return unless provider_bound?(provider)
 
-        @provider_state_registry.update_state_from_event(provider, event_type, details)
+          @provider_state_registry.update_state_from_event(provider, event_type, details)
+        end
 
         provider_name = extract_provider_name(provider)
 

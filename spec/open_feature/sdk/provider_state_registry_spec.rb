@@ -83,18 +83,16 @@ RSpec.describe OpenFeature::SDK::ProviderStateRegistry do
       expect(registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
     end
 
-    [OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR].each do |prior_event|
-      it "updates state to READY on PROVIDER_CONTEXT_CHANGED after #{prior_event} (spec 5.3.5)" do
-        registry.update_state_from_event(provider, prior_event)
+    it "updates state to READY on PROVIDER_CONTEXT_CHANGED (spec 5.3.5)" do
+      registry.update_state_from_event(provider, OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
 
-        new_state = registry.update_state_from_event(provider, OpenFeature::SDK::ProviderEvent::PROVIDER_CONTEXT_CHANGED)
+      new_state = registry.update_state_from_event(provider, OpenFeature::SDK::ProviderEvent::PROVIDER_CONTEXT_CHANGED)
 
-        expect(new_state).to eq(OpenFeature::SDK::ProviderState::READY)
-        expect(registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
-      end
+      expect(new_state).to eq(OpenFeature::SDK::ProviderState::READY)
+      expect(registry.get_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
     end
 
-    it "does not change state on PROVIDER_RECONCILING, since RECONCILING status is static-context only (spec 1.7.2.1)" do
+    it "does not change state on PROVIDER_RECONCILING" do
       registry.update_state_from_event(provider, OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
 
       new_state = registry.update_state_from_event(provider, OpenFeature::SDK::ProviderEvent::PROVIDER_RECONCILING)

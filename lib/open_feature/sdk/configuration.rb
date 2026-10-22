@@ -147,7 +147,10 @@ module OpenFeature
           if old_provider && !old_provider.equal?(provider)
             still_bound = @providers.any? { |_, p| p.equal?(old_provider) }
             needs_shutdown = !still_bound
-            @provider_state_registry.remove_provider(old_provider) unless still_bound
+            unless still_bound
+              @provider_state_registry.remove_provider(old_provider)
+              old_provider.send(:detach) if old_provider.is_a?(Provider::EventEmitter)
+            end
           end
         end
 

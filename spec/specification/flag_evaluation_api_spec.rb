@@ -81,6 +81,50 @@ RSpec.describe "Flag Evaluation API" do
       end
     end
 
+    context "Requirement 1.1.2.3: replaced providers are detached" do
+      before { OpenFeature::SDK.configuration.send(:reset) }
+      after { OpenFeature::SDK.configuration.send(:reset) }
+
+      specify "a replaced provider's events no longer reach handlers" do
+        old = OpenFeature::SDK::Provider::InMemoryProvider.new
+        received = []
+        OpenFeature::SDK.set_provider_and_wait(old)
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, ->(details) { received << details })
+
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new)
+        old.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+
+        expect(received).to be_empty
+        expect(old.configuration_attached?).to be(false)
+        expect(OpenFeature::SDK.configuration.provider_tracked?(old)).to be(false)
+      end
+
+      specify "a provider still bound to another domain stays attached" do
+        shared = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(shared, domain: "a")
+        OpenFeature::SDK.set_provider_and_wait(shared, domain: "b")
+
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new, domain: "a")
+
+        expect(shared.configuration_attached?).to be(true)
+      end
+
+      specify "re-setting the same provider on the same domain keeps it attached" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        expect(provider.configuration_attached?).to be(true)
+      end
+
+      specify "replacing a NoOpProvider does not raise" do
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::NoOpProvider.new)
+
+        expect { OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new) }.not_to raise_error
+      end
+    end
+
     context "Requirement 1.1.2.4" do
       specify "The API SHOULD provide functions to set a provider and wait for the initialize function to complete or abnormally terminate" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new

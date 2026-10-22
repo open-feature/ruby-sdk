@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "timeout"
 require_relative "api"
 require_relative "provider_initialization_error"
 require_relative "event_dispatcher"

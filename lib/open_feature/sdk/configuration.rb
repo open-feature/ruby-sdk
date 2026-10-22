@@ -212,6 +212,9 @@ module OpenFeature
       end
 
       def dispatch_provider_event(provider, event_type, details = {})
+        # Events from providers that are no longer registered (e.g. a late async init) are dropped
+        return unless provider_bound?(provider)
+
         @provider_state_registry.update_state_from_event(provider, event_type, details)
 
         provider_name = extract_provider_name(provider)
@@ -224,6 +227,10 @@ module OpenFeature
       end
 
       private
+
+      def provider_bound?(provider)
+        @providers.each_value.any? { |p| p.equal?(provider) }
+      end
 
       def extract_provider_name(provider)
         provider.respond_to?(:metadata) ? provider.metadata.name : provider.class.name

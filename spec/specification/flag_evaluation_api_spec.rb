@@ -118,6 +118,28 @@ RSpec.describe "Flag Evaluation API" do
         expect(provider.configuration_attached?).to be(true)
       end
 
+      specify "an async init that finishes after replacement is ignored" do
+        gate = Queue.new
+        slow_class = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+          define_method(:init) { |_evaluation_context = nil| gate.pop }
+
+          def metadata = OpenFeature::SDK::Provider::ProviderMetadata.new(name: "Slow Provider")
+        end
+        slow = slow_class.new
+        threads = []
+        allow(Thread).to receive(:new).and_wrap_original { |original, *args, &block| original.call(*args, &block).tap { |t| threads << t } }
+        ready_names = []
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(details) { ready_names << details[:provider_name] })
+
+        OpenFeature::SDK.set_provider(slow)
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new)
+        gate << :go
+        threads.each(&:join)
+
+        expect(OpenFeature::SDK.configuration.provider_tracked?(slow)).to be(false)
+        expect(ready_names).to eq(["In-memory Provider"])
+      end
+
       specify "replacing a NoOpProvider does not raise" do
         OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::NoOpProvider.new)
 

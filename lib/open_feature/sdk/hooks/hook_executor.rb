@@ -18,8 +18,8 @@ module OpenFeature
           @logger = logger
         end
 
-        # Runs error hooks and finally hooks for a short-circuit evaluation
-        # (see Client#fetch_details). Before hooks and after hooks are NOT run.
+        # Runs error hooks and finally hooks for a short-circuit evaluation.
+        # Before hooks and after hooks are NOT run.
         #
         # @param ordered_hooks [Array] hooks in before-order
         # @param hook_context [HookContext] the hook context

@@ -80,7 +80,7 @@ module OpenFeature
         provider_hooks = @provider.respond_to?(:hooks) ? Array(@provider.hooks) : []
         ordered_hooks = [*OpenFeature::SDK.hooks, *@hooks, *invocation_hooks, *provider_hooks]
 
-        # Short-circuit NOT_READY/FATAL providers. Spec v0.9.0 no longer requires this (2.2.7), but evaluation_v2.feature does.
+        # Short-circuit NOT_READY/FATAL providers (required by evaluation_v2.feature)
         short_circuit_code = nil
         if OpenFeature::SDK.configuration.provider_tracked?(@provider)
           short_circuit_code = short_circuit_error_code(provider_status)
@@ -130,7 +130,6 @@ module OpenFeature
         executor = Hooks::HookExecutor.new(logger: OpenFeature::SDK.configuration.logger)
 
         if short_circuit_code
-          # Short-circuits still run error and finally hooks
           resolution = Provider::ResolutionDetails.new(
             value: default_value,
             error_code: short_circuit_code,

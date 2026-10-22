@@ -19,7 +19,7 @@ module OpenFeature
         end
 
         # Runs error hooks and finally hooks for a short-circuit evaluation
-        # (spec 1.7.6 + 1.7.7). Before hooks and after hooks are NOT run.
+        # (see Client#fetch_details). Before hooks and after hooks are NOT run.
         #
         # @param ordered_hooks [Array] hooks in before-order
         # @param hook_context [HookContext] the hook context

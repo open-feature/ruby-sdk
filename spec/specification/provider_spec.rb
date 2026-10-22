@@ -51,7 +51,7 @@ RSpec.describe "Provider" do
         end
       end
 
-      specify "Requirement 2.4.5: Provider status indicates FATAL if init terminates with PROVIDER_FATAL error code" do
+      specify "Requirement 1.7.5: Provider status indicates FATAL if init terminates with PROVIDER_FATAL error code" do
         fatal_error_class = Class.new(StandardError) do
           define_method(:error_code) { OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL }
         end
@@ -70,7 +70,7 @@ RSpec.describe "Provider" do
         expect(state).to eq(OpenFeature::SDK::ProviderState::FATAL)
       end
 
-      specify "Requirement 2.4.5: Provider status indicates ERROR for non-fatal init errors" do
+      specify "Requirement 1.7.4: Provider status indicates ERROR for non-fatal init errors" do
         generic_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         allow(generic_provider).to receive(:init).and_raise(StandardError.new("Generic init failure"))
 

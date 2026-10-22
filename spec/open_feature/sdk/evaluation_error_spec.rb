@@ -17,4 +17,28 @@ RSpec.describe OpenFeature::SDK::EvaluationError do
   it "defaults the error code to GENERAL" do
     expect(described_class.new("x").error_code).to eq("GENERAL")
   end
+
+  describe ".code_for" do
+    it "returns the code of any exception exposing error_code" do
+      error = Class.new(StandardError) { def error_code = "PARSE_ERROR" }.new
+
+      expect(described_class.code_for(error)).to eq("PARSE_ERROR")
+    end
+
+    it "returns GENERAL when the exception has no error_code" do
+      expect(described_class.code_for(StandardError.new)).to eq("GENERAL")
+    end
+
+    it "returns GENERAL when error_code is nil" do
+      error = Class.new(StandardError) { def error_code = nil }.new
+
+      expect(described_class.code_for(error)).to eq("GENERAL")
+    end
+
+    it "returns GENERAL when the error_code reader raises" do
+      error = Class.new(StandardError) { def error_code = raise("broken reader") }.new
+
+      expect(described_class.code_for(error)).to eq("GENERAL")
+    end
+  end
 end

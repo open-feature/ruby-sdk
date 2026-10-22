@@ -159,6 +159,17 @@ RSpec.describe OpenFeature::SDK::Hooks::LoggingHook do
       hook.error(hook_context: hook_context, exception: error_with_code, hints: hints)
     end
 
+    it "logs GENERAL when the exception's error_code is nil" do
+      error_without_code = Class.new(StandardError) { def error_code = nil }.new("no code")
+      hook = described_class.new(logger: logger)
+
+      expect(logger).to receive(:error) do |&block|
+        expect(block.call).to include("error_code=GENERAL")
+      end
+
+      hook.error(hook_context: hook_context, exception: error_without_code, hints: hints)
+    end
+
     it "includes evaluation_context when enabled" do
       hook = described_class.new(logger: logger, include_evaluation_context: true)
       expect(logger).to receive(:error) do |&block|

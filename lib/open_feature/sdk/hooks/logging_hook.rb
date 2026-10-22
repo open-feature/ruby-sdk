@@ -49,8 +49,7 @@ module OpenFeature
 
         def build_error_message(hook_context, exception)
           parts = base_parts("error", hook_context)
-          error_code = exception.respond_to?(:error_code) ? exception.error_code : Provider::ErrorCode::GENERAL
-          parts << "error_code=#{sanitize(error_code)}"
+          parts << "error_code=#{sanitize(EvaluationError.code_for(exception))}"
           parts << "error_message=#{sanitize(exception.message)}"
           parts << "evaluation_context=#{format_context(hook_context.evaluation_context)}" if @include_evaluation_context
           parts.join(" ")

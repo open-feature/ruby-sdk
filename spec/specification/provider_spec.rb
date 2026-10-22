@@ -150,22 +150,6 @@ RSpec.describe "Provider" do
             expect(details.value).to be(false)
           end
 
-          specify "any exception exposing error_code is honored" do
-            error_class = Class.new(StandardError) { def error_code = "PARSE_ERROR" }
-
-            expect(fetch_with(error_class.new("bad"), with_hook:).error_code).to eq("PARSE_ERROR")
-          end
-
-          specify "an exception whose error_code is nil reports GENERAL" do
-            error_class = Class.new(StandardError) { def error_code = nil }
-
-            expect(fetch_with(error_class.new("bad"), with_hook:).error_code).to eq("GENERAL")
-          end
-
-          specify "a plain StandardError reports GENERAL" do
-            expect(fetch_with(StandardError.new("plain"), with_hook:).error_code).to eq("GENERAL")
-          end
-
           specify "an exception whose error_code reader raises reports GENERAL instead of escaping" do
             error_class = Class.new(StandardError) { def error_code = raise("broken reader") }
 

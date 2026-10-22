@@ -26,7 +26,7 @@ module OpenFeature
         # @param hints [Hints] hook hints
         # @param evaluation_details [EvaluationDetails] the short-circuit result
         def run_short_circuit(ordered_hooks:, hook_context:, hints:, evaluation_details:)
-          error = StandardError.new(evaluation_details.error_code)
+          error = EvaluationError.new(evaluation_details.error_message || evaluation_details.error_code, error_code: evaluation_details.error_code)
           run_error_hooks(ordered_hooks, hook_context, error, hints)
         ensure
           run_finally_hooks(ordered_hooks, hook_context, evaluation_details, hints)
@@ -49,7 +49,7 @@ module OpenFeature
             # Spec 4.3.6: If evaluation resulted in an error (e.g. FLAG_NOT_FOUND,
             # TYPE_MISMATCH), run error hooks instead of after hooks.
             if evaluation_details.error_code
-              error = StandardError.new(evaluation_details.error_message || evaluation_details.error_code)
+              error = EvaluationError.new(evaluation_details.error_message || evaluation_details.error_code, error_code: evaluation_details.error_code)
               run_error_hooks(ordered_hooks, hook_context, error, hints)
             else
               run_after_hooks(ordered_hooks, hook_context, evaluation_details, hints)

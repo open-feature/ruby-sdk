@@ -245,4 +245,21 @@ RSpec.describe OpenFeature::SDK::Hooks::LoggingHook do
       hook.error(hook_context: hook_context, exception: exception, hints: hints)
     end
   end
+
+  describe "end to end" do
+    after { OpenFeature::SDK.configuration.send(:reset) }
+
+    it "reports the provider's error code" do
+      messages = []
+      allow(logger).to receive(:debug)
+      allow(logger).to receive(:error) { |&block| messages << block.call }
+      OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new({}))
+      client = OpenFeature::SDK.build_client
+      client.hooks << described_class.new(logger: logger)
+
+      client.fetch_boolean_details(flag_key: "missing", default_value: false)
+
+      expect(messages.join).to include("error_code=FLAG_NOT_FOUND")
+    end
+  end
 end

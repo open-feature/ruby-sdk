@@ -346,4 +346,51 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
       end
     end
   end
+
+  describe "exceptions passed to error hooks" do
+    let(:capturing_hook) do
+      Class.new do
+        include OpenFeature::SDK::Hooks::Hook
+
+        attr_reader :exception
+
+        def error(hook_context:, exception:, hints:)
+          @exception = exception
+        end
+      end.new
+    end
+
+    def error_details(error_code:, error_message: nil)
+      OpenFeature::SDK::EvaluationDetails.new(
+        flag_key: "test-flag",
+        resolution_details: OpenFeature::SDK::Provider::ResolutionDetails.new(
+          value: false,
+          reason: OpenFeature::SDK::Provider::Reason::ERROR,
+          error_code: error_code,
+          error_message: error_message
+        )
+      )
+    end
+
+    it "carries the resolution's error code and message" do
+      executor.execute(ordered_hooks: [capturing_hook], hook_context: hook_context, hints: hints) do |_hctx|
+        error_details(error_code: "FLAG_NOT_FOUND", error_message: "nope")
+      end
+
+      expect(capturing_hook.exception).to be_a(OpenFeature::SDK::EvaluationError)
+      expect(capturing_hook.exception.error_code).to eq("FLAG_NOT_FOUND")
+      expect(capturing_hook.exception.message).to eq("nope")
+    end
+
+    it "carries the short-circuit error code" do
+      executor.run_short_circuit(
+        ordered_hooks: [capturing_hook],
+        hook_context: hook_context,
+        hints: hints,
+        evaluation_details: error_details(error_code: "PROVIDER_NOT_READY")
+      )
+
+      expect(capturing_hook.exception.error_code).to eq("PROVIDER_NOT_READY")
+    end
+  end
 end

@@ -18,9 +18,9 @@ RSpec.describe OpenFeature::SDK do
       provider = OpenFeature::SDK::Provider::InMemoryProvider.new
       api_instance = OpenFeature::SDK::API.instance
 
-      expect(api_instance).to receive(:set_provider_and_wait).with(provider, domain: "test", timeout: 60)
+      expect(api_instance).to receive(:set_provider_and_wait).with(provider, domain: "test")
 
-      OpenFeature::SDK.set_provider_and_wait(provider, domain: "test", timeout: 60)
+      OpenFeature::SDK.set_provider_and_wait(provider, domain: "test")
     end
 
     it "is accessible via method_missing delegation" do

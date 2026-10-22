@@ -18,15 +18,15 @@ module OpenFeature
           @logger = logger
         end
 
-        # Runs error hooks and finally hooks for a short-circuit evaluation
-        # (spec 1.7.6 + 1.7.7). Before hooks and after hooks are NOT run.
+        # Runs error hooks and finally hooks for a short-circuit evaluation.
+        # Before hooks and after hooks are NOT run.
         #
         # @param ordered_hooks [Array] hooks in before-order
         # @param hook_context [HookContext] the hook context
         # @param hints [Hints] hook hints
         # @param evaluation_details [EvaluationDetails] the short-circuit result
         def run_short_circuit(ordered_hooks:, hook_context:, hints:, evaluation_details:)
-          error = StandardError.new(evaluation_details.error_code)
+          error = EvaluationError.new(evaluation_details.error_message, error_code: evaluation_details.error_code)
           run_error_hooks(ordered_hooks, hook_context, error, hints)
         ensure
           run_finally_hooks(ordered_hooks, hook_context, evaluation_details, hints)
@@ -49,7 +49,7 @@ module OpenFeature
             # Spec 4.3.6: If evaluation resulted in an error (e.g. FLAG_NOT_FOUND,
             # TYPE_MISMATCH), run error hooks instead of after hooks.
             if evaluation_details.error_code
-              error = StandardError.new(evaluation_details.error_message || evaluation_details.error_code)
+              error = EvaluationError.new(evaluation_details.error_message, error_code: evaluation_details.error_code)
               run_error_hooks(ordered_hooks, hook_context, error, hints)
             else
               run_after_hooks(ordered_hooks, hook_context, evaluation_details, hints)
@@ -61,7 +61,7 @@ module OpenFeature
               flag_key: hook_context.flag_key,
               resolution_details: Provider::ResolutionDetails.new(
                 value: hook_context.default_value,
-                error_code: Provider::ErrorCode::GENERAL,
+                error_code: EvaluationError.code_for(e),
                 reason: Provider::Reason::ERROR,
                 error_message: e.message
               )

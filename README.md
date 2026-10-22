@@ -78,7 +78,13 @@ OpenFeature::SDK.configure do |config|
   config.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new(
     {
       "flag1" => true,
-      "flag2" => 1
+      "flag2" => 1,
+      # Variant flags report a variant and reason, and can target on the evaluation context
+      "flag3" => OpenFeature::SDK::Provider::InMemoryProvider::Flag.new(
+        variants: {"on" => true, "off" => false},
+        default_variant: "off",
+        context_evaluator: ->(ctx) { "on" if ctx&.targeting_key == "beta-user" }
+      )
     }
   ))
 end
@@ -156,9 +162,6 @@ rescue OpenFeature::SDK::ProviderInitializationError => e
   # original_error contains the underlying exception that caused the initialization failure
   puts "Original error: #{e.original_error}"
 end
-
-# With custom timeout (default is 30 seconds)
-OpenFeature::SDK.set_provider_and_wait(my_provider, timeout: 60)
 
 # Domain-specific provider
 OpenFeature::SDK.set_provider_and_wait(my_provider, domain: "feature-flags")
@@ -453,6 +456,8 @@ class MyProvider
 
   def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
     # Retrieve a boolean value from provider source
+    # To signal an error, return ResolutionDetails with an error_code, or raise
+    # OpenFeature::SDK::EvaluationError.new("message", error_code: OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
   end
 
   def fetch_string_value(flag_key:, default_value:, evaluation_context: nil)

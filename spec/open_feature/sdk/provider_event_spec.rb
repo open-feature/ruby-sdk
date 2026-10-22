@@ -20,12 +20,22 @@ RSpec.describe OpenFeature::SDK::ProviderEvent do
     expect(described_class::PROVIDER_STALE).to eq("PROVIDER_STALE")
   end
 
+  it "defines PROVIDER_RECONCILING constant" do
+    expect(described_class::PROVIDER_RECONCILING).to eq("PROVIDER_RECONCILING")
+  end
+
+  it "defines PROVIDER_CONTEXT_CHANGED constant" do
+    expect(described_class::PROVIDER_CONTEXT_CHANGED).to eq("PROVIDER_CONTEXT_CHANGED")
+  end
+
   it "defines ALL_EVENTS with all event types" do
     expect(described_class::ALL_EVENTS).to contain_exactly(
       "PROVIDER_READY",
       "PROVIDER_ERROR",
       "PROVIDER_CONFIGURATION_CHANGED",
-      "PROVIDER_STALE"
+      "PROVIDER_STALE",
+      "PROVIDER_RECONCILING",
+      "PROVIDER_CONTEXT_CHANGED"
     )
   end
 

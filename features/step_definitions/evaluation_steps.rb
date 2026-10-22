@@ -4,7 +4,7 @@
 
 Given(/^a (stable|not ready|error|fatal|stale) provider$/) do |status|
   if status == "stable"
-    @provider = TestFlagsProvider.new(TEST_FLAGS)
+    @provider = CachingInMemoryProvider.new(build_test_flags(TEST_FLAGS))
     OpenFeature::SDK.set_provider_and_wait(@provider)
   else
     provider = StatusProvider.new

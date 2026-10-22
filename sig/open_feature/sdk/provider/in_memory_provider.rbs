@@ -6,6 +6,16 @@ module OpenFeature
 
         NAME: String
 
+        class Flag < Struct[untyped]
+          attr_accessor variants: Hash[String, untyped]?
+          attr_accessor default_variant: String?
+          attr_accessor context_evaluator: (^(EvaluationContext?) -> String?)?
+          attr_accessor flag_metadata: Hash[String, untyped]?
+          attr_accessor disabled: bool?
+
+          def initialize: (?variants: Hash[String, untyped]?, ?default_variant: String?, ?context_evaluator: (^(EvaluationContext?) -> String?)?, ?flag_metadata: Hash[String, untyped]?, ?disabled: bool?) -> void
+        end
+
         attr_reader metadata: ProviderMetadata
 
         def initialize: (?Hash[String, untyped] flags) -> void
@@ -28,6 +38,7 @@ module OpenFeature
         attr_reader flags: Hash[String, untyped]
 
         def fetch_value: (flag_key: String, default_value: untyped, evaluation_context: EvaluationContext?) -> ResolutionDetails
+        def resolve_variant_flag: (Flag flag, untyped default_value, EvaluationContext? evaluation_context) -> ResolutionDetails
         def emit_provider_changed: (Array[String] flag_keys) -> void
       end
     end

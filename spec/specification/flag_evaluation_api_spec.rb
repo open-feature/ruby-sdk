@@ -575,7 +575,8 @@ RSpec.describe "Flag Evaluation API" do
       end
     end
 
-    context "Requirement 1.7.6" do
+    # Not a spec requirement since v0.9.0 (2.2.7 moved it to providers); evaluation_v2.feature still expects it.
+    context "Short-circuit: provider not ready" do
       specify "If the provider status is NOT_READY, the client should return the default value with PROVIDER_NOT_READY error." do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         OpenFeature::SDK.set_provider_and_wait(provider)
@@ -617,7 +618,7 @@ RSpec.describe "Flag Evaluation API" do
       end
     end
 
-    context "Requirement 1.7.7" do
+    context "Short-circuit: provider fatal" do
       specify "If the provider status is FATAL, the client should return the default value with PROVIDER_FATAL error." do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         OpenFeature::SDK.set_provider_and_wait(provider)
@@ -661,7 +662,7 @@ RSpec.describe "Flag Evaluation API" do
   end
 
   context "1.7 - Provider Lifecycle (shutdown)" do
-    context "Requirement 1.7.9" do
+    context "Requirement 1.7.6" do
       specify "shutdown must not emit PROVIDER_READY before transitioning to NOT_READY" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         OpenFeature::SDK.set_provider_and_wait(provider)

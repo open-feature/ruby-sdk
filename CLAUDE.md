@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is the official OpenFeature SDK for Ruby — an implementation of the [OpenFeature specification](https://openfeature.dev) providing a vendor-agnostic API for feature flag evaluation. Published as the `openfeature-sdk` gem. Requires Ruby >= 3.1.
+This is the official OpenFeature SDK for Ruby — an implementation of the [OpenFeature specification](https://openfeature.dev) providing a vendor-agnostic API for feature flag evaluation. Published as the `openfeature-sdk` gem. Requires Ruby >= 3.4.
 
 ## Commands
 

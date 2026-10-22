@@ -91,7 +91,7 @@ module OpenFeature
 
       def state_from_event(event_type, event_details = nil)
         case event_type
-        when ProviderEvent::PROVIDER_READY
+        when ProviderEvent::PROVIDER_READY, ProviderEvent::PROVIDER_CONTEXT_CHANGED
           ProviderState::READY
         when ProviderEvent::PROVIDER_STALE
           ProviderState::STALE
@@ -100,7 +100,7 @@ module OpenFeature
         when ProviderEvent::PROVIDER_CONFIGURATION_CHANGED
           nil # No state change per OpenFeature spec Requirement 5.3.5
         else
-          nil # No state change for unknown events - conservative default
+          nil # PROVIDER_RECONCILING (RECONCILING status is static-context only, spec 1.7.2.1) and unknown events
         end
       end
 

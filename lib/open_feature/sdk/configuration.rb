@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "timeout"
 require_relative "api"
 require_relative "provider_initialization_error"
 require_relative "event_dispatcher"
@@ -92,7 +91,7 @@ module OpenFeature
         providers_to_shutdown = @provider_mutex.synchronize { @providers.values.uniq(&:object_id) }
 
         providers_to_shutdown.each do |prov|
-          # Spec 1.7.9: Set provider state to NOT_READY before shutdown
+          # Spec 1.7.6: Set provider state to NOT_READY before shutdown
           @provider_state_registry.set_initial_state(prov, ProviderState::NOT_READY)
           prov.shutdown if prov.respond_to?(:shutdown)
         rescue => e
@@ -187,7 +186,7 @@ module OpenFeature
 
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
       rescue => e
-        # Spec 1.7.8: Propagate error code from provider if available
+        # Spec 1.7.5: PROVIDER_FATAL from init makes the provider FATAL
         error_code = if e.respond_to?(:error_code) && e.error_code
           e.error_code
         else

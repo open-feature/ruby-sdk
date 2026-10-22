@@ -3,6 +3,7 @@
 require "timeout"
 require_relative "api"
 require_relative "provider_initialization_error"
+require_relative "evaluation_error"
 require_relative "event_dispatcher"
 require_relative "provider_event"
 require_relative "provider_state_registry"
@@ -188,11 +189,7 @@ module OpenFeature
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
       rescue => e
         # Spec 1.7.8: Propagate error code from provider if available
-        error_code = if e.respond_to?(:error_code) && e.error_code
-          e.error_code
-        else
-          Provider::ErrorCode::GENERAL
-        end
+        error_code = EvaluationError.code_for(e)
 
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
           error_code: error_code,

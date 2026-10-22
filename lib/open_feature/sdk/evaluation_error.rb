@@ -15,6 +15,14 @@ module OpenFeature
         super(message || error_code)
         @error_code = error_code
       end
+
+      # The error code carried by +exception+, or GENERAL when it has none.
+      # Rescues a failing reader so callers inside a rescue block never raise (spec 1.4.10).
+      def self.code_for(exception)
+        (exception.respond_to?(:error_code) && exception.error_code) || Provider::ErrorCode::GENERAL
+      rescue
+        Provider::ErrorCode::GENERAL
+      end
     end
   end
 end

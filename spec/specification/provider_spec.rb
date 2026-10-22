@@ -84,6 +84,18 @@ RSpec.describe "Provider" do
         expect(state).to eq(OpenFeature::SDK::ProviderState::ERROR)
       end
 
+      specify "An init error whose error_code reader raises still becomes a GENERAL ProviderInitializationError" do
+        error_class = Class.new(StandardError) { def error_code = raise("broken reader") }
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        allow(provider).to receive(:init).and_raise(error_class.new("init failed"))
+
+        expect do
+          OpenFeature::SDK.set_provider_and_wait(provider)
+        end.to raise_error(OpenFeature::SDK::ProviderInitializationError) do |error|
+          expect(error.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+        end
+      end
+
       specify "Provider initialization errors should prevent the provider from being used" do
         # Store the old provider
         OpenFeature::SDK.provider
@@ -152,6 +164,12 @@ RSpec.describe "Provider" do
 
           specify "a plain StandardError reports GENERAL" do
             expect(fetch_with(StandardError.new("plain"), with_hook:).error_code).to eq("GENERAL")
+          end
+
+          specify "an exception whose error_code reader raises reports GENERAL instead of escaping" do
+            error_class = Class.new(StandardError) { def error_code = raise("broken reader") }
+
+            expect(fetch_with(error_class.new("bad"), with_hook:).error_code).to eq("GENERAL")
           end
         end
       end

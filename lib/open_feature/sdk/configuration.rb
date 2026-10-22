@@ -146,9 +146,8 @@ module OpenFeature
 
           # Spec 1.1.2.3: Only shutdown old provider if it's no longer bound to any domain
           if old_provider && !old_provider.equal?(provider)
-            still_bound = @providers.any? { |_, p| p.equal?(old_provider) }
-            needs_shutdown = !still_bound
-            unless still_bound
+            needs_shutdown = !provider_bound?(old_provider)
+            if needs_shutdown
               @provider_state_registry.remove_provider(old_provider)
               old_provider.send(:detach) if old_provider.is_a?(Provider::EventEmitter)
             end
@@ -213,7 +212,7 @@ module OpenFeature
       end
 
       def dispatch_provider_event(provider, event_type, details = {})
-        # Events from providers that are no longer registered (e.g. a late async init) are dropped
+        # A late async init can fire after the provider was replaced or shut down
         return unless provider_bound?(provider)
 
         @provider_state_registry.update_state_from_event(provider, event_type, details)

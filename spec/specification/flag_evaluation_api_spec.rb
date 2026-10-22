@@ -3,6 +3,22 @@
 require "spec_helper"
 
 RSpec.describe "Flag Evaluation API" do
+  # An InMemoryProvider whose init blocks until something is pushed onto +gate+.
+  def slow_init_provider(gate)
+    Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+      define_method(:init) { |_evaluation_context = nil| gate.pop }
+
+      def metadata = OpenFeature::SDK::Provider::ProviderMetadata.new(name: "Slow Provider")
+    end.new
+  end
+
+  # Collects threads the SDK starts (e.g. async init) so a test can join them.
+  def capture_threads
+    [].tap do |threads|
+      allow(Thread).to receive(:new).and_wrap_original { |original, *args, &block| original.call(*args, &block).tap { |t| threads << t } }
+    end
+  end
+
   context "1.1 - API Initialization and Configuration" do
     context "Requirement 1.1.1" do
       specify "the API should exist as a global singleton" do
@@ -120,14 +136,8 @@ RSpec.describe "Flag Evaluation API" do
 
       specify "an async init that finishes after replacement is ignored" do
         gate = Queue.new
-        slow_class = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
-          define_method(:init) { |_evaluation_context = nil| gate.pop }
-
-          def metadata = OpenFeature::SDK::Provider::ProviderMetadata.new(name: "Slow Provider")
-        end
-        slow = slow_class.new
-        threads = []
-        allow(Thread).to receive(:new).and_wrap_original { |original, *args, &block| original.call(*args, &block).tap { |t| threads << t } }
+        slow = slow_init_provider(gate)
+        threads = capture_threads
         ready_names = []
         OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(details) { ready_names << details[:provider_name] })
 
@@ -415,6 +425,8 @@ RSpec.describe "Flag Evaluation API" do
     end
 
     context "Requirement 1.6.2" do
+      after { OpenFeature::SDK.configuration.send(:reset) }
+
       specify "When a shutdown function is called, the API invokes the shutdown function on the registered provider." do
         provider1 = OpenFeature::SDK::Provider::InMemoryProvider.new
         provider2 = OpenFeature::SDK::Provider::InMemoryProvider.new
@@ -440,18 +452,12 @@ RSpec.describe "Flag Evaluation API" do
         expect(received).to be_empty
         expect(provider.configuration_attached?).to be(false)
         expect(OpenFeature::SDK.configuration.provider_tracked?(provider)).to be(false)
-      ensure
-        OpenFeature::SDK.configuration.send(:reset)
       end
 
       specify "After shutdown, an async init that finishes late is ignored" do
         gate = Queue.new
-        slow_class = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
-          define_method(:init) { |_evaluation_context = nil| gate.pop }
-        end
-        slow = slow_class.new
-        threads = []
-        allow(Thread).to receive(:new).and_wrap_original { |original, *args, &block| original.call(*args, &block).tap { |t| threads << t } }
+        slow = slow_init_provider(gate)
+        threads = capture_threads
 
         OpenFeature::SDK.set_provider(slow)
         OpenFeature::SDK.shutdown
@@ -462,8 +468,6 @@ RSpec.describe "Flag Evaluation API" do
 
         expect(OpenFeature::SDK.configuration.provider_tracked?(slow)).to be(false)
         expect(received).to be_empty
-      ensure
-        OpenFeature::SDK.configuration.send(:reset)
       end
 
       specify "After shutdown, providers are cleared." do

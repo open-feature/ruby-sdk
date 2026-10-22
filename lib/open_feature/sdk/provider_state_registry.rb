@@ -91,7 +91,7 @@ module OpenFeature
 
       def state_from_event(event_type, event_details = nil)
         case event_type
-        when ProviderEvent::PROVIDER_READY
+        when ProviderEvent::PROVIDER_READY, ProviderEvent::PROVIDER_CONTEXT_CHANGED
           ProviderState::READY
         when ProviderEvent::PROVIDER_STALE
           ProviderState::STALE

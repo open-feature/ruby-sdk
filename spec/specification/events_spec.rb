@@ -32,7 +32,7 @@ RSpec.describe "OpenFeature Specification: Events" do
       expect(provider).to respond_to(:emit_event)
     end
 
-    specify "the event set includes PROVIDER_RECONCILING and PROVIDER_CONTEXT_CHANGED, which don't change provider status" do
+    specify "the event set includes PROVIDER_RECONCILING and PROVIDER_CONTEXT_CHANGED" do
       provider = OpenFeature::SDK::Provider::InMemoryProvider.new
       received = []
       OpenFeature::SDK.set_provider_and_wait(provider)

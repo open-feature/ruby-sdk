@@ -13,7 +13,7 @@ RSpec.describe "OpenFeature Specification: Events" do
   end
 
   context "Requirement 5.1.1" do
-    specify "The provider MAY define a mechanism for signaling the occurrence of events" do
+    specify "The feature provider interface MUST define a mechanism for signaling the occurrence of one of a set of events, with a provider event details payload" do
       # Verify that the EventEmitter mixin exists and can be included
       provider_class = Class.new do
         include OpenFeature::SDK::Provider::EventEmitter
@@ -30,6 +30,18 @@ RSpec.describe "OpenFeature Specification: Events" do
 
       provider = provider_class.new
       expect(provider).to respond_to(:emit_event)
+    end
+
+    specify "the event set includes PROVIDER_RECONCILING and PROVIDER_CONTEXT_CHANGED, which don't change provider status" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      received = []
+      OpenFeature::SDK.set_provider_and_wait(provider)
+      [OpenFeature::SDK::ProviderEvent::PROVIDER_RECONCILING, OpenFeature::SDK::ProviderEvent::PROVIDER_CONTEXT_CHANGED].each do |event|
+        OpenFeature::SDK.add_handler(event, ->(_details) { received << event })
+        provider.emit_event(event)
+      end
+      expect(received).to eq(%w[PROVIDER_RECONCILING PROVIDER_CONTEXT_CHANGED])
+      expect(OpenFeature::SDK.build_client.provider_status).to eq(OpenFeature::SDK::ProviderState::READY)
     end
   end
 

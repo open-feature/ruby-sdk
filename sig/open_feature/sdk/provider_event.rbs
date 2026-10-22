@@ -5,6 +5,8 @@ module OpenFeature
       PROVIDER_ERROR: String
       PROVIDER_CONFIGURATION_CHANGED: String
       PROVIDER_STALE: String
+      PROVIDER_RECONCILING: String
+      PROVIDER_CONTEXT_CHANGED: String
 
       ALL_EVENTS: Array[String]
     end

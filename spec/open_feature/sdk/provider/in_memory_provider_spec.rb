@@ -256,4 +256,109 @@ RSpec.describe OpenFeature::SDK::Provider::InMemoryProvider do
       end
     end
   end
+
+  describe "variant flags" do
+    let(:flag_class) { described_class::Flag }
+    let(:metadata) { {"team" => "growth"} }
+
+    def fetch_string(flag, evaluation_context: nil)
+      described_class.new({"f" => flag}).fetch_string_value(flag_key: "f", default_value: "fallback", evaluation_context:)
+    end
+
+    it "returns the default value with reason DISABLED when the flag is disabled" do
+      fetched = fetch_string(flag_class.new(variants: {"on" => "yes"}, default_variant: "on", flag_metadata: metadata, disabled: true))
+
+      expect(fetched.value).to eq("fallback")
+      expect(fetched.variant).to be_nil
+      expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::DISABLED)
+      expect(fetched.error_code).to be_nil
+      expect(fetched.flag_metadata).to eq(metadata)
+    end
+
+    it "returns PARSE_ERROR when the default variant is missing from variants" do
+      fetched = fetch_string(flag_class.new(variants: {"on" => "yes"}, default_variant: "off", flag_metadata: metadata))
+
+      expect(fetched.value).to eq("fallback")
+      expect(fetched.variant).to be_nil
+      expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+      expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PARSE_ERROR)
+      expect(fetched.flag_metadata).to eq(metadata)
+    end
+
+    it "returns PARSE_ERROR when there is no default variant" do
+      fetched = fetch_string(flag_class.new(variants: {"on" => "yes"}))
+
+      expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PARSE_ERROR)
+    end
+
+    it "returns the matched variant with reason TARGETING_MATCH" do
+      evaluator = ->(ctx) { (ctx&.targeting_key == "vip") ? "gold" : nil }
+      flag = flag_class.new(variants: {"gold" => "shiny", "plain" => "dull"}, default_variant: "plain", context_evaluator: evaluator, flag_metadata: metadata)
+
+      fetched = fetch_string(flag, evaluation_context: OpenFeature::SDK::EvaluationContext.new(targeting_key: "vip"))
+
+      expect(fetched.value).to eq("shiny")
+      expect(fetched.variant).to eq("gold")
+      expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::TARGETING_MATCH)
+      expect(fetched.error_code).to be_nil
+      expect(fetched.flag_metadata).to eq(metadata)
+    end
+
+    [nil, "", "unknown"].each do |result|
+      it "falls back to the default variant with reason DEFAULT when the evaluator returns #{result.inspect}" do
+        flag = flag_class.new(variants: {"gold" => "shiny", "plain" => "dull"}, default_variant: "plain", context_evaluator: ->(_ctx) { result }, flag_metadata: metadata)
+
+        fetched = fetch_string(flag)
+
+        expect(fetched.value).to eq("dull")
+        expect(fetched.variant).to eq("plain")
+        expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::DEFAULT)
+        expect(fetched.error_code).to be_nil
+        expect(fetched.flag_metadata).to eq(metadata)
+      end
+    end
+
+    it "returns the default variant with reason STATIC when there is no evaluator" do
+      fetched = fetch_string(flag_class.new(variants: {"on" => "yes"}, default_variant: "on", flag_metadata: metadata))
+
+      expect(fetched.value).to eq("yes")
+      expect(fetched.variant).to eq("on")
+      expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
+      expect(fetched.error_code).to be_nil
+      expect(fetched.flag_metadata).to eq(metadata)
+    end
+
+    it "resolves a falsy variant value" do
+      flag = flag_class.new(variants: {"zero" => false, "one" => true}, default_variant: "one", context_evaluator: ->(_ctx) { "zero" })
+
+      fetched = described_class.new({"f" => flag}).fetch_boolean_value(flag_key: "f", default_value: true)
+
+      expect(fetched.value).to be(false)
+      expect(fetched.variant).to eq("zero")
+      expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::TARGETING_MATCH)
+    end
+
+    it "returns a plain Hash flag value as-is" do
+      raw = {"variants" => {"a" => 1}}
+
+      fetched = described_class.new({"f" => raw}).fetch_object_value(flag_key: "f", default_value: {})
+
+      expect(fetched.value).to eq(raw)
+      expect(fetched.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
+    end
+
+    it "emits PROVIDER_CONFIGURATION_CHANGED when Flag values are updated" do
+      config = instance_double("OpenFeature::SDK::Configuration")
+      allow(config).to receive(:dispatch_provider_event)
+      provider.send(:attach, config)
+
+      provider.update_flags({"f" => flag_class.new(variants: {"on" => "yes"}, default_variant: "on")})
+
+      expect(config).to have_received(:dispatch_provider_event).with(
+        provider,
+        OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED,
+        flags_changed: contain_exactly("bool", "str", "int", "float", "struct", "f")
+      )
+    end
+  end
 end

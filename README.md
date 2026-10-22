@@ -78,7 +78,13 @@ OpenFeature::SDK.configure do |config|
   config.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new(
     {
       "flag1" => true,
-      "flag2" => 1
+      "flag2" => 1,
+      # Variant flags report a variant and reason, and can target on the evaluation context
+      "flag3" => OpenFeature::SDK::Provider::InMemoryProvider::Flag.new(
+        variants: {"on" => true, "off" => false},
+        default_variant: "off",
+        context_evaluator: ->(ctx) { "on" if ctx&.targeting_key == "beta-user" }
+      )
     }
   ))
 end

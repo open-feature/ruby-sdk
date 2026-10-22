@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.6](https://github.com/open-feature/ruby-sdk/compare/v0.6.5...v0.6.6) (2026-10-22)
+
+
+### Features
+
+* add PROVIDER_RECONCILING and PROVIDER_CONTEXT_CHANGED events ([#338](https://github.com/open-feature/ruby-sdk/issues/338)) ([2b93aa4](https://github.com/open-feature/ruby-sdk/commit/2b93aa4daf7087a818d0b758c7978e7ad3c1c589))
+* support variant flags in InMemoryProvider ([#340](https://github.com/open-feature/ruby-sdk/issues/340)) ([1e4b168](https://github.com/open-feature/ruby-sdk/commit/1e4b168373e39522c4884e34383730d48772b95f))
+
+
+### Bug Fixes
+
+* carry provider error codes through hooks ([#339](https://github.com/open-feature/ruby-sdk/issues/339)) ([b9e586c](https://github.com/open-feature/ruby-sdk/commit/b9e586c518a4b8e85facbb90e123c347b0db33e5))
+
 ## [0.6.5](https://github.com/open-feature/ruby-sdk/compare/v0.6.4...v0.6.5) (2026-03-18)
 
 

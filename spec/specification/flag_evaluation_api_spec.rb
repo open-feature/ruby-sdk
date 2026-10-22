@@ -444,6 +444,28 @@ RSpec.describe "Flag Evaluation API" do
         OpenFeature::SDK.configuration.send(:reset)
       end
 
+      specify "After shutdown, an async init that finishes late is ignored" do
+        gate = Queue.new
+        slow_class = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+          define_method(:init) { |_evaluation_context = nil| gate.pop }
+        end
+        slow = slow_class.new
+        threads = []
+        allow(Thread).to receive(:new).and_wrap_original { |original, *args, &block| original.call(*args, &block).tap { |t| threads << t } }
+
+        OpenFeature::SDK.set_provider(slow)
+        OpenFeature::SDK.shutdown
+        received = []
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(details) { received << details })
+        gate << :go
+        threads.each(&:join)
+
+        expect(OpenFeature::SDK.configuration.provider_tracked?(slow)).to be(false)
+        expect(received).to be_empty
+      ensure
+        OpenFeature::SDK.configuration.send(:reset)
+      end
+
       specify "After shutdown, providers are cleared." do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         OpenFeature::SDK.set_provider_and_wait(provider)

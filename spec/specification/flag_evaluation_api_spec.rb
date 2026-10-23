@@ -751,6 +751,27 @@ RSpec.describe "Flag Evaluation API" do
     end
   end
 
+  context "1.3 - Flag Evaluation" do
+    context "Conditional Requirement 1.3.1.1" do
+      before { OpenFeature::SDK.configuration.send(:reset) }
+      after { OpenFeature::SDK.configuration.send(:reset) }
+
+      specify "The typed flag evaluation methods MUST return the resolved flag value." do
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new(
+          "bool" => true, "str" => "resolved", "num" => 7, "int" => 3, "float" => 2.5, "obj" => {"a" => 1}
+        ))
+        client = OpenFeature::SDK.build_client
+
+        expect(client.fetch_boolean_value(flag_key: "bool", default_value: false)).to be(true)
+        expect(client.fetch_string_value(flag_key: "str", default_value: "default")).to eq("resolved")
+        expect(client.fetch_number_value(flag_key: "num", default_value: 0)).to eql(7)
+        expect(client.fetch_integer_value(flag_key: "int", default_value: 0)).to eql(3)
+        expect(client.fetch_float_value(flag_key: "float", default_value: 0.0)).to eql(2.5)
+        expect(client.fetch_object_value(flag_key: "obj", default_value: {})).to eq({"a" => 1})
+      end
+    end
+  end
+
   context "1.4 - Flag Metadata" do
     context "Requirement 1.4.14" do
       specify "flag_metadata defaults to an empty hash when not provided" do
@@ -823,7 +844,7 @@ RSpec.describe "Flag Evaluation API" do
     context "Requirement 1.6.2" do
       after { OpenFeature::SDK.configuration.send(:reset) }
 
-      specify "When a shutdown function is called, the API invokes the shutdown function on the registered provider." do
+      specify "1.6.1: When a shutdown function is called, the API invokes the shutdown function on the registered provider." do
         provider1 = OpenFeature::SDK::Provider::InMemoryProvider.new
         provider2 = OpenFeature::SDK::Provider::InMemoryProvider.new
 
@@ -903,6 +924,20 @@ RSpec.describe "Flag Evaluation API" do
         OpenFeature::SDK.shutdown
 
         expect(OpenFeature::SDK.hooks).to be_empty
+      end
+
+      specify "After shutdown, API and client event handlers are removed." do
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new)
+        client = OpenFeature::SDK.build_client
+        calls = []
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_) { calls << :api })
+        client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_) { calls << :client })
+        calls.clear # both ran on registration, since the provider is already READY
+
+        OpenFeature::SDK.shutdown
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new)
+
+        expect(calls).to be_empty
       end
 
       specify "After shutdown, evaluation context is cleared." do
@@ -1251,6 +1286,37 @@ RSpec.describe "Flag Evaluation API" do
 
   context "1.7 - Provider Lifecycle (shutdown)" do
     context "Requirement 1.7.6" do
+      before { OpenFeature::SDK.configuration.send(:reset) }
+      after { OpenFeature::SDK.configuration.send(:reset) }
+
+      specify "The client's provider status accessor MUST indicate NOT_READY once the API shutdown has shut its provider down." do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        pinned = OpenFeature::SDK::Client.new(provider:)
+        bound = OpenFeature::SDK.build_client
+        expect(pinned.provider_status).to eq(OpenFeature::SDK::ProviderState::READY)
+
+        OpenFeature::SDK.shutdown
+
+        expect(pinned.provider_status).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+        expect(bound.provider_status).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+      end
+
+      specify "A client pinned to a replaced provider reads NOT_READY once that provider is shut down." do
+        old_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(old_provider, domain: "d")
+        pinned = OpenFeature::SDK::Client.new(provider: old_provider, domain: "d")
+        bound = OpenFeature::SDK.build_client(domain: "d")
+        expect(pinned.provider_status).to eq(OpenFeature::SDK::ProviderState::READY)
+
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new, domain: "d")
+
+        expect(pinned.provider_status).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+        expect(bound.provider_status).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+    end
+
+    context "Shutdown events" do
       specify "shutdown must not emit PROVIDER_READY before transitioning to NOT_READY" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         OpenFeature::SDK.set_provider_and_wait(provider)

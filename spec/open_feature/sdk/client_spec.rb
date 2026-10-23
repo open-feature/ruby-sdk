@@ -29,14 +29,14 @@ RSpec.describe OpenFeature::SDK::Client do
       expect(client.metadata.domain).to eq(domain)
     end
 
-    it "client metadata is frozen (req 4.2.2.1 — hook context client_metadata must be immutable)" do
+    it "client metadata is frozen (req 4.2.2.2 — hook context client_metadata must be immutable)" do
       expect(client.metadata).to be_frozen
       expect(client.metadata.domain).to be_frozen
     end
   end
 
   context "Flag evaluation" do
-    context "Requirement 1.3.1" do
+    context "Conditional Requirement 1.3.1.1" do
       context "Provide methods for typed flag evaluation, including boolean, numeric, string, and structure, with parameters flag key (string, required), default value (boolean | number | string | structure, required), evaluation context (optional), and evaluation options (optional), which returns the flag value." do
         let(:flag_key) { "my-awesome-feature-flag-key" }
 
@@ -46,11 +46,11 @@ RSpec.describe OpenFeature::SDK::Client do
           end
 
           it do
-            expect(client.fetch_boolean_value(flag_key: flag_key, default_value: false)).is_a?(FalseClass)
+            expect(client.fetch_boolean_value(flag_key: flag_key, default_value: false)).to be_a(FalseClass)
           end
 
           it do
-            expect(client.fetch_boolean_value(flag_key: flag_key, default_value: true)).is_a?(TrueClass)
+            expect(client.fetch_boolean_value(flag_key: flag_key, default_value: true)).to be_a(TrueClass)
           end
         end
 
@@ -60,7 +60,7 @@ RSpec.describe OpenFeature::SDK::Client do
           end
 
           it do
-            expect(client.fetch_string_value(flag_key: flag_key, default_value: "default_value")).is_a?(String)
+            expect(client.fetch_string_value(flag_key: flag_key, default_value: "default_value")).to be_a(String)
           end
         end
 
@@ -70,20 +70,20 @@ RSpec.describe OpenFeature::SDK::Client do
           end
 
           it do
-            expect(client.fetch_number_value(flag_key: flag_key, default_value: 4)).is_a?(Integer)
+            expect(client.fetch_number_value(flag_key: flag_key, default_value: 4)).to be_a(Integer)
           end
 
           it do
-            expect(client.fetch_number_value(flag_key: flag_key, default_value: 95.5)).is_a?(Float)
+            expect(client.fetch_number_value(flag_key: flag_key, default_value: 95.5)).to be_a(Float)
           end
 
           context "Condition 1.3.3 - The implementation language differentiates between floating-point numbers and integers." do
             it do
-              expect(client.fetch_integer_value(flag_key: flag_key, default_value: 4)).is_a?(Integer)
+              expect(client.fetch_integer_value(flag_key: flag_key, default_value: 4)).to be_a(Integer)
             end
 
             it do
-              expect(client.fetch_float_value(flag_key: flag_key, default_value: 95.5)).is_a?(Float)
+              expect(client.fetch_float_value(flag_key: flag_key, default_value: 95.5)).to be_a(Float)
             end
           end
         end
@@ -95,7 +95,7 @@ RSpec.describe OpenFeature::SDK::Client do
 
           it do
             expect(client.fetch_object_value(flag_key: flag_key,
-              default_value: {data: "some-data"})).is_a?(Hash)
+              default_value: {data: "some-data"})).to be_a(Hash)
           end
         end
       end
@@ -239,7 +239,7 @@ RSpec.describe OpenFeature::SDK::Client do
       let(:flag_key) { "my-awesome-feature-flag-key" }
 
       context "boolean value" do
-        context "Requirement 1.4.1" do
+        context "Conditional Requirement 1.4.1.1" do
           it do
             expect(client).to respond_to(:fetch_boolean_details)
           end
@@ -249,30 +249,30 @@ RSpec.describe OpenFeature::SDK::Client do
           end
         end
 
-        context "Requirement 1.4.2" do
+        context "Requirement 1.4.3" do
           it "The evaluation details structure's value field MUST contain the evaluated flag value" do
             expect(client.fetch_boolean_details(flag_key: flag_key, default_value: true).value).is_a?(TrueClass)
             expect(client.fetch_boolean_details(flag_key: flag_key, default_value: false).value).is_a?(FalseClass)
           end
         end
 
-        context "Requirement 1.4.3" do
+        context "Condition 1.4.4" do
           pending
         end
 
-        context "Requirement 1.4.4" do
-          it "The evaluation details structure's flag key field MUST contain the flag key argument passed to the detailed flag evaluation method." do
+        context "Requirement 1.4.5" do
+          it "responds to fetch_boolean_details" do
             expect(client).to respond_to(:fetch_boolean_details)
           end
         end
 
-        context "Requirement 1.4.5" do
+        context "Requirement 1.4.6" do
           pending
         end
       end
 
       context "number value" do
-        context "Requirement 1.4.1" do
+        context "Conditional Requirement 1.4.1.1" do
           it do
             expect(client).to respond_to(:fetch_number_details)
           end
@@ -283,26 +283,26 @@ RSpec.describe OpenFeature::SDK::Client do
           end
         end
 
-        context "Requirement 1.4.2" do
+        context "Requirement 1.4.3" do
           it "The evaluation details structure's value field MUST contain the evaluated flag value" do
             expect(client.fetch_number_details(flag_key: flag_key, default_value: 1.0).value).is_a?(Float)
             expect(client.fetch_number_details(flag_key: flag_key, default_value: 1).value).is_a?(Integer)
           end
         end
 
-        context "Requirement 1.4.3" do
+        context "Condition 1.4.4" do
           pending
         end
 
-        context "Requirement 1.4.4" do
-          it "The evaluation details structure's flag key field MUST contain the flag key argument passed to the detailed flag evaluation method." do
+        context "Requirement 1.4.5" do
+          it "responds to fetch_number_details" do
             expect(client).to respond_to(:fetch_number_details)
           end
         end
       end
 
       context "string value" do
-        context "Requirement 1.4.1" do
+        context "Conditional Requirement 1.4.1.1" do
           it do
             expect(client).to respond_to(:fetch_string_details)
           end
@@ -312,25 +312,25 @@ RSpec.describe OpenFeature::SDK::Client do
           end
         end
 
-        context "Requirement 1.4.2" do
+        context "Requirement 1.4.3" do
           it "The evaluation details structure's value field MUST contain the evaluated flag value" do
             expect(client.fetch_string_details(flag_key: flag_key, default_value: "some-string").value).is_a?(String)
           end
         end
 
-        context "Requirement 1.4.3" do
+        context "Condition 1.4.4" do
           pending
         end
 
-        context "Requirement 1.4.4" do
-          it "The evaluation details structure's flag key field MUST contain the flag key argument passed to the detailed flag evaluation method." do
+        context "Requirement 1.4.5" do
+          it "responds to fetch_string_details" do
             expect(client).to respond_to(:fetch_string_details)
           end
         end
       end
 
       context "object value" do
-        context "Requirement 1.4.1" do
+        context "Conditional Requirement 1.4.1.1" do
           it do
             expect(client).to respond_to(:fetch_object_details)
           end
@@ -341,22 +341,18 @@ RSpec.describe OpenFeature::SDK::Client do
           end
         end
 
-        context "Requirement 1.4.2" do
+        context "Requirement 1.4.3" do
           it "The evaluation details structure's value field MUST contain the evaluated flag value" do
             expect(client.fetch_object_details(flag_key: flag_key,
               default_value: {name: "some-name"}).value).is_a?(String)
           end
         end
 
-        context "Requirement 1.4.4" do
-          it "The evaluation details structure's flag key field MUST contain the flag key argument passed to the detailed flag evaluation method." do
+        context "Requirement 1.4.5" do
+          it "responds to fetch_object_details" do
             expect(client).to respond_to(:fetch_object_details)
           end
         end
-      end
-
-      context "Requirement 1.4.5" do
-        pending
       end
 
       context "Requirement 1.4.6" do
@@ -384,6 +380,10 @@ RSpec.describe OpenFeature::SDK::Client do
       end
 
       context "Requirement 1.4.12" do
+        pending
+      end
+
+      context "Requirement 1.4.13" do
         pending
       end
     end

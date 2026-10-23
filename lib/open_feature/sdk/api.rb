@@ -30,7 +30,7 @@ module OpenFeature
     # If no provider is specified, the <tt>NoOpProvider</tt> is set as the default <tt>Provider</tt>.
     # Once the SDK has been configured, a client can be built
     #
-    #   client = OpenFeature::SDK::API.instance.build_client(name: 'my-open-feature-client')
+    #   client = OpenFeature::SDK::API.instance.build_client(domain: 'my-open-feature-client')
     class API
       include Singleton # Satisfies Flag Evaluation API Requirement 1.1.1; Isolated.create_api builds others (1.8.1)
       extend Forwardable

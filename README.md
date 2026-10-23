@@ -506,6 +506,12 @@ class MyProvider
     # Return value is ignored
   end
 
+  # Optional: hooks the SDK runs on every evaluation that uses this provider (spec 2.3.1).
+  # They run after API, client and invocation hooks in the before stage, and first in the after, error and finally stages.
+  def hooks
+    []
+  end
+
   def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
     # Retrieve a boolean value from provider source
     # To signal an error, return ResolutionDetails with an error_code, or raise

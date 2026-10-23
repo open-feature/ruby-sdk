@@ -293,6 +293,17 @@ RSpec.describe "Hooks Specification" do
 
     before { OpenFeature::SDK.set_provider_and_wait(provider) }
 
+    context "Requirement 4.2.1" do
+      specify "hook hints MUST support boolean, number and datetime values" do
+        now = Time.now
+        hints = {"bool" => true, "int" => 1, "float" => 1.5, "time" => now}
+
+        OpenFeature::SDK.build_client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [capture_hook], hook_hints: hints)
+
+        expect(captured[:hints].to_h).to eq(hints)
+      end
+    end
+
     context "Conditional Requirement 4.2.2.1" do
       specify "hook hints MUST be immutable, including nested values, without freezing the caller's hash" do
         hint_hash = {"nested" => {"list" => []}}
@@ -356,6 +367,38 @@ RSpec.describe "Hooks Specification" do
     end
 
     context "Requirement 4.3.2" do
+      let(:hook_data_seen) { [] }
+      let(:hook_data_probe) do
+        seen = hook_data_seen
+        Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:before) do |hook_context:, **|
+            data = hook_context.hook_data_for(self)
+            seen << [:before, data.dup]
+            data["set_in"] = "before"
+            nil
+          end
+
+          define_method(:error) { |hook_context:, **| seen << [:error, hook_context.hook_data_for(self).dup] }
+        end.new
+      end
+
+      specify "hook data set in the before stage reaches the error stage" do
+        OpenFeature::SDK.build_client.fetch_boolean_value(flag_key: "missing", default_value: false, hooks: [hook_data_probe])
+
+        expect(hook_data_seen).to eq([[:before, {}], [:error, {"set_in" => "before"}]])
+      end
+
+      specify "each evaluation starts with fresh hook data" do
+        client = OpenFeature::SDK.build_client
+        2.times { client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook_data_probe]) }
+
+        expect(hook_data_seen).to eq([[:before, {}], [:before, {}]])
+      end
+    end
+
+    context "Conditional Requirement 4.3.2.1" do
       specify "The before stage MUST run before flag evaluation" do
         call_log = []
 
@@ -381,7 +424,7 @@ RSpec.describe "Hooks Specification" do
       end
     end
 
-    context "Requirement 4.3.3" do
+    context "Requirement 4.3.6" do
       specify "The after stage MUST run after flag evaluation succeeds" do
         after_ran = false
 
@@ -400,7 +443,7 @@ RSpec.describe "Hooks Specification" do
       end
     end
 
-    context "Requirement 4.3.4" do
+    context "Requirement 4.3.5" do
       specify "If a before hook returns an evaluation context, it MUST be merged with the existing context" do
         captured_eval_context = nil
 
@@ -431,7 +474,7 @@ RSpec.describe "Hooks Specification" do
       end
     end
 
-    context "Requirement 4.3.6" do
+    context "Requirement 4.3.7" do
       specify "The error stage MUST run when errors are raised" do
         error_ran = false
         captured_exception = nil
@@ -455,7 +498,7 @@ RSpec.describe "Hooks Specification" do
       end
     end
 
-    context "Requirement 4.3.7" do
+    context "Requirement 4.3.8" do
       specify "The finally stage MUST run unconditionally" do
         finally_count = 0
 
@@ -552,7 +595,7 @@ RSpec.describe "Hooks Specification" do
         expect(before_calls).to eq(["api:before", "client:before", "invocation:before", "provider:before"])
       end
 
-      specify "After, Error, and Finally hooks run in reverse order: Provider → Invocation → Client → API" do
+      specify "After and Finally hooks run in reverse order: Provider → Invocation → Client → API" do
         call_log = []
         api_hook = recording_hook("api", call_log)
         client_hook = recording_hook("client", call_log)
@@ -571,6 +614,19 @@ RSpec.describe "Hooks Specification" do
 
         finally_calls = call_log.select { |c| c.end_with?(":finally") }
         expect(finally_calls).to eq(["provider:finally", "invocation:finally", "client:finally", "api:finally"])
+      end
+
+      specify "Error hooks run in reverse order: Provider → Invocation → Client → API" do
+        call_log = []
+        OpenFeature::SDK.hooks << recording_hook("api", call_log)
+        allow(provider).to receive(:hooks).and_return([recording_hook("provider", call_log)])
+
+        client = OpenFeature::SDK.build_client
+        client.hooks << recording_hook("client", call_log)
+        client.fetch_boolean_value(flag_key: "missing", default_value: false, hooks: [recording_hook("invocation", call_log)])
+
+        error_calls = call_log.select { |c| c.end_with?(":error") }
+        expect(error_calls).to eq(["provider:error", "invocation:error", "client:error", "api:error"])
       end
     end
 
@@ -686,6 +742,22 @@ RSpec.describe "Hooks Specification" do
 
         expect(second_before_ran).to be false
       end
+
+      specify "If an after hook abnormally terminates, remaining after hooks MUST NOT be invoked" do
+        call_log = []
+        first_added = recording_hook("first_added", call_log)
+        failing_hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          def after(**) = raise("after failed")
+        end.new
+
+        # After hooks run in reverse, so failing_hook runs first
+        OpenFeature::SDK.build_client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [first_added, failing_hook])
+
+        expect(call_log).not_to include("first_added:after")
+        expect(call_log).to include("first_added:error")
+      end
     end
 
     context "Requirement 4.4.7" do
@@ -706,12 +778,12 @@ RSpec.describe "Hooks Specification" do
     end
   end
 
-  context "4.5 - Hook Registration" do
+  context "4.4 - Hook Registration" do
     before(:each) do
       OpenFeature::SDK::API.instance.send(:configuration).send(:reset)
     end
 
-    context "Requirement 4.5.1" do
+    context "Requirement 4.4.1" do
       specify "API, Client, and invocation hooks MUST be registered" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new({"flag-1" => true})
         OpenFeature::SDK.set_provider_and_wait(provider)
@@ -727,6 +799,38 @@ RSpec.describe "Hooks Specification" do
         client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [invocation_hook])
 
         expect(call_log).to include("api:before", "client:before", "invocation:before")
+      end
+    end
+  end
+
+  context "4.5 - Flag evaluation options" do
+    before { OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new({"flag-1" => true})) }
+
+    context "Requirement 4.5.2" do
+      specify "hook hints MUST be passed to every stage of each hook" do
+        seen = []
+        hint_probe = ->(name) {
+          Class.new do
+            include OpenFeature::SDK::Hooks::Hook
+
+            %i[before after error finally].each do |stage|
+              define_method(stage) do |hints:, **|
+                seen << [name, stage, hints["h"]]
+                nil
+              end
+            end
+          end.new
+        }
+        client = OpenFeature::SDK.build_client
+
+        client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hint_probe.call(:a), hint_probe.call(:b)], hook_hints: {"h" => "v"})
+        client.fetch_boolean_value(flag_key: "missing", default_value: false, hooks: [hint_probe.call(:c)], hook_hints: {"h" => "v"})
+
+        expect(seen).to contain_exactly(
+          [:a, :before, "v"], [:a, :after, "v"], [:a, :finally, "v"],
+          [:b, :before, "v"], [:b, :after, "v"], [:b, :finally, "v"],
+          [:c, :before, "v"], [:c, :error, "v"], [:c, :finally, "v"]
+        )
       end
     end
   end

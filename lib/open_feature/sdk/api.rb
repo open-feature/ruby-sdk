@@ -32,13 +32,15 @@ module OpenFeature
     #
     #   client = OpenFeature::SDK::API.instance.build_client(name: 'my-open-feature-client')
     class API
-      include Singleton # Satisfies Flag Evaluation API Requirement 1.1.1
+      include Singleton # Satisfies Flag Evaluation API Requirement 1.1.1; Isolated.create_api builds others (1.8.1)
       extend Forwardable
 
       def_delegators :configuration, :provider, :set_provider, :set_provider_and_wait, :hooks, :add_hooks, :evaluation_context
 
-      def configuration
-        @configuration ||= Configuration.new
+      attr_reader :configuration
+
+      def initialize
+        @configuration = Configuration.new
       end
 
       def configure(&block)
@@ -48,7 +50,7 @@ module OpenFeature
       end
 
       def build_client(domain: nil, evaluation_context: nil)
-        Client.new(domain:, evaluation_context:)
+        Client.new(domain:, evaluation_context:, configuration:)
       end
 
       def provider_metadata(domain: nil)

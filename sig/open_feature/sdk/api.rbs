@@ -1,10 +1,13 @@
 module OpenFeature
   module SDK
     class API
-      include Singleton
       extend Forwardable
 
-      def configuration: () -> Configuration
+      include Singleton
+
+      attr_reader configuration: Configuration
+
+      def initialize: () -> void
 
       def configure: () { (Configuration) -> void } -> void
 

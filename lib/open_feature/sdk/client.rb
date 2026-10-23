@@ -21,8 +21,9 @@ module OpenFeature
 
       attr_accessor :hooks, :evaluation_context
 
-      def initialize(provider: nil, domain: nil, evaluation_context: nil)
+      def initialize(provider: nil, domain: nil, evaluation_context: nil, configuration: API.instance.configuration)
         @provider = provider
+        @configuration = configuration
         @metadata = ClientMetadata.new(domain:)
         @evaluation_context = evaluation_context
         @hooks = []
@@ -33,17 +34,17 @@ module OpenFeature
       end
 
       def provider_status
-        OpenFeature::SDK.configuration.provider_state(resolve_provider)
+        @configuration.provider_state(resolve_provider)
       end
 
       def add_handler(event_type, handler = nil, &block)
         actual_handler = handler || block
-        OpenFeature::SDK.configuration.add_client_handler(self, event_type, actual_handler)
+        @configuration.add_client_handler(self, event_type, actual_handler)
       end
 
       def remove_handler(event_type, handler = nil, &block)
         actual_handler = handler || block
-        OpenFeature::SDK.configuration.remove_client_handler(self, event_type, actual_handler)
+        @configuration.remove_client_handler(self, event_type, actual_handler)
       end
 
       # Tracking API (spec 6.1.1.1) — dynamic-context paradigm
@@ -81,13 +82,13 @@ module OpenFeature
 
         # Assemble ordered hooks: API → Client → Invocation → Provider (spec 4.4.2)
         provider_hooks = provider.respond_to?(:hooks) ? Array(provider.hooks) : []
-        ordered_hooks = [*OpenFeature::SDK.hooks, *@hooks, *invocation_hooks, *provider_hooks]
+        ordered_hooks = [*@configuration.hooks, *@hooks, *invocation_hooks, *provider_hooks]
 
         # Short-circuit NOT_READY/FATAL providers (required by evaluation_v2.feature). A provider resolved from the
         # configuration is tracked while bound, so one that isn't was replaced mid-call and reads NOT_READY.
         short_circuit_code = nil
-        if @provider ? OpenFeature::SDK.configuration.provider_tracked?(provider) : !provider.equal?(@fallback_provider)
-          short_circuit_code = short_circuit_error_code(OpenFeature::SDK.configuration.provider_state(provider))
+        if @provider ? @configuration.provider_tracked?(provider) : !provider.equal?(@fallback_provider)
+          short_circuit_code = short_circuit_error_code(@configuration.provider_state(provider))
         end
 
         # Fast path: skip hook ceremony when no hooks are registered
@@ -121,7 +122,7 @@ module OpenFeature
           EMPTY_HINTS
         end
 
-        executor = Hooks::HookExecutor.new(logger: OpenFeature::SDK.configuration.logger)
+        executor = Hooks::HookExecutor.new(logger: @configuration.logger)
 
         if short_circuit_code
           resolution = Provider::ResolutionDetails.new(
@@ -169,7 +170,7 @@ module OpenFeature
       # Callers resolve once per operation, so a rebinding mid-evaluation can't mix two providers.
       # The fallback NoOp is never registered: untracked, so not short-circuited, and its status reads NOT_READY.
       def resolve_provider
-        @provider || OpenFeature::SDK.configuration.provider(domain: @metadata.domain) || (@fallback_provider ||= Provider::NoOpProvider.new)
+        @provider || @configuration.provider(domain: @metadata.domain) || (@fallback_provider ||= Provider::NoOpProvider.new)
       end
 
       def short_circuit_error_code(state)
@@ -180,11 +181,11 @@ module OpenFeature
       end
 
       def build_evaluation_context(invocation_context)
-        propagator = OpenFeature::SDK.configuration.transaction_context_propagator
+        propagator = @configuration.transaction_context_propagator
         transaction_context = propagator&.get_transaction_context
 
         EvaluationContextBuilder.new.call(
-          api_context: OpenFeature::SDK.evaluation_context,
+          api_context: @configuration.evaluation_context,
           transaction_context: transaction_context,
           client_context: evaluation_context,
           invocation_context: invocation_context

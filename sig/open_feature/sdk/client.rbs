@@ -10,7 +10,7 @@ module OpenFeature
       attr_accessor evaluation_context: EvaluationContext?
       attr_accessor hooks: Array[untyped]
 
-      def initialize: (?provider: untyped, ?domain: String?, ?evaluation_context: EvaluationContext?) -> void
+      def initialize: (?provider: untyped, ?domain: String?, ?evaluation_context: EvaluationContext?, ?configuration: Configuration) -> void
 
       def add_hooks: (*Array[untyped] new_hooks) -> void
 

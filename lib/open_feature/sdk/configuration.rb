@@ -162,9 +162,10 @@ module OpenFeature
           needs_init = attempt.nil? || attempt.state == :failed
 
           if needs_init
+            # First, so a provider registered with another API (1.8.4) leaves no state behind
+            provider.send(:attach, self) if provider.is_a?(Provider::EventEmitter)
             attempt = @init_attempts[provider] = InitAttempt.new(:running, nil, Thread::Queue.new)
             @provider_state_registry.set_initial_state(provider)
-            provider.send(:attach, self) if provider.is_a?(Provider::EventEmitter)
           end
 
           # Publish last: clients read @providers without the lock, and must not see an untracked provider
@@ -219,7 +220,7 @@ module OpenFeature
         end
       ensure
         # Fail an attempt no init took over (e.g. a Timeout hit first), or it would stay running forever
-        finish_init_attempt(attempt, :failed) if needs_init && !init_thread
+        finish_init_attempt(attempt, :failed) if needs_init && attempt && !init_thread
       end
 
       def init_provider(provider, context, domain:, attempt:, raise_on_error: false)

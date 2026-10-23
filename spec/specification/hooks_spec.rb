@@ -7,6 +7,20 @@ RSpec.describe "Hooks Specification" do
     OpenFeature::SDK::API.instance.send(:configuration).send(:reset)
   end
 
+  let(:captured) { {} }
+  let(:capture_hook) do
+    seen = captured
+    Class.new do
+      include OpenFeature::SDK::Hooks::Hook
+
+      define_method(:before) do |hook_context:, hints:|
+        seen[:hook_context] = hook_context
+        seen[:hints] = hints
+        nil
+      end
+    end.new
+  end
+
   context "4.1 - Hook Context" do
     let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new({"flag-1" => true}) }
 
@@ -79,6 +93,30 @@ RSpec.describe "Hooks Specification" do
         expect(captured_context.flag_key).to be_frozen
         expect(captured_context.flag_value_type).to be_frozen
       end
+
+      specify "default value MUST be immutable, without freezing the caller's objects" do
+        flag_key = +"missing-flag"
+        default = {"nested" => {"list" => []}}
+
+        OpenFeature::SDK.build_client.fetch_object_value(flag_key:, default_value: default, hooks: [capture_hook])
+
+        expect(captured[:hook_context].default_value).to eq(default)
+        expect(captured[:hook_context].default_value["nested"]["list"]).to be_frozen
+        expect(default["nested"]).not_to be_frozen
+        expect(default).not_to be_frozen
+        expect(flag_key).not_to be_frozen
+      end
+
+      specify "the caller gets their own default back when the provider raises" do
+        allow(provider).to receive(:fetch_object_value).and_raise("boom")
+        default = {"rules" => []}
+
+        details = OpenFeature::SDK.build_client.fetch_object_details(flag_key: "flag-1", default_value: default, hooks: [capture_hook])
+
+        expect(details.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+        expect(details.value).to equal(default)
+        expect(default).not_to be_frozen
+      end
     end
 
     context "Requirement 4.1.5" do
@@ -147,28 +185,127 @@ RSpec.describe "Hooks Specification" do
       end
     end
 
-    context "Requirement 4.1.4" do
-      specify "evaluation context MUST be mutable" do
-        captured_context = nil
+    context "Conditional Requirement 4.1.4.1" do
+      let(:user) { OpenFeature::SDK::EvaluationContext.new(targeting_key: "user-1") }
+      let(:stages_seen) { {} }
 
+      def context_probe(*stages)
+        seen = stages_seen
+        Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:attempt) do |&change|
+            change.call
+            :mutable
+          rescue FrozenError
+            :frozen
+          end
+
+          stages.each do |stage|
+            define_method(stage) do |hook_context:, **|
+              ctx = hook_context.evaluation_context
+              seen[stage] = [attempt { ctx.fields["probe"] = stage }, attempt { hook_context.evaluation_context = ctx }]
+            end
+          end
+        end.new
+      end
+
+      specify "the evaluation context can be changed or replaced in before hooks, and not in after and finally hooks" do
+        OpenFeature::SDK.build_client.fetch_boolean_value(flag_key: "flag-1", default_value: false, evaluation_context: user,
+          hooks: [context_probe(:before, :after, :finally)])
+
+        expect(stages_seen).to eq(before: [:mutable, :mutable], after: [:frozen, :frozen], finally: [:frozen, :frozen])
+        expect(user).not_to be_frozen
+        expect(user.fields).not_to be_frozen
+      end
+
+      specify "the evaluation context is frozen in error and finally hooks when a before hook raises" do
+        failing_before = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          def before(**) = raise("boom")
+        end.new
+
+        OpenFeature::SDK.build_client.fetch_boolean_value(flag_key: "flag-1", default_value: false, evaluation_context: user,
+          hooks: [context_probe(:error, :finally), failing_before])
+
+        expect(stages_seen).to eq(error: [:frozen, :frozen], finally: [:frozen, :frozen])
+      end
+
+      specify "a provider can still write to the evaluation context while hooks are registered" do
+        writing_provider = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+          def fetch_boolean_value(evaluation_context:, **)
+            evaluation_context.fields["written_by_provider"] = true
+            super
+          end
+        end.new({"flag-1" => true})
+        OpenFeature::SDK.set_provider_and_wait(writing_provider)
+
+        details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag-1", default_value: false,
+          evaluation_context: user, hooks: [context_probe(:finally)])
+
+        expect(details.value).to be(true)
+        expect(details.error_code).to be_nil
+      end
+
+      specify "a context a before hook returns isn't frozen afterwards" do
+        returned = OpenFeature::SDK::EvaluationContext.new(targeting_key: "from-hook")
+        seen_targeting_key = nil
         hook = Class.new do
           include OpenFeature::SDK::Hooks::Hook
 
-          define_method(:before) do |hook_context:, hints:|
-            captured_context = hook_context
-            nil
-          end
+          define_method(:before) { |**| returned }
+          define_method(:after) { |hook_context:, **| seen_targeting_key = hook_context.evaluation_context.targeting_key }
         end.new
 
-        client = OpenFeature::SDK.build_client
-        client.fetch_boolean_value(
-          flag_key: "flag-1",
-          default_value: false,
-          evaluation_context: OpenFeature::SDK::EvaluationContext.new(targeting_key: "user-1"),
-          hooks: [hook]
-        )
+        OpenFeature::SDK.build_client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook])
 
-        expect { captured_context.evaluation_context = OpenFeature::SDK::EvaluationContext.new }.not_to raise_error
+        expect(seen_targeting_key).to eq("from-hook")
+        expect(returned).not_to be_frozen
+      end
+    end
+  end
+
+  context "4.2 - Hook Hints" do
+    let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new({"flag-1" => true}) }
+
+    before { OpenFeature::SDK.set_provider_and_wait(provider) }
+
+    context "Conditional Requirement 4.2.2.1" do
+      specify "hook hints MUST be immutable, including nested values, without freezing the caller's hash" do
+        hint_hash = {"nested" => {"list" => []}}
+
+        OpenFeature::SDK.build_client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [capture_hook], hook_hints: hint_hash)
+
+        expect(captured[:hints]["nested"]["list"]).to be_frozen
+        expect(hint_hash["nested"]["list"]).not_to be_frozen
+      end
+    end
+
+    context "Conditional Requirement 4.2.2.2" do
+      specify "the client metadata in the hook context MUST be immutable" do
+        OpenFeature::SDK.build_client(domain: "my-domain").fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [capture_hook])
+
+        expect(captured[:hook_context].client_metadata).to be_frozen
+        expect(captured[:hook_context].client_metadata.domain).to be_frozen
+      end
+    end
+
+    context "Conditional Requirement 4.2.2.3" do
+      let(:provider) do
+        Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+          def metadata = @unfrozen_metadata ||= OpenFeature::SDK::Provider::ProviderMetadata.new(name: +"custom")
+        end.new({"flag-1" => true})
+      end
+
+      specify "the provider metadata in the hook context MUST be immutable, and the provider's own is left alone" do
+        OpenFeature::SDK.build_client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [capture_hook])
+
+        hook_metadata = captured[:hook_context].provider_metadata
+        expect { hook_metadata.name = "renamed" }.to raise_error(FrozenError)
+        expect { hook_metadata.name << "!" }.to raise_error(FrozenError)
+        expect(provider.metadata.name).to eq("custom")
+        expect(provider.metadata).not_to be_frozen
       end
     end
   end

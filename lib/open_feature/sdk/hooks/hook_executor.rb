@@ -13,6 +13,9 @@ module OpenFeature
       #   - Before/after hook error → stop remaining hooks, run error hooks, return default
       #   - Error hook error → log, continue remaining error hooks
       #   - Finally hook error → log, continue remaining finally hooks
+      #
+      # The hook context is frozen before after, error and finally hooks run, so only before hooks
+      # can change the evaluation context (spec 4.1.4.1). Not earlier: some providers write to it.
       class HookExecutor
         def initialize(logger: nil)
           @logger = logger
@@ -37,9 +40,10 @@ module OpenFeature
         # @param ordered_hooks [Array] hooks in before-order (API, Client, Invocation, Provider)
         # @param hook_context [HookContext] the hook context
         # @param hints [Hints] hook hints
+        # @param default_value [Object] returned if evaluation raises; the caller's own object, not the hooks' frozen copy
         # @param evaluate_block [Proc] the flag evaluation to wrap
         # @return [EvaluationDetails] the evaluation result
-        def execute(ordered_hooks:, hook_context:, hints:, &evaluate_block)
+        def execute(ordered_hooks:, hook_context:, hints:, default_value:, &evaluate_block)
           evaluation_details = nil
 
           begin
@@ -60,7 +64,7 @@ module OpenFeature
             evaluation_details = EvaluationDetails.new(
               flag_key: hook_context.flag_key,
               resolution_details: Provider::ResolutionDetails.new(
-                value: hook_context.default_value,
+                value: default_value,
                 error_code: EvaluationError.code_for(e),
                 reason: Provider::Reason::ERROR,
                 error_message: e.message
@@ -91,6 +95,7 @@ module OpenFeature
 
         # Spec 4.4.2: After hooks run in reverse order: Provider → Invocation → Client → API
         def run_after_hooks(hooks, hook_context, evaluation_details, hints)
+          hook_context.freeze
           hooks.reverse_each do |hook|
             next unless hook.respond_to?(:after)
             hook.after(hook_context: hook_context, evaluation_details: evaluation_details, hints: hints)
@@ -100,6 +105,7 @@ module OpenFeature
         # Spec 4.4.4: Error hooks run in reverse order.
         # If an error hook itself errors, log and continue remaining error hooks.
         def run_error_hooks(hooks, hook_context, exception, hints)
+          hook_context.freeze
           hooks.reverse_each do |hook|
             next unless hook.respond_to?(:error)
             hook.error(hook_context: hook_context, exception: exception, hints: hints)
@@ -111,6 +117,7 @@ module OpenFeature
         # Spec 4.4.3: Finally hooks run in reverse order unconditionally.
         # If a finally hook errors, log and continue remaining finally hooks.
         def run_finally_hooks(hooks, hook_context, evaluation_details, hints)
+          hook_context.freeze
           hooks.reverse_each do |hook|
             next unless hook.respond_to?(:finally)
             hook.finally(hook_context: hook_context, evaluation_details: evaluation_details, hints: hints)

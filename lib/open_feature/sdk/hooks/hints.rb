@@ -13,8 +13,7 @@ module OpenFeature
             assert_allowed_key(key)
             assert_allowed_value(value)
           end
-          @hash = hash.dup
-          super(@hash)
+          super(Ractor.make_shareable(hash, copy: true)) # Spec 4.2.2.1: deep-frozen, without freezing the caller's hash
           freeze
         end
 

@@ -4,14 +4,21 @@ module OpenFeature
       class HookContext
         attr_reader flag_key: String
         attr_reader flag_value_type: Symbol
-        attr_reader default_value: untyped
         attr_reader client_metadata: ClientMetadata?
         attr_reader provider_metadata: Provider::ProviderMetadata?
         attr_accessor evaluation_context: EvaluationContext?
 
         def initialize: (flag_key: String, flag_value_type: Symbol, default_value: untyped, evaluation_context: EvaluationContext?, ?client_metadata: ClientMetadata?, ?provider_metadata: Provider::ProviderMetadata?) -> void
 
+        def default_value: () -> untyped
+
+        def freeze: () -> self
+
         def hook_data_for: (untyped hook) -> Hash[untyped, untyped]
+
+        private
+
+        def frozen_copy: [T] (T value) -> T
       end
     end
   end

@@ -26,6 +26,11 @@ module OpenFeature
         )
       end
 
+      def freeze
+        fields.freeze
+        super
+      end
+
       def ==(other)
         fields == other.fields
       end

@@ -83,9 +83,10 @@ module OpenFeature
         provider_hooks = provider.respond_to?(:hooks) ? Array(provider.hooks) : []
         ordered_hooks = [*OpenFeature::SDK.hooks, *@hooks, *invocation_hooks, *provider_hooks]
 
-        # Short-circuit NOT_READY/FATAL providers (required by evaluation_v2.feature)
+        # Short-circuit NOT_READY/FATAL providers (required by evaluation_v2.feature). A provider resolved from the
+        # configuration is tracked while bound, so one that isn't was replaced mid-call and reads NOT_READY.
         short_circuit_code = nil
-        if OpenFeature::SDK.configuration.provider_tracked?(provider)
+        if @provider ? OpenFeature::SDK.configuration.provider_tracked?(provider) : !provider.equal?(@fallback_provider)
           short_circuit_code = short_circuit_error_code(OpenFeature::SDK.configuration.provider_state(provider))
         end
 

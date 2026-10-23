@@ -497,6 +497,31 @@ RSpec.describe "Flag Evaluation API" do
           expect(client.fetch_boolean_value(flag_key: "flag", default_value: false)).to be(true)
         end
 
+        specify "1.1.3: an evaluation whose provider is replaced mid-call doesn't run it before its init" do
+          gate = Queue.new
+          threads = capture_threads
+          initializing = slow_init_provider(gate)
+          client = OpenFeature::SDK.build_client(domain: "d")
+          OpenFeature::SDK.set_provider(initializing, domain: "d")
+          rebind = Class.new do
+            include OpenFeature::SDK::TransactionContextPropagator
+
+            def get_transaction_context
+              OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new, domain: "d") unless @rebound
+              @rebound = true
+              nil
+            end
+          end.new
+          OpenFeature::SDK.set_transaction_context_propagator(rebind)
+
+          details = client.fetch_boolean_details(flag_key: "flag", default_value: false)
+
+          expect(details.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::PROVIDER_NOT_READY)
+        ensure
+          gate << :go
+          threads.each { |t| t.join(5) }
+        end
+
         specify "1.1.3: an existing client never evaluates a newly bound provider before its init" do
           init_tracking = Class.new do
             attr_reader :fetched_before_init

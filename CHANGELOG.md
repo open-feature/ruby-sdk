@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.1](https://github.com/open-feature/ruby-sdk/compare/v0.7.0...v0.7.1) (2026-10-23)
+
+
+### Features
+
+* isolated API instances ([#354](https://github.com/open-feature/ruby-sdk/issues/354)) ([1c92b4a](https://github.com/open-feature/ruby-sdk/commit/1c92b4ad7550a6b345e7471f84cd5a7ff445591e))
+
+
+### Bug Fixes
+
+* key provider state by identity, default the NoOp reason, freeze client metadata ([#355](https://github.com/open-feature/ruby-sdk/issues/355)) ([d15bd84](https://github.com/open-feature/ruby-sdk/commit/d15bd84e1456b6200e29c12c3463c4f8ddfe693f))
+
 ## [0.7.0](https://github.com/open-feature/ruby-sdk/compare/v0.6.7...v0.7.0) (2026-10-23)
 
 

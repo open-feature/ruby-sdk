@@ -8,7 +8,7 @@ module OpenFeature
       # Mixin for providers that emit lifecycle events
       module EventEmitter
         def emit_event(event_type, details = {})
-          config = @configuration
+          config = @openfeature_configuration
           return unless config
 
           unless ::OpenFeature::SDK::ProviderEvent::ALL_EVENTS.include?(event_type)
@@ -19,17 +19,22 @@ module OpenFeature
         end
 
         def configuration_attached?
-          !@configuration.nil?
+          !@openfeature_configuration.nil?
         end
 
         private
 
         def attach(configuration)
-          @configuration = configuration
+          # Spec 1.8.4: only providers using this mixin know which API they're registered with
+          if @openfeature_configuration && !@openfeature_configuration.equal?(configuration)
+            raise ArgumentError, "Provider is already registered with another OpenFeature API instance"
+          end
+
+          @openfeature_configuration = configuration
         end
 
         def detach
-          @configuration = nil
+          @openfeature_configuration = nil
         end
       end
     end

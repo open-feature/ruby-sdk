@@ -1,0 +1,7 @@
+module OpenFeature
+  module SDK
+    module Isolated
+      def self.create_api: () -> API
+    end
+  end
+end

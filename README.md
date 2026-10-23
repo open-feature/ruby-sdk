@@ -443,6 +443,29 @@ class MyRequestScopedPropagator
 end
 ```
 
+### Isolated API instances
+
+`OpenFeature::SDK` is a global singleton. Some applications need more than one independent API in a process, for example separately developed modules that each need their own provider, or tests that run in parallel. Require the factory explicitly to create one:
+
+```ruby
+require "open_feature/sdk/isolated"
+
+api = OpenFeature::SDK::Isolated.create_api
+api.set_provider_and_wait(MyProvider.new)
+client = api.build_client
+client.fetch_boolean_value(flag_key: "my-flag", default_value: false)
+```
+
+Each instance has its own providers, hooks, evaluation context, event handlers, transaction context propagator and `shutdown`, and shares none of them with `OpenFeature::SDK` or other instances.
+Build its clients with `api.build_client`; `OpenFeature::SDK::Client.new` binds to the global API.
+Prefer the global API unless you need this.
+
+A provider instance should be registered with only one API at a time.
+Registering a provider that includes `OpenFeature::SDK::Provider::EventEmitter` with a second API raises `ArgumentError`; other providers can't be detected.
+Once the first API replaces the provider or shuts down, it can be registered with another.
+
+A `LoggingHook` created without `logger:` logs to the global API's logger, even when added to an isolated API. Pass `logger:` to use another.
+
 ## Extending
 
 ### Develop a provider

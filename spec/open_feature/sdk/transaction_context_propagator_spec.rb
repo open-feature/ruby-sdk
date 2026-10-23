@@ -31,6 +31,27 @@ RSpec.describe OpenFeature::SDK::ThreadLocalTransactionContextPropagator do
       expect(other_thread_context).to be_nil
       expect(propagator.get_transaction_context).to eq(context)
     end
+
+    it "clears every propagator's context when THREAD_KEY is reset, as request middleware does" do
+      other = described_class.new
+      propagator.set_transaction_context(OpenFeature::SDK::EvaluationContext.new(targeting_key: "request-a"))
+      other.set_transaction_context(OpenFeature::SDK::EvaluationContext.new(targeting_key: "request-a"))
+
+      Thread.current[described_class::THREAD_KEY] = nil
+
+      expect(propagator.get_transaction_context).to be_nil
+      expect(other.get_transaction_context).to be_nil
+    end
+
+    it "works for a subclass whose initialize doesn't call super" do
+      subclass = Class.new(described_class) { def initialize = (@configured = true) }
+      context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "user-123")
+      instance = subclass.new
+
+      instance.set_transaction_context(context)
+
+      expect(instance.get_transaction_context).to eq(context)
+    end
   end
 end
 

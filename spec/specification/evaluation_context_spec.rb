@@ -60,6 +60,14 @@ RSpec.describe "Evaluation Context" do
           expect(client.evaluation_context).to eq(evaluation_context)
         end
 
+        specify "3.2.1.1: a client's evaluation context can be supplied after creation" do
+          client = OpenFeature::SDK::Client.new(provider: OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => ->(ctx) { ctx.targeting_key }))
+
+          client.evaluation_context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "u")
+
+          expect(client.fetch_string_value(flag_key: "flag", default_value: "none")).to eq("u")
+        end
+
         specify "The invocation MUST have a method for supplying evaluation context." do
           client = OpenFeature::SDK.build_client
 

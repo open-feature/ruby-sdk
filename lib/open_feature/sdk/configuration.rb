@@ -152,10 +152,6 @@ module OpenFeature
 
           old_provider = @providers[domain]
 
-          new_providers = @providers.dup
-          new_providers[domain] = provider
-          @providers = new_providers
-
           # Spec 1.1.2.2: initialize once per registration; a failed init is retried on the next set
           attempt = @init_attempts[provider]
           needs_init = attempt.nil? || attempt.state == :failed
@@ -165,6 +161,11 @@ module OpenFeature
             @provider_state_registry.set_initial_state(provider)
             provider.send(:attach, self) if provider.is_a?(Provider::EventEmitter)
           end
+
+          # Publish last: clients read @providers without the lock, and must not see an untracked provider
+          new_providers = @providers.dup
+          new_providers[domain] = provider
+          @providers = new_providers
 
           # Spec 1.1.2.3: Only shutdown old provider if it's no longer bound to any domain
           if old_provider && !old_provider.equal?(provider)

@@ -7,10 +7,10 @@ module OpenFeature
       EMPTY_HINTS: Hooks::Hints
 
       attr_reader metadata: ClientMetadata
-      attr_reader evaluation_context: EvaluationContext?
+      attr_accessor evaluation_context: EvaluationContext?
       attr_accessor hooks: Array[untyped]
 
-      def initialize: (provider: untyped, ?domain: String?, ?evaluation_context: EvaluationContext?) -> void
+      def initialize: (?provider: untyped, ?domain: String?, ?evaluation_context: EvaluationContext?) -> void
 
       def add_hooks: (*Array[untyped] new_hooks) -> void
 
@@ -40,7 +40,8 @@ module OpenFeature
       private
 
       def fetch_details: (type: Symbol, flag_key: String, default_value: untyped, ?evaluation_context: EvaluationContext?, ?invocation_hooks: Array[untyped], ?hook_hints: Hooks::Hints?) -> EvaluationDetails?
-      def evaluate_flag: (type: Symbol, flag_key: String, default_value: untyped, evaluation_context: EvaluationContext?) -> EvaluationDetails
+      def evaluate_flag: (provider: untyped, type: Symbol, flag_key: String, default_value: untyped, evaluation_context: EvaluationContext?) -> EvaluationDetails
+      def resolve_provider: () -> untyped
       def short_circuit_error_code: (String state) -> String?
       def build_evaluation_context: (EvaluationContext? invocation_context) -> EvaluationContext?
       def validate_default_value_type: (Symbol type, untyped default_value) -> void

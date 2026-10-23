@@ -17,11 +17,11 @@ module OpenFeature
       SUFFIXES = %i[value details].freeze
       EMPTY_HINTS = Hooks::Hints.new.freeze
 
-      attr_reader :metadata, :evaluation_context
+      attr_reader :metadata
 
-      attr_accessor :hooks
+      attr_accessor :hooks, :evaluation_context
 
-      def initialize(provider:, domain: nil, evaluation_context: nil)
+      def initialize(provider: nil, domain: nil, evaluation_context: nil)
         @provider = provider
         @metadata = ClientMetadata.new(domain:)
         @evaluation_context = evaluation_context
@@ -33,7 +33,7 @@ module OpenFeature
       end
 
       def provider_status
-        OpenFeature::SDK.configuration.provider_state(@provider)
+        OpenFeature::SDK.configuration.provider_state(resolve_provider)
       end
 
       def add_handler(event_type, handler = nil, &block)
@@ -51,11 +51,12 @@ module OpenFeature
       # Records a tracking event. If the provider does not implement
       # tracking, this is a no-op (spec 6.1.4).
       def track(tracking_event_name, evaluation_context: nil, tracking_event_details: nil)
-        return unless @provider.respond_to?(:track)
+        provider = resolve_provider
+        return unless provider.respond_to?(:track)
 
         built_context = build_evaluation_context(evaluation_context)
 
-        @provider.track(tracking_event_name, evaluation_context: built_context, tracking_event_details: tracking_event_details)
+        provider.track(tracking_event_name, evaluation_context: built_context, tracking_event_details: tracking_event_details)
       rescue StandardError, NotImplementedError
         nil
       end
@@ -75,16 +76,18 @@ module OpenFeature
       private
 
       def fetch_details(type:, flag_key:, default_value:, evaluation_context: nil, invocation_hooks: [], hook_hints: nil)
+        provider = resolve_provider
         built_context = build_evaluation_context(evaluation_context)
 
         # Assemble ordered hooks: API → Client → Invocation → Provider (spec 4.4.2)
-        provider_hooks = @provider.respond_to?(:hooks) ? Array(@provider.hooks) : []
+        provider_hooks = provider.respond_to?(:hooks) ? Array(provider.hooks) : []
         ordered_hooks = [*OpenFeature::SDK.hooks, *@hooks, *invocation_hooks, *provider_hooks]
 
-        # Short-circuit NOT_READY/FATAL providers (required by evaluation_v2.feature)
+        # Short-circuit NOT_READY/FATAL providers (required by evaluation_v2.feature). A provider resolved from the
+        # configuration is tracked while bound, so one that isn't was replaced mid-call and reads NOT_READY.
         short_circuit_code = nil
-        if OpenFeature::SDK.configuration.provider_tracked?(@provider)
-          short_circuit_code = short_circuit_error_code(provider_status)
+        if @provider ? OpenFeature::SDK.configuration.provider_tracked?(provider) : !provider.equal?(@fallback_provider)
+          short_circuit_code = short_circuit_error_code(OpenFeature::SDK.configuration.provider_state(provider))
         end
 
         # Fast path: skip hook ceremony when no hooks are registered
@@ -98,7 +101,7 @@ module OpenFeature
             return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
           end
 
-          return evaluate_flag(type: type, flag_key: flag_key, default_value: default_value, evaluation_context: built_context)
+          return evaluate_flag(provider: provider, type: type, flag_key: flag_key, default_value: default_value, evaluation_context: built_context)
         end
 
         hook_context = Hooks::HookContext.new(
@@ -107,7 +110,7 @@ module OpenFeature
           default_value: default_value,
           evaluation_context: built_context,
           client_metadata: @metadata,
-          provider_metadata: @provider.respond_to?(:metadata) ? @provider.metadata : nil
+          provider_metadata: provider.respond_to?(:metadata) ? provider.metadata : nil
         )
 
         hints = if hook_hints.is_a?(Hooks::Hints)
@@ -131,7 +134,7 @@ module OpenFeature
           evaluation_details
         else
           executor.execute(ordered_hooks: ordered_hooks, hook_context: hook_context, hints: hints) do |hctx|
-            evaluate_flag(type: type, flag_key: flag_key, default_value: default_value, evaluation_context: hctx.evaluation_context)
+            evaluate_flag(provider: provider, type: type, flag_key: flag_key, default_value: default_value, evaluation_context: hctx.evaluation_context)
           end
         end
       rescue StandardError, NotImplementedError => e
@@ -145,8 +148,8 @@ module OpenFeature
         EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
       end
 
-      def evaluate_flag(type:, flag_key:, default_value:, evaluation_context:)
-        resolution_details = @provider.send(
+      def evaluate_flag(provider:, type:, flag_key:, default_value:, evaluation_context:)
+        resolution_details = provider.send(
           :"fetch_#{type}_value",
           flag_key: flag_key,
           default_value: default_value,
@@ -161,6 +164,12 @@ module OpenFeature
         end
 
         EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution_details)
+      end
+
+      # Callers resolve once per operation, so a rebinding mid-evaluation can't mix two providers.
+      # The fallback NoOp is never registered: untracked, so not short-circuited, and its status reads NOT_READY.
+      def resolve_provider
+        @provider || OpenFeature::SDK.configuration.provider(domain: @metadata.domain) || (@fallback_provider ||= Provider::NoOpProvider.new)
       end
 
       def short_circuit_error_code(state)

@@ -48,11 +48,7 @@ module OpenFeature
       end
 
       def build_client(domain: nil, evaluation_context: nil)
-        active_provider = provider(domain:).nil? ? Provider::NoOpProvider.new : provider(domain:)
-
-        Client.new(provider: active_provider, domain:, evaluation_context:)
-      rescue
-        Client.new(provider: Provider::NoOpProvider.new, evaluation_context:)
+        Client.new(domain:, evaluation_context:)
       end
 
       def provider_metadata(domain: nil)

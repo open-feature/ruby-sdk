@@ -287,6 +287,7 @@ Log output uses a structured key=value format:
 
 Clients can be assigned to a domain. A domain is a logical identifier which can be used to associate clients with a particular provider.
 If a domain has no associated provider, the default provider is used.
+Clients look up their domain's provider on every call, so a client created before `set_provider` follows the new binding.
 
 ```ruby
 OpenFeature::SDK.configure do |config|

@@ -370,6 +370,52 @@ RSpec.describe "Flag Evaluation API" do
       ensure
         outcomes << :ok
       end
+
+      specify "replacing a provider releases a waiter on its unfinished init" do
+        OpenFeature::SDK.set_provider(provider, domain: "a")
+        waiter = start_waiter("a")
+
+        OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new, domain: "a")
+
+        expect(waiter.join(2)&.value).to be_a(OpenFeature::SDK::ProviderInitializationError)
+      ensure
+        outcomes << :ok
+      end
+
+      specify "replacing a provider while set_provider_and_wait runs its init makes that call raise too" do
+        initiator = background do
+          OpenFeature::SDK.set_provider_and_wait(provider, domain: "a")
+        rescue OpenFeature::SDK::ProviderInitializationError => e
+          e
+        end
+        200.times do
+          break if outcomes.num_waiting.positive?
+          sleep 0.01
+        end
+
+        OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new, domain: "a")
+        outcomes << :ok
+
+        expect(initiator.join(2)&.value).to be_a(OpenFeature::SDK::ProviderInitializationError)
+        expect(OpenFeature::SDK.configuration.provider_tracked?(provider)).to be(false)
+      end
+
+      specify "set_provider_and_wait from inside the provider's own init raises instead of deadlocking" do
+        emitting = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+          def init(_evaluation_context = nil) = emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+        end.new
+        reentry = nil
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, lambda do |_|
+          OpenFeature::SDK.set_provider_and_wait(emitting)
+        rescue OpenFeature::SDK::ProviderInitializationError => e
+          reentry = e
+        end)
+
+        setter = background { OpenFeature::SDK.set_provider_and_wait(emitting) }
+
+        expect(setter.join(2)).to be(setter)
+        expect(reentry).to be_a(OpenFeature::SDK::ProviderInitializationError)
+      end
     end
 
     context "Requirement 1.1.2.4" do

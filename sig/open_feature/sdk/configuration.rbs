@@ -33,7 +33,9 @@ module OpenFeature
       def reset: () -> void
       def set_provider_internal: (untyped provider, domain: String?, wait_for_init: bool) -> void
       def init_provider: (untyped provider, EvaluationContext? context, domain: String?, attempt: untyped, ?raise_on_error: bool) -> void
-      def finish_init_attempt: (untyped attempt, Symbol state, ?ProviderInitializationError? error) -> void
+      def finish_init_attempt: (untyped attempt, Symbol state, ?ProviderInitializationError? error) -> bool
+      def abandon_init_attempt: (untyped attempt) -> void
+      def incomplete_init_error: (untyped provider, String reason) -> ProviderInitializationError
       def dispatch_provider_event: (untyped provider, String event_type, ?Hash[Symbol, untyped] details) -> void
       def provider_bound?: (untyped provider) -> bool
       def domain_scoped?: (untyped provider) -> bool

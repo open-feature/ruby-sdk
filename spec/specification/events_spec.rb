@@ -78,6 +78,116 @@ RSpec.describe "OpenFeature Specification: Events" do
       # Cleanup
       OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
     end
+
+    specify "5.1.2: a handler that raises doesn't stop queued events" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      OpenFeature::SDK.set_provider_and_wait(provider)
+      client = OpenFeature::SDK.build_client
+      received = []
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, lambda do |_details|
+        provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        raise "handler failed"
+      end)
+      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_details) { received << :ready })
+      received.clear # Ignore the immediate callback during registration
+
+      provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+
+      expect(received).to eq([:ready])
+    end
+
+    specify "5.1.2: a failing queued event doesn't turn a successful init into a failure" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      logger = spy("Logger")
+      OpenFeature::SDK.configuration.logger = logger
+      # Non-Hash details make the queued event fail while its handlers are prepared
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_details) { provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, nil) })
+
+      expect { OpenFeature::SDK.set_provider_and_wait(provider) }.not_to raise_error
+      expect(OpenFeature::SDK.configuration.provider_state(provider)).to eq(OpenFeature::SDK::ProviderState::STALE)
+      expect(logger).to have_received(:error).with(/Queued provider event failed/)
+    ensure
+      OpenFeature::SDK.configuration.logger = nil
+    end
+
+    specify "5.1.2: a queued event is delivered with the details it was emitted with" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      OpenFeature::SDK.set_provider_and_wait(provider)
+      received = nil
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, lambda do |_details|
+        details = {message: "first"}
+        provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED, details)
+        details[:message] = "changed"
+      end)
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_CONFIGURATION_CHANGED, ->(details) { received = details[:message] })
+
+      provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+
+      expect(received).to eq("first")
+    end
+
+    specify "5.1.2: a queued event is dropped when its provider was replaced meanwhile" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      OpenFeature::SDK.set_provider_and_wait(provider)
+      client = OpenFeature::SDK.build_client
+      names = []
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, lambda do |_details|
+        provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::NoOpProvider.new)
+      end)
+      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(details) { names << details[:provider_name] })
+      names.clear # Ignore the immediate callback during registration
+
+      provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+
+      expect(names).to eq(["No-op Provider"])
+    end
+
+    specify "5.1.2: set_provider_and_wait for another provider from inside a handler returns READY" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      other = OpenFeature::SDK::Provider::InMemoryProvider.new
+      OpenFeature::SDK.set_provider_and_wait(provider)
+      states = []
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, lambda do |_details|
+        OpenFeature::SDK.set_provider_and_wait(other, domain: "x")
+        states << OpenFeature::SDK.configuration.provider_state(other)
+      end)
+
+      provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+
+      expect(states).to eq([OpenFeature::SDK::ProviderState::READY])
+    end
+
+    specify "5.1.2: a client handler can add another handler while handling an event" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      OpenFeature::SDK.set_provider_and_wait(provider)
+      client = OpenFeature::SDK.build_client
+      received = []
+      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, lambda do |_details|
+        client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_ready_details) { received << :ready })
+      end)
+
+      provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+      provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+
+      expect(received).to eq([:ready])
+    end
+
+    specify "5.1.2: a client handler can emit an event for another provider" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      other = OpenFeature::SDK::Provider::InMemoryProvider.new
+      OpenFeature::SDK.set_provider_and_wait(provider, domain: "a")
+      OpenFeature::SDK.set_provider_and_wait(other, domain: "b")
+      client = OpenFeature::SDK.build_client(domain: "a")
+      other_client = OpenFeature::SDK.build_client(domain: "b")
+      received = []
+      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, ->(_details) { other.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE) })
+      other_client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, ->(_details) { received << :stale })
+
+      provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+
+      expect(received).to eq([:stale])
+    end
   end
 
   context "Requirement 5.1.3" do
@@ -223,6 +333,13 @@ RSpec.describe "OpenFeature Specification: Events" do
       client_handlers = OpenFeature::SDK.configuration.instance_variable_get(:@client_handlers)
       expect(client_handlers[client][OpenFeature::SDK::ProviderEvent::PROVIDER_READY]).to be_empty
     end
+
+    specify "rejects a client handler for an unknown event type or one that can't be called" do
+      client = OpenFeature::SDK.build_client
+
+      expect { client.add_handler("NOPE", ->(_details) {}) }.to raise_error(ArgumentError, /Invalid event type/)
+      expect { client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) }.to raise_error(ArgumentError, /Handler must respond to call/)
+    end
   end
 
   context "Requirement 5.2.2" do
@@ -330,6 +447,29 @@ RSpec.describe "OpenFeature Specification: Events" do
     end
   end
 
+  context "Requirement 5.2.7" do
+    after { OpenFeature::SDK.configuration.logger = nil }
+
+    specify "5.2.7: a client handler can remove itself while handling an event" do
+      logger = spy("Logger")
+      OpenFeature::SDK.configuration.logger = logger
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      OpenFeature::SDK.set_provider_and_wait(provider)
+      client = OpenFeature::SDK.build_client
+      calls = 0
+      handler = lambda do |_details|
+        calls += 1
+        client.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, handler)
+      end
+      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, handler)
+
+      2.times { provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE) }
+
+      expect(calls).to eq(1)
+      expect(logger).not_to have_received(:error)
+    end
+  end
+
   context "Requirement 5.3.1" do
     specify "If the provider's initialize function terminates normally, PROVIDER_READY handlers MUST run" do
       ready_event_received = false
@@ -370,6 +510,17 @@ RSpec.describe "OpenFeature Specification: Events" do
 
           OpenFeature::SDK.remove_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, handler)
         end
+
+        specify "5.3.3: an API handler runs once for a READY provider bound to two domains" do
+          provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+          OpenFeature::SDK.set_provider_and_wait(provider, domain: "a")
+          OpenFeature::SDK.set_provider_and_wait(provider, domain: "b")
+          names = []
+
+          OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(details) { names << details[:provider_name] })
+
+          expect(names.count("In-memory Provider")).to eq(1)
+        end
       end
 
       context "Client-level handlers" do
@@ -388,6 +539,84 @@ RSpec.describe "OpenFeature Specification: Events" do
           expect(events_received[0][:provider_name]).to eq("In-memory Provider")
         end
       end
+    end
+  end
+
+  context "Requirement 5.3.5" do
+    specify "1.1.2.4: set_provider_and_wait from the provider's own ERROR handler returns with the provider READY" do
+      outcomes = Queue.new
+      outcomes << :fail << :ok
+      provider = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+        define_method(:init) { |_evaluation_context = nil| raise "init failed" if outcomes.pop == :fail }
+      end.new
+      retried = false
+      state_after_retry = nil
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, lambda do |_details|
+        next if retried
+
+        retried = true
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        state_after_retry = OpenFeature::SDK.configuration.provider_state(provider)
+      end)
+
+      expect { OpenFeature::SDK.set_provider_and_wait(provider) }.to raise_error(OpenFeature::SDK::ProviderInitializationError)
+      expect(state_after_retry).to eq(OpenFeature::SDK::ProviderState::READY)
+    end
+
+    [[:ERROR, :READY], [:READY, :STALE]].each do |first, following|
+      specify "5.3.5: a nested event for the same provider is delivered after the current one (#{first}, then #{following})" do
+        first_event, following_event = [first, following].map { |name| OpenFeature::SDK::ProviderEvent.const_get(:"PROVIDER_#{name}") }
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+        client = OpenFeature::SDK.build_client
+        events = []
+        OpenFeature::SDK.add_handler(first_event, ->(_details) { provider.emit_event(following_event) })
+        client.add_handler(first_event, ->(_details) { events << first })
+        client.add_handler(following_event, ->(_details) { events << following })
+        events.clear # Ignore immediate callbacks during registration
+
+        provider.emit_event(first_event)
+
+        expect(events).to eq([first, following])
+      end
+    end
+
+    specify "5.3.5: client handlers of the outer event observe the outer event's status" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      OpenFeature::SDK.set_provider_and_wait(provider)
+      client = OpenFeature::SDK.build_client
+      statuses = []
+      OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, ->(_details) { provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) })
+      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, ->(_details) { statuses << client.provider_status })
+
+      provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR)
+
+      expect(statuses).to eq([OpenFeature::SDK::ProviderState::ERROR])
+    end
+
+    specify "5.3.5: a stale READY from an earlier registration is dropped" do
+      gates = [Queue.new, Queue.new]
+      first_init, second_init = gates
+      provider = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+        define_method(:init) { |_evaluation_context = nil| gates.shift.pop }
+      end.new
+      init_threads = []
+      allow(Thread).to receive(:new).and_wrap_original { |original, *args, &block| original.call(*args, &block).tap { |t| init_threads << t } }
+
+      OpenFeature::SDK.set_provider(provider)
+      500.times { first_init.num_waiting.positive? ? break : sleep(0.01) }
+      expect(first_init.num_waiting).to eq(1)
+      OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::NoOpProvider.new)
+      OpenFeature::SDK.set_provider(provider)
+
+      first_init << :ok
+      expect(init_threads.first.join(5)).to be(init_threads.first)
+      expect(OpenFeature::SDK.configuration.provider_state(provider)).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+
+      second_init << :ok
+      expect(init_threads.last.join(5)).to be(init_threads.last)
+      expect(OpenFeature::SDK.configuration.provider_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
     end
   end
 end

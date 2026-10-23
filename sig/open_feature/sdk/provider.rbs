@@ -20,6 +20,10 @@ module OpenFeature
         def domain_scoped?: () -> bool
       end
 
+      interface _HookProvider
+        def hooks: () -> Array[Hooks::_Hook]
+      end
+
       interface _TrackableProvider
         def track: (String tracking_event_name, ?evaluation_context: EvaluationContext?, ?tracking_event_details: TrackingEventDetails?) -> void
       end

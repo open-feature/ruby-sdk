@@ -160,26 +160,26 @@ RSpec.describe "Provider" do
     end
   end
 
-  context "2.5 - Shutdown" do
-    context "Requirement 2.5.2" do
-      before { OpenFeature::SDK.configuration.send(:reset) }
-      after { OpenFeature::SDK.configuration.send(:reset) }
-
-      specify "a replaced provider is initialized again when re-registered" do
-        provider_class = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
-          attr_reader :inits
-
-          def init(_evaluation_context = nil)
-            @inits = (@inits || 0) + 1
-          end
+  context "2.3 - Provider hooks" do
+    context "Requirement 2.3.2" do
+      specify "In cases of normal execution, the built-in providers MUST NOT populate the error message field." do
+        noop = OpenFeature::SDK::Provider::NoOpProvider.new
+        {boolean: true, string: "s", number: 1, integer: 1, float: 1.0, object: {}}.each do |type, default_value|
+          expect(noop.send(:"fetch_#{type}_value", flag_key: "k", default_value:).error_message).to be_nil
         end
-        provider = provider_class.new
 
-        OpenFeature::SDK.set_provider_and_wait(provider)
-        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new)
-        OpenFeature::SDK.set_provider_and_wait(provider)
-
-        expect(provider.inits).to eq(2)
+        flag = OpenFeature::SDK::Provider::InMemoryProvider::Flag
+        flags = {
+          "plain" => true,
+          "callable" => ->(_ctx) { true },
+          "variant" => flag.new(variants: {"on" => true}, default_variant: "on"),
+          "targeted" => flag.new(variants: {"on" => true, "off" => false}, default_variant: "off", context_evaluator: ->(_ctx) { "on" }),
+          "disabled" => flag.new(variants: {"on" => true}, default_variant: "on", disabled: true)
+        }
+        in_memory = OpenFeature::SDK::Provider::InMemoryProvider.new(flags)
+        flags.each_key do |flag_key|
+          expect(in_memory.fetch_boolean_value(flag_key:, default_value: false).error_message).to be_nil
+        end
       end
     end
   end

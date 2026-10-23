@@ -65,6 +65,29 @@ RSpec.describe "Tracking Specification" do
         # Invocation has highest precedence
         expect(captured_context.field("shared")).to eq("invocation")
       end
+
+      specify "API, transaction, client and invocation contexts are merged in that order, with later levels overwriting earlier ones" do
+        captured_context = nil
+        tracking_provider = Class.new do
+          define_method(:track) { |_name, evaluation_context:, **| captured_context = evaluation_context }
+        end.new
+        propagator = OpenFeature::SDK::ThreadLocalTransactionContextPropagator.new
+        OpenFeature::SDK.configure do |config|
+          config.evaluation_context = OpenFeature::SDK::EvaluationContext.new("api" => "api", "api_txn" => "api", "api_client" => "api")
+          config.transaction_context_propagator = propagator
+        end
+        OpenFeature::SDK.set_provider(tracking_provider)
+        client = OpenFeature::SDK.build_client(
+          evaluation_context: OpenFeature::SDK::EvaluationContext.new("api_client" => "client", "txn_client" => "client", "client_inv" => "client")
+        )
+
+        propagator.set_transaction_context(OpenFeature::SDK::EvaluationContext.new("api_txn" => "txn", "txn_client" => "txn"))
+        client.track("checkout", evaluation_context: OpenFeature::SDK::EvaluationContext.new("client_inv" => "inv"))
+
+        expect(captured_context.fields).to include(
+          "api" => "api", "api_txn" => "txn", "api_client" => "client", "txn_client" => "client", "client_inv" => "inv"
+        )
+      end
     end
 
     context "Requirement 6.1.4" do

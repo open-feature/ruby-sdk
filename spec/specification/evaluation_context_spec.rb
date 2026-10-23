@@ -20,6 +20,22 @@ RSpec.describe "Evaluation Context" do
       specify "The evaluation context MUST support the inclusion of custom fields, having keys of type string, and values of type boolean | string | number | datetime | structure." do
         expect(context_with_custom_fields.fields).to eq({"favorite_fruit" => "banana", "favorite_music" => "maryland beach ska rock"})
       end
+
+      specify "datetime and structure values keep their types, including through merge" do
+        now = Time.now
+        structure = {"nested" => {"list" => [1, 2]}}
+        context = OpenFeature::SDK::EvaluationContext.new("bool" => true, "int" => 1, "float" => 1.5, "time" => now, "structure" => structure)
+
+        merged = OpenFeature::SDK::EvaluationContext.new("other" => "x").merge(context)
+
+        [context, merged].each do |ctx|
+          expect(ctx.field("bool")).to be(true)
+          expect(ctx.field("int")).to eql(1)
+          expect(ctx.field("float")).to eql(1.5)
+          expect(ctx.field("time")).to be_a(Time).and eq(now)
+          expect(ctx.field("structure")).to eq(structure)
+        end
+      end
     end
 
     context "Requirement 3.1.3" do
@@ -37,6 +53,19 @@ RSpec.describe "Evaluation Context" do
         context = OpenFeature::SDK::EvaluationContext.new("favorite_fruit" => "banana", "favorite_fruit" => "apple") # standard:disable Lint/DuplicateHashKey
 
         expect(context.fields).to eq({"favorite_fruit" => "apple"})
+      end
+
+      specify "a symbol key and the same string key are one field" do
+        context = OpenFeature::SDK::EvaluationContext.new(:foo => 1, "foo" => 2)
+
+        expect(context.fields).to eq({"foo" => 2})
+      end
+
+      specify "targeting_key shares the namespace of the custom fields" do
+        context = OpenFeature::SDK::EvaluationContext.new(:targeting_key => "a", "targeting_key" => "b")
+
+        expect(context.fields).to eq({"targeting_key" => "b"})
+        expect(context.targeting_key).to eq("b")
       end
     end
   end
@@ -76,7 +105,7 @@ RSpec.describe "Evaluation Context" do
       end
     end
 
-    specify "Requirement 3.2.3 - Evaluation context MUST be merged in the order: API (global; lowest precedence) -> transaction -> client -> invocation -> before hooks (highest precedence), with duplicate values being overwritten." do
+    specify "Requirement 3.2.3: the client passes the API, transaction, client and invocation contexts to the context builder" do
       api_context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "api")
       transaction_context = OpenFeature::SDK::EvaluationContext.new("targeting_key" => "transaction", "transaction-related" => "field")
       client_context = OpenFeature::SDK::EvaluationContext.new("targeting_key" => "client", "client-related" => "field")
@@ -101,6 +130,27 @@ RSpec.describe "Evaluation Context" do
       client.fetch_boolean_value(flag_key: "testing", default_value: true, evaluation_context: invocation_context)
 
       propagator.set_transaction_context(nil)
+    end
+
+    specify "Requirement 3.2.3: a before hook's returned context overrides the invocation context" do
+      seen = nil
+      provider = Class.new do
+        define_method(:fetch_string_value) do |evaluation_context:, **|
+          seen = evaluation_context
+          OpenFeature::SDK::Provider::ResolutionDetails.new(value: "v", reason: OpenFeature::SDK::Provider::Reason::STATIC)
+        end
+      end.new
+      hook = Class.new do
+        include OpenFeature::SDK::Hooks::Hook
+
+        def before(**) = OpenFeature::SDK::EvaluationContext.new("targeting_key" => "hook", "shared" => "hook")
+      end.new
+
+      OpenFeature::SDK::Client.new(provider:).fetch_string_value(flag_key: "f", default_value: "d", hooks: [hook],
+        evaluation_context: OpenFeature::SDK::EvaluationContext.new("targeting_key" => "invocation", "shared" => "invocation"))
+
+      expect(seen.field("shared")).to eq("hook")
+      expect(seen.targeting_key).to eq("hook")
     end
   end
 

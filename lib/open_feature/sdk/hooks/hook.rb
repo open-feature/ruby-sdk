@@ -14,17 +14,17 @@ module OpenFeature
           nil
         end
 
-        # Called after successful flag evaluation (spec 4.3.3).
+        # Called after successful flag evaluation (spec 4.3.6).
         def after(hook_context:, evaluation_details:, hints:)
           nil
         end
 
-        # Called when an error occurs during flag evaluation (spec 4.3.6).
+        # Called when an error occurs during flag evaluation (spec 4.3.7).
         def error(hook_context:, exception:, hints:)
           nil
         end
 
-        # Called unconditionally after flag evaluation (spec 4.3.7).
+        # Called unconditionally after flag evaluation (spec 4.3.8).
         def finally(hook_context:, evaluation_details:, hints:)
           nil
         end

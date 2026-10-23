@@ -157,11 +157,15 @@ module OpenFeature
           evaluation_context: evaluation_context
         )
 
-        if resolution_details.error_code || TYPE_CLASS_MAP[type].none? { |klass| resolution_details.value.is_a?(klass) }
+        provider_error = resolution_details.error_code
+        if provider_error || TYPE_CLASS_MAP[type].none? { |klass| resolution_details.value.is_a?(klass) }
+          # A new struct, since a provider may cache and reuse the one it returned
           resolution_details = Provider::ResolutionDetails.new(
             value: default_value,
-            error_code: resolution_details.error_code || Provider::ErrorCode::TYPE_MISMATCH,
-            reason: Provider::Reason::ERROR
+            reason: Provider::Reason::ERROR,
+            error_code: provider_error || Provider::ErrorCode::TYPE_MISMATCH,
+            error_message: provider_error ? resolution_details.error_message : "Expected #{type}, got #{resolution_details.value.class}",
+            flag_metadata: resolution_details.flag_metadata
           )
         end
 

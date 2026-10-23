@@ -213,6 +213,25 @@ RSpec.describe OpenFeature::SDK::Client do
           expect(original.error_code).to be_nil
           expect(original.reason).to eq(OpenFeature::SDK::Provider::Reason::STATIC)
         end
+
+        it "keeps a provider error's message without mutating the provider's ResolutionDetails" do
+          original = OpenFeature::SDK::Provider::ResolutionDetails.new(
+            value: true,
+            reason: OpenFeature::SDK::Provider::Reason::DEFAULT,
+            error_code: OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND,
+            error_message: "no such flag"
+          )
+          caching_provider = instance_double(OpenFeature::SDK::Provider::NoOpProvider)
+          allow(caching_provider).to receive(:fetch_boolean_value).and_return(original)
+
+          fetched = described_class.new(provider: caching_provider).fetch_boolean_details(flag_key: "flag", default_value: false)
+
+          expect(fetched.value).to be(false)
+          expect(fetched.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
+          expect(fetched.error_message).to eq("no such flag")
+          expect(original.value).to be(true)
+          expect(original.reason).to eq(OpenFeature::SDK::Provider::Reason::DEFAULT)
+        end
       end
     end
 

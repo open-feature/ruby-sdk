@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.7.0](https://github.com/open-feature/ruby-sdk/compare/v0.6.7...v0.7.0) (2026-10-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* resolve a client's provider by domain on every call ([#352](https://github.com/open-feature/ruby-sdk/issues/352))
+
+### Features
+
+* let providers own their lifecycle events ([#353](https://github.com/open-feature/ruby-sdk/issues/353)) ([15faf98](https://github.com/open-feature/ruby-sdk/commit/15faf98d1c900118da362f6b8d76ccdec1b3b99e))
+
+
+### Bug Fixes
+
+* catch NotImplementedError in track and the hook lifecycle ([#349](https://github.com/open-feature/ruby-sdk/issues/349)) ([62759f4](https://github.com/open-feature/ruby-sdk/commit/62759f443fa8cb2f7a1b67720397240063623da1))
+* deliver provider events in order, outside handler locks ([#351](https://github.com/open-feature/ruby-sdk/issues/351)) ([16bf89c](https://github.com/open-feature/ruby-sdk/commit/16bf89cf72541c22de9565f0dcdbfcf9dfe097ad))
+* release init waiters on replacement and same-thread re-entry ([#348](https://github.com/open-feature/ruby-sdk/issues/348)) ([9e82b15](https://github.com/open-feature/ruby-sdk/commit/9e82b15e9730f0c53f2186aeb39cc53275d5f929))
+* resolve a client's provider by domain on every call ([#352](https://github.com/open-feature/ruby-sdk/issues/352)) ([fa0076f](https://github.com/open-feature/ruby-sdk/commit/fa0076fb8a159a180af408ee0a335e9f8d43afc9))
+
 ## [0.6.7](https://github.com/open-feature/ruby-sdk/compare/v0.6.6...v0.6.7) (2026-10-23)
 
 

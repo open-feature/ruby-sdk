@@ -20,7 +20,6 @@ module OpenFeature
 
         def initialize: (?Hash[String, untyped] flags) -> void
 
-        def init: (?EvaluationContext? evaluation_context) -> void
         def shutdown: () -> void
 
         def add_flag: (flag_key: String, value: untyped) -> void

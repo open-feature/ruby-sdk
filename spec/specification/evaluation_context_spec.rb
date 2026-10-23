@@ -32,8 +32,8 @@ RSpec.describe "Evaluation Context" do
           expect(ctx.field("bool")).to be(true)
           expect(ctx.field("int")).to eql(1)
           expect(ctx.field("float")).to eql(1.5)
-          expect(ctx.field("time")).to equal(now)
-          expect(ctx.field("structure")).to equal(structure)
+          expect(ctx.field("time")).to be_a(Time).and eq(now)
+          expect(ctx.field("structure")).to eq(structure)
         end
       end
     end
@@ -130,6 +130,27 @@ RSpec.describe "Evaluation Context" do
       client.fetch_boolean_value(flag_key: "testing", default_value: true, evaluation_context: invocation_context)
 
       propagator.set_transaction_context(nil)
+    end
+
+    specify "Requirement 3.2.3: a before hook's returned context overrides the invocation context" do
+      seen = nil
+      provider = Class.new do
+        define_method(:fetch_string_value) do |evaluation_context:, **|
+          seen = evaluation_context
+          OpenFeature::SDK::Provider::ResolutionDetails.new(value: "v", reason: OpenFeature::SDK::Provider::Reason::STATIC)
+        end
+      end.new
+      hook = Class.new do
+        include OpenFeature::SDK::Hooks::Hook
+
+        def before(**) = OpenFeature::SDK::EvaluationContext.new("targeting_key" => "hook", "shared" => "hook")
+      end.new
+
+      OpenFeature::SDK::Client.new(provider:).fetch_string_value(flag_key: "f", default_value: "d", hooks: [hook],
+        evaluation_context: OpenFeature::SDK::EvaluationContext.new("targeting_key" => "invocation", "shared" => "invocation"))
+
+      expect(seen.field("shared")).to eq("hook")
+      expect(seen.targeting_key).to eq("hook")
     end
   end
 

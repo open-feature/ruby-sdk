@@ -101,10 +101,6 @@ RSpec.describe OpenFeature::SDK::Client do
       end
     end
 
-    context "Requirement 1.3.3" do
-      pending
-    end
-
     context "Requirement 1.3.4" do
       context "Guarantee the returned value of any typed flag evaluation method is of the expected type. If the value returned by the underlying provider implementation does not match the expected type, it's to be considered abnormal execution, and the supplied default value should be returned." do
         let(:provider) do
@@ -237,6 +233,7 @@ RSpec.describe OpenFeature::SDK::Client do
 
     context "Detailed Feature Evaluation" do
       let(:flag_key) { "my-awesome-feature-flag-key" }
+      let(:hook) { Class.new { include OpenFeature::SDK::Hooks::Hook }.new }
 
       context "boolean value" do
         context "Conditional Requirement 1.4.1.1" do
@@ -245,29 +242,22 @@ RSpec.describe OpenFeature::SDK::Client do
           end
 
           it do
-            expect(client.fetch_boolean_details(flag_key: flag_key, default_value: false)).is_a?(OpenFeature::SDK::Provider::ResolutionDetails)
+            expect(client.fetch_boolean_details(flag_key: flag_key, default_value: false)).to be_a(OpenFeature::SDK::EvaluationDetails)
           end
         end
 
         context "Requirement 1.4.3" do
           it "The evaluation details structure's value field MUST contain the evaluated flag value" do
-            expect(client.fetch_boolean_details(flag_key: flag_key, default_value: true).value).is_a?(TrueClass)
-            expect(client.fetch_boolean_details(flag_key: flag_key, default_value: false).value).is_a?(FalseClass)
+            expect(client.fetch_boolean_details(flag_key: flag_key, default_value: true).value).to be(true)
+            expect(client.fetch_boolean_details(flag_key: flag_key, default_value: false).value).to be(false)
           end
-        end
-
-        context "Condition 1.4.4" do
-          pending
         end
 
         context "Requirement 1.4.5" do
-          it "responds to fetch_boolean_details" do
-            expect(client).to respond_to(:fetch_boolean_details)
+          it "The evaluation details structure's flag key field MUST contain the flag key argument passed to the detailed flag evaluation method." do
+            expect(client.fetch_boolean_details(flag_key:, default_value: true).flag_key).to eq(flag_key)
+            expect(client.fetch_boolean_details(flag_key:, default_value: true, hooks: [hook]).flag_key).to eq(flag_key)
           end
-        end
-
-        context "Requirement 1.4.6" do
-          pending
         end
       end
 
@@ -278,25 +268,22 @@ RSpec.describe OpenFeature::SDK::Client do
           end
 
           it do
-            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1.2)).is_a?(OpenFeature::SDK::Provider::ResolutionDetails)
-            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1)).is_a?(OpenFeature::SDK::Provider::ResolutionDetails)
+            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1.2)).to be_a(OpenFeature::SDK::EvaluationDetails)
+            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1)).to be_a(OpenFeature::SDK::EvaluationDetails)
           end
         end
 
         context "Requirement 1.4.3" do
           it "The evaluation details structure's value field MUST contain the evaluated flag value" do
-            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1.0).value).is_a?(Float)
-            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1).value).is_a?(Integer)
+            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1.0).value).to eql(1.0)
+            expect(client.fetch_number_details(flag_key: flag_key, default_value: 1).value).to eql(1)
           end
         end
 
-        context "Condition 1.4.4" do
-          pending
-        end
-
         context "Requirement 1.4.5" do
-          it "responds to fetch_number_details" do
-            expect(client).to respond_to(:fetch_number_details)
+          it "The evaluation details structure's flag key field MUST contain the flag key argument passed to the detailed flag evaluation method." do
+            expect(client.fetch_number_details(flag_key:, default_value: 1).flag_key).to eq(flag_key)
+            expect(client.fetch_number_details(flag_key:, default_value: 1, hooks: [hook]).flag_key).to eq(flag_key)
           end
         end
       end
@@ -308,23 +295,20 @@ RSpec.describe OpenFeature::SDK::Client do
           end
 
           it do
-            expect(client.fetch_string_details(flag_key: flag_key, default_value: "some-string")).is_a?(OpenFeature::SDK::Provider::ResolutionDetails)
+            expect(client.fetch_string_details(flag_key: flag_key, default_value: "some-string")).to be_a(OpenFeature::SDK::EvaluationDetails)
           end
         end
 
         context "Requirement 1.4.3" do
           it "The evaluation details structure's value field MUST contain the evaluated flag value" do
-            expect(client.fetch_string_details(flag_key: flag_key, default_value: "some-string").value).is_a?(String)
+            expect(client.fetch_string_details(flag_key: flag_key, default_value: "some-string").value).to eq("some-string")
           end
         end
 
-        context "Condition 1.4.4" do
-          pending
-        end
-
         context "Requirement 1.4.5" do
-          it "responds to fetch_string_details" do
-            expect(client).to respond_to(:fetch_string_details)
+          it "The evaluation details structure's flag key field MUST contain the flag key argument passed to the detailed flag evaluation method." do
+            expect(client.fetch_string_details(flag_key:, default_value: "some-string").flag_key).to eq(flag_key)
+            expect(client.fetch_string_details(flag_key:, default_value: "some-string", hooks: [hook]).flag_key).to eq(flag_key)
           end
         end
       end
@@ -337,20 +321,21 @@ RSpec.describe OpenFeature::SDK::Client do
 
           it do
             expect(client.fetch_object_details(flag_key: flag_key,
-              default_value: {name: "some-name"})).is_a?(OpenFeature::SDK::Provider::ResolutionDetails)
+              default_value: {name: "some-name"})).to be_a(OpenFeature::SDK::EvaluationDetails)
           end
         end
 
         context "Requirement 1.4.3" do
           it "The evaluation details structure's value field MUST contain the evaluated flag value" do
             expect(client.fetch_object_details(flag_key: flag_key,
-              default_value: {name: "some-name"}).value).is_a?(String)
+              default_value: {name: "some-name"}).value).to eq({name: "some-name"})
           end
         end
 
         context "Requirement 1.4.5" do
-          it "responds to fetch_object_details" do
-            expect(client).to respond_to(:fetch_object_details)
+          it "The evaluation details structure's flag key field MUST contain the flag key argument passed to the detailed flag evaluation method." do
+            expect(client.fetch_object_details(flag_key:, default_value: {name: "some-name"}).flag_key).to eq(flag_key)
+            expect(client.fetch_object_details(flag_key:, default_value: {name: "some-name"}, hooks: [hook]).flag_key).to eq(flag_key)
           end
         end
       end
@@ -359,37 +344,7 @@ RSpec.describe OpenFeature::SDK::Client do
         pending
       end
 
-      context "Requirement 1.4.7" do
-        pending
-      end
-
-      context "Requirement 1.4.8" do
-        pending
-      end
-
-      context "Requirement 1.4.9" do
-        pending
-      end
-
-      context "Requirement 1.4.10" do
-        pending
-      end
-
-      context "Requirement 1.4.11" do
-        pending
-      end
-
       context "Requirement 1.4.12" do
-        pending
-      end
-
-      context "Requirement 1.4.13" do
-        pending
-      end
-    end
-
-    context "Evaluation Options" do
-      context "Requirement 1.5.1" do
         pending
       end
     end

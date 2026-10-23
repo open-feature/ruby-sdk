@@ -424,25 +424,6 @@ RSpec.describe "Hooks Specification" do
       end
     end
 
-    context "Requirement 4.3.6" do
-      specify "The after stage MUST run after flag evaluation succeeds" do
-        after_ran = false
-
-        hook = Class.new do
-          include OpenFeature::SDK::Hooks::Hook
-
-          define_method(:after) do |hook_context:, evaluation_details:, hints:|
-            after_ran = true
-          end
-        end.new
-
-        client = OpenFeature::SDK.build_client
-        client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook])
-
-        expect(after_ran).to be true
-      end
-    end
-
     context "Requirement 4.3.5" do
       specify "If a before hook returns an evaluation context, it MUST be merged with the existing context" do
         captured_eval_context = nil
@@ -471,6 +452,25 @@ RSpec.describe "Hooks Specification" do
 
         expect(captured_eval_context.field("hook_key")).to eq("hook_value")
         expect(captured_eval_context.targeting_key).to eq("user-1")
+      end
+    end
+
+    context "Requirement 4.3.6" do
+      specify "The after stage MUST run after flag evaluation succeeds" do
+        after_ran = false
+
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:after) do |hook_context:, evaluation_details:, hints:|
+            after_ran = true
+          end
+        end.new
+
+        client = OpenFeature::SDK.build_client
+        client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook])
+
+        expect(after_ran).to be true
       end
     end
 
@@ -521,9 +521,7 @@ RSpec.describe "Hooks Specification" do
         client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook])
         expect(finally_count).to eq(2)
       end
-    end
 
-    context "Requirement 4.3.8" do
       specify "On success, finally hook receives evaluation details with the resolved value" do
         captured_details = nil
 
@@ -569,11 +567,33 @@ RSpec.describe "Hooks Specification" do
     end
   end
 
-  context "4.4 - Hook Execution" do
+  context "4.4 - Hook Registration & Ordering" do
     let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new({"flag-1" => true}) }
 
     before do
       OpenFeature::SDK.set_provider_and_wait(provider)
+    end
+
+    context "Requirement 4.4.1" do
+      specify "API, Client, Provider, and invocation hooks MUST be registered" do
+        call_log = []
+        provider_hook = recording_hook("provider", call_log)
+        provider_with_hooks = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+          define_method(:hooks) { [provider_hook] }
+        end.new({"flag-1" => true})
+        OpenFeature::SDK.set_provider_and_wait(provider_with_hooks)
+
+        api_hook = recording_hook("api", call_log)
+        client_hook = recording_hook("client", call_log)
+        invocation_hook = recording_hook("invocation", call_log)
+
+        OpenFeature::SDK.hooks << api_hook
+        client = OpenFeature::SDK.build_client
+        client.hooks << client_hook
+        client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [invocation_hook])
+
+        expect(call_log).to include("api:before", "client:before", "invocation:before", "provider:before")
+      end
     end
 
     context "Requirement 4.4.2" do
@@ -774,31 +794,6 @@ RSpec.describe "Hooks Specification" do
         result = client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [failing_hook])
 
         expect(result).to eq(false)
-      end
-    end
-  end
-
-  context "4.4 - Hook Registration" do
-    before(:each) do
-      OpenFeature::SDK::API.instance.send(:configuration).send(:reset)
-    end
-
-    context "Requirement 4.4.1" do
-      specify "API, Client, and invocation hooks MUST be registered" do
-        provider = OpenFeature::SDK::Provider::InMemoryProvider.new({"flag-1" => true})
-        OpenFeature::SDK.set_provider_and_wait(provider)
-
-        call_log = []
-        api_hook = recording_hook("api", call_log)
-        client_hook = recording_hook("client", call_log)
-        invocation_hook = recording_hook("invocation", call_log)
-
-        OpenFeature::SDK.hooks << api_hook
-        client = OpenFeature::SDK.build_client
-        client.hooks << client_hook
-        client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [invocation_hook])
-
-        expect(call_log).to include("api:before", "client:before", "invocation:before")
       end
     end
   end

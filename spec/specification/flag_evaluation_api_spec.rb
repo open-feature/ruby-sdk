@@ -46,6 +46,9 @@ RSpec.describe "Flag Evaluation API" do
     end
 
     context "Requirement 1.1.2.2" do
+      before { OpenFeature::SDK.configuration.send(:reset) }
+      after { OpenFeature::SDK.configuration.send(:reset) }
+
       specify "provider instances already active need not be initialized again" do
         shared_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
 
@@ -53,6 +56,23 @@ RSpec.describe "Flag Evaluation API" do
 
         OpenFeature::SDK.set_provider_and_wait(shared_provider, domain: "domain-a")
         OpenFeature::SDK.set_provider_and_wait(shared_provider, domain: "domain-b")
+      end
+
+      specify "a replaced provider is initialized again when re-registered" do
+        provider_class = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+          attr_reader :inits
+
+          def init(_evaluation_context = nil)
+            @inits = (@inits || 0) + 1
+          end
+        end
+        provider = provider_class.new
+
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new)
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        expect(provider.inits).to eq(2)
       end
     end
 
@@ -836,15 +856,13 @@ RSpec.describe "Flag Evaluation API" do
 
   context "1.6 - Shutdown" do
     context "Requirement 1.6.1" do
+      after { OpenFeature::SDK.configuration.send(:reset) }
+
       specify "The API MUST define a mechanism to propagate a shutdown request to registered providers." do
         expect(OpenFeature::SDK).to respond_to(:shutdown)
       end
-    end
 
-    context "Requirement 1.6.2" do
-      after { OpenFeature::SDK.configuration.send(:reset) }
-
-      specify "1.6.1: When a shutdown function is called, the API invokes the shutdown function on the registered provider." do
+      specify "When a shutdown function is called, the API invokes the shutdown function on the registered provider." do
         provider1 = OpenFeature::SDK::Provider::InMemoryProvider.new
         provider2 = OpenFeature::SDK::Provider::InMemoryProvider.new
 
@@ -856,6 +874,10 @@ RSpec.describe "Flag Evaluation API" do
 
         OpenFeature::SDK.shutdown
       end
+    end
+
+    context "Requirement 1.6.2" do
+      after { OpenFeature::SDK.configuration.send(:reset) }
 
       specify "After shutdown, providers are detached and their events are ignored" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new

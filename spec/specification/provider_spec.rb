@@ -184,30 +184,6 @@ RSpec.describe "Provider" do
     end
   end
 
-  context "2.5 - Shutdown" do
-    context "Requirement 1.1.2.2" do
-      before { OpenFeature::SDK.configuration.send(:reset) }
-      after { OpenFeature::SDK.configuration.send(:reset) }
-
-      specify "a replaced provider is initialized again when re-registered" do
-        provider_class = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
-          attr_reader :inits
-
-          def init(_evaluation_context = nil)
-            @inits = (@inits || 0) + 1
-          end
-        end
-        provider = provider_class.new
-
-        OpenFeature::SDK.set_provider_and_wait(provider)
-        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new)
-        OpenFeature::SDK.set_provider_and_wait(provider)
-
-        expect(provider.inits).to eq(2)
-      end
-    end
-  end
-
   context "2.8 - Provider status" do
     before { OpenFeature::SDK.configuration.send(:reset) }
     after { OpenFeature::SDK.configuration.send(:reset) }

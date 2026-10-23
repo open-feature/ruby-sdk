@@ -183,6 +183,195 @@ RSpec.describe "Flag Evaluation API" do
       end
     end
 
+    context "Requirement 1.1.2.2: init outcome" do
+      before { OpenFeature::SDK.configuration.send(:reset) }
+      after { OpenFeature::SDK.configuration.send(:reset) }
+
+      let(:outcomes) { Queue.new }
+      let(:aborted_error) { Class.new(Exception) } # rubocop:disable Lint/InheritException
+      # Each init blocks until an outcome is pushed; :fail raises, :abort raises a non-StandardError
+      let(:provider) do
+        queue = outcomes
+        aborted = aborted_error
+        Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+          attr_reader :init_calls
+
+          define_method(:init) do |_evaluation_context = nil|
+            @init_calls = (@init_calls || 0) + 1
+            outcome = queue.pop
+            raise "init failed" if outcome == :fail
+            raise aborted if outcome == :abort
+          end
+        end.new
+      end
+
+      # Blocks until a set_provider_and_wait is waiting on the provider's running init
+      def wait_for_waiter(provider)
+        attempt = OpenFeature::SDK.configuration.instance_variable_get(:@init_attempts)[provider]
+        200.times do
+          break if attempt.done.num_waiting.positive?
+          sleep 0.01
+        end
+      end
+
+      # A thread already waiting on the running init; its value is the error it raised, if any
+      def start_waiter(domain)
+        waiter = background do
+          OpenFeature::SDK.set_provider_and_wait(provider, domain:)
+        rescue OpenFeature::SDK::ProviderInitializationError => e
+          e
+        end
+        wait_for_waiter(provider)
+        waiter
+      end
+
+      specify "a provider whose init failed is initialized again when set again" do
+        outcomes << :fail << :ok
+
+        expect { OpenFeature::SDK.set_provider_and_wait(provider) }.to raise_error(OpenFeature::SDK::ProviderInitializationError)
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        expect(provider.init_calls).to eq(2)
+        expect(OpenFeature::SDK.configuration.provider_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "a provider whose init failed is initialized again when bound to another domain" do
+        outcomes << :fail << :ok
+
+        expect { OpenFeature::SDK.set_provider_and_wait(provider, domain: "a") }.to raise_error(OpenFeature::SDK::ProviderInitializationError)
+        OpenFeature::SDK.set_provider_and_wait(provider, domain: "b")
+
+        expect(provider.init_calls).to eq(2)
+      end
+
+      specify "binding another domain while init is running starts no second init" do
+        threads = capture_threads
+
+        OpenFeature::SDK.set_provider(provider, domain: "a")
+        OpenFeature::SDK.set_provider(provider, domain: "b")
+        outcomes << :ok << :ok
+        threads.each { |t| t.join(5) }
+
+        expect(provider.init_calls).to eq(1)
+      end
+
+      specify "set_provider_and_wait waits for an init that's already running" do
+        OpenFeature::SDK.set_provider(provider, domain: "a")
+        waiter = start_waiter("b")
+
+        outcomes << :ok << :ok
+
+        expect(waiter.join(5)).to be(waiter)
+        expect(provider.init_calls).to eq(1)
+        expect(OpenFeature::SDK.configuration.provider_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "set_provider_and_wait raises when the running init it waited for fails" do
+        OpenFeature::SDK.set_provider(provider, domain: "a")
+        waiter = start_waiter("b")
+
+        outcomes << :fail << :ok
+
+        expect(waiter.join(5)&.value).to be_a(OpenFeature::SDK::ProviderInitializationError)
+        expect(provider.init_calls).to eq(1)
+      end
+
+      specify "a provider that reported ERROR after a successful init isn't initialized again" do
+        outcomes << :ok << :ok
+        OpenFeature::SDK.set_provider_and_wait(provider, domain: "a")
+        provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, message: "lost connection")
+
+        OpenFeature::SDK.set_provider_and_wait(provider, domain: "b")
+
+        expect(provider.init_calls).to eq(1)
+      end
+
+      specify "a provider set again after shutdown interrupted its init is initialized again" do
+        threads = capture_threads
+        OpenFeature::SDK.set_provider(provider)
+        OpenFeature::SDK.shutdown
+        outcomes << :ok
+        threads.each { |t| t.join(5) }
+        outcomes << :ok
+
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        expect(provider.init_calls).to eq(2)
+      end
+
+      specify "a READY handler can bind the same provider to another domain" do
+        outcomes << :ok
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, lambda do |_|
+          next if OpenFeature::SDK.provider(domain: "b").equal?(provider)
+
+          OpenFeature::SDK.set_provider_and_wait(provider, domain: "b")
+        end)
+
+        setter = Thread.new { OpenFeature::SDK.set_provider_and_wait(provider, domain: "a") }
+
+        expect(setter.join(2)).to be(setter)
+        expect(OpenFeature::SDK.configuration.instance_variable_get(:@providers)["b"]).to be(provider)
+      end
+
+      specify "an ERROR handler can retry a failed init" do
+        outcomes << :fail << :ok
+        retried = false
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, lambda do |_|
+          next if retried
+
+          retried = true
+          OpenFeature::SDK.set_provider_and_wait(provider)
+        end)
+
+        setter = Thread.new do
+          OpenFeature::SDK.set_provider_and_wait(provider)
+        rescue OpenFeature::SDK::ProviderInitializationError
+          :raised
+        end
+
+        expect(setter.join(2)&.value).to eq(:raised)
+        expect(provider.init_calls).to eq(2)
+        expect(OpenFeature::SDK.configuration.provider_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "an exception before init starts leaves the provider able to initialize" do
+        error_class = aborted_error
+        old = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) { define_method(:shutdown) { raise error_class } }.new
+        OpenFeature::SDK.set_provider_and_wait(old)
+
+        expect { OpenFeature::SDK.set_provider_and_wait(provider) }.to raise_error(error_class)
+        outcomes << :ok
+        setter = Thread.new { OpenFeature::SDK.set_provider_and_wait(provider) }
+
+        expect(setter.join(2)).to be(setter)
+        expect(provider.init_calls).to eq(1)
+        expect(OpenFeature::SDK.configuration.provider_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "a waiter raises when the init it waited for was stopped by a non-StandardError" do
+        threads = capture_threads
+        OpenFeature::SDK.set_provider(provider, domain: "a")
+        waiter = start_waiter("b")
+        threads.each { |t| t.report_on_exception = false }
+
+        outcomes << :abort
+
+        expect(waiter.join(2)&.value).to be_a(OpenFeature::SDK::ProviderInitializationError)
+        expect(OpenFeature::SDK.configuration.provider_state(provider)).not_to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "shutdown releases a waiter whose init hasn't finished" do
+        OpenFeature::SDK.set_provider(provider, domain: "a")
+        waiter = start_waiter("b")
+
+        OpenFeature::SDK.shutdown
+
+        expect(waiter.join(2)&.value).to be_a(OpenFeature::SDK::ProviderInitializationError)
+      ensure
+        outcomes << :ok
+      end
+    end
+
     context "Requirement 1.1.2.4" do
       specify "The API SHOULD provide functions to set a provider and wait for the initialize function to complete or abnormally terminate" do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new

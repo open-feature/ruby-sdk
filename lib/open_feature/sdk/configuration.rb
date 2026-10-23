@@ -20,9 +20,14 @@ module OpenFeature
       attr_accessor :evaluation_context, :hooks, :transaction_context_propagator
       attr_reader :logger
 
+      # One per registration; +done+ is closed once init finishes, so waiters can pop on it
+      InitAttempt = Struct.new(:state, :error, :done)
+      private_constant :InitAttempt
+
       def initialize
         @hooks = []
         @providers = {}
+        @init_attempts = {}.compare_by_identity
         @provider_mutex = Mutex.new
         @logger = nil
         @event_dispatcher = EventDispatcher.new(@logger)
@@ -118,6 +123,9 @@ module OpenFeature
         @provider_state_registry.clear
         @provider_mutex.synchronize do
           @providers.clear
+          # Release anyone waiting on an init that shutdown cut short
+          @init_attempts.each_value { |attempt| attempt.done.close }
+          @init_attempts.clear
         end
         @hooks.clear
         @evaluation_context = nil
@@ -129,22 +137,29 @@ module OpenFeature
         context_for_init = @evaluation_context
 
         old_provider = nil
+        attempt = nil
         needs_init = false
+        init_thread = nil
         needs_shutdown = false
 
+        # Provider code runs before taking the lock: it may call back into the SDK
+        scoped = domain_scoped?(provider)
+
         @provider_mutex.synchronize do
+          validate_domain_scoped_binding!(provider, domain, scoped)
+
           old_provider = @providers[domain]
 
           new_providers = @providers.dup
           new_providers[domain] = provider
           @providers = new_providers
 
-          # Spec 1.1.2.2: Only initialize if the provider is not already active
-          # (i.e., not already bound to another domain)
-          already_active = @providers.any? { |d, p| d != domain && p.equal?(provider) && @provider_state_registry.tracked?(p) }
-          needs_init = !already_active
+          # Spec 1.1.2.2: initialize once per registration; a failed init is retried on the next set
+          attempt = @init_attempts[provider]
+          needs_init = attempt.nil? || attempt.state == :failed
 
           if needs_init
+            attempt = @init_attempts[provider] = InitAttempt.new(:running, nil, Thread::Queue.new)
             @provider_state_registry.set_initial_state(provider)
             provider.send(:attach, self) if provider.is_a?(Provider::EventEmitter)
           end
@@ -153,6 +168,7 @@ module OpenFeature
           if old_provider && !old_provider.equal?(provider)
             needs_shutdown = !provider_bound?(old_provider)
             if needs_shutdown
+              @init_attempts.delete(old_provider)
               @provider_state_registry.remove_provider(old_provider)
               old_provider.send(:detach) if old_provider.is_a?(Provider::EventEmitter)
             end
@@ -171,45 +187,65 @@ module OpenFeature
         # Initialize provider outside the mutex to avoid blocking other operations
         if needs_init
           if wait_for_init
-            init_provider(provider, context_for_init, raise_on_error: true)
+            init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: true)
           else
-            Thread.new do
-              init_provider(provider, context_for_init, raise_on_error: false)
+            init_thread = Thread.new do
+              init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: false)
             end
           end
         elsif wait_for_init
-          # Provider already active; no init needed but still dispatch READY
+          # Already registered: wait for an init still in flight, then report its outcome
+          attempt.done.pop
+          unless attempt.state == :succeeded
+            raise attempt.error || ProviderInitializationError.new(
+              "Provider #{provider.class.name} initialization did not complete",
+              provider:,
+              error_code: Provider::ErrorCode::GENERAL
+            )
+          end
+
           dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
         end
+      ensure
+        # Fail an attempt no init took over (e.g. a Timeout hit first), or it would stay running forever
+        finish_init_attempt(attempt, :failed) if needs_init && !init_thread
       end
 
-      def init_provider(provider, context, raise_on_error: false)
-        if provider.respond_to?(:init)
-          init_method = provider.method(:init)
-          if init_method.parameters.empty?
-            provider.init
-          else
-            provider.init(context)
-          end
-        end
+      def init_provider(provider, context, domain:, attempt:, raise_on_error: false)
+        call_init(provider, context, domain)
 
+        # Settle the attempt before handlers run, so a handler can register this provider again
+        finish_init_attempt(attempt, :succeeded)
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
       rescue => e
         # Spec 1.7.5: PROVIDER_FATAL from init makes the provider FATAL
         error_code = EvaluationError.code_for(e)
+        error = ProviderInitializationError.new(
+          "Provider #{provider.class.name} initialization failed: #{e.message}",
+          provider:,
+          error_code: error_code,
+          original_error: e
+        )
+        finish_init_attempt(attempt, :failed, error)
 
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
           error_code: error_code,
           message: e.message)
 
-        if raise_on_error
-          raise ProviderInitializationError.new(
-            "Provider #{provider.class.name} initialization failed: #{e.message}",
-            provider:,
-            error_code: error_code,
-            original_error: e
-          )
+        raise error if raise_on_error
+      ensure
+        # Reached unsettled only when init raised something other than a StandardError
+        finish_init_attempt(attempt, :failed)
+      end
+
+      def finish_init_attempt(attempt, state, error = nil)
+        @provider_mutex.synchronize do
+          return unless attempt.state == :running
+
+          attempt.state = state
+          attempt.error = error
         end
+        attempt.done.close
       end
 
       def dispatch_provider_event(provider, event_type, details = {})
@@ -237,6 +273,40 @@ module OpenFeature
 
       def extract_provider_name(provider)
         provider.respond_to?(:metadata) ? provider.metadata.name : provider.class.name
+      end
+
+      def domain_scoped?(provider)
+        provider.respond_to?(:domain_scoped?) && provider.domain_scoped?
+      end
+
+      def validate_domain_scoped_binding!(provider, domain, scoped)
+        return unless scoped && provider_bound?(provider) && !@providers[domain].equal?(provider)
+
+        raise ArgumentError, "Cannot bind domain-scoped provider to more than one domain"
+      end
+
+      def call_init(provider, context, domain)
+        return unless provider.respond_to?(:init)
+
+        parameters = provider.method(:init).parameters
+        takes_domain = init_accepts_domain?(parameters)
+        if !takes_domain && domain_scoped?(provider)
+          @logger&.warn("Provider #{extract_provider_name(provider)} is domain-scoped but its init doesn't accept domain:")
+        end
+
+        args = init_accepts_evaluation_context?(parameters) ? [context] : []
+        provider.init(*args, **(takes_domain ? {domain:} : {}))
+      end
+
+      # Anonymous `**` (from `...`) and delegators' bare `*` can't be trusted to accept `domain:`
+      def init_accepts_domain?(parameters)
+        parameters.any? do |kind, name|
+          ((kind == :key || kind == :keyreq) && name == :domain) || (kind == :keyrest && name && name != :**)
+        end
+      end
+
+      def init_accepts_evaluation_context?(parameters)
+        parameters.any? { |kind, _| kind == :req || kind == :opt || kind == :rest }
       end
 
       def run_handlers_for_provider(provider, event_type, event_details)

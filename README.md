@@ -446,11 +446,19 @@ You’ll then need to write the provider by implementing the `Provider` duck.
 
 ```ruby
 class MyProvider
-  def init
+  # Both arguments are optional; declare only the ones you need.
+  # `domain` is the domain the provider was bound to, or nil for the default provider.
+  def init(evaluation_context = nil, domain: nil)
     # Perform any initialization steps with flag management system here
     # Return value is ignored
     # **Note** The OpenFeature spec defines a lifecycle method called `initialize` to be called when a new provider is set.
     # To avoid conflicting with the Ruby `initialize` method, this method should be named `init` when creating a provider.
+  end
+
+  # Optional: return true if this provider keeps state for a single domain.
+  # The SDK then raises ArgumentError if the same instance is bound to a second domain.
+  def domain_scoped?
+    false
   end
 
   def shutdown

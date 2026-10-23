@@ -110,7 +110,7 @@ module OpenFeature
           @provider_state_registry.set_initial_state(prov, ProviderState::NOT_READY)
           prov.send(:detach) if prov.is_a?(Provider::EventEmitter)
           prov.shutdown if prov.respond_to?(:shutdown)
-        rescue => e
+        rescue *RECOVERABLE_ERRORS => e
           @logger&.warn("Error shutting down provider #{prov&.class&.name || "unknown"}: #{e.message}")
         end
 
@@ -165,7 +165,8 @@ module OpenFeature
             # First, so a provider registered with another API (1.8.4) leaves no state behind
             provider.send(:attach, self) if provider.is_a?(Provider::EventEmitter)
             attempt = @init_attempts[provider] = InitAttempt.new(:running, nil, Thread::Queue.new)
-            @provider_state_registry.set_initial_state(provider)
+            # Spec 2.8.5.1: a provider without init is READY from registration
+            @provider_state_registry.set_initial_state(provider, has_init ? ProviderState::NOT_READY : ProviderState::READY)
           end
 
           # Publish last: clients read @providers without the lock, and must not see an untracked provider
@@ -184,30 +185,41 @@ module OpenFeature
           end
         end
 
-        # Shutdown old provider outside mutex to avoid blocking other operations
-        if needs_shutdown
-          begin
-            old_provider.shutdown if old_provider.respond_to?(:shutdown)
-          rescue => e
-            @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || "unknown"}: #{e.message}")
+        begin
+          # Spec 2.8.5.1: a provider without init is READY from registration, so its READY handlers run now, before the
+          # old provider's shutdown; after it, a handler added during the shutdown would run twice
+          unless has_init
+            if needs_init
+              init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: wait_for_init)
+              raise incomplete_init_error(provider, "initialization did not complete") if wait_for_init && attempt.state != :succeeded
+            elsif !old_provider.equal?(provider)
+              # Each new binding runs its domain's READY handlers
+              dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY, token: attempt)
+            end
+          end
+        ensure
+          # Shutdown old provider outside mutex to avoid blocking other operations
+          if needs_shutdown
+            begin
+              old_provider.shutdown if old_provider.respond_to?(:shutdown)
+            rescue *RECOVERABLE_ERRORS => e
+              @logger&.warn("Error shutting down previous provider #{old_provider&.class&.name || "unknown"}: #{e.message}")
+            end
           end
         end
+        return unless has_init
 
         # Initialize provider outside the mutex to avoid blocking other operations
         if needs_init
-          # Spec 2.8.5.1: a provider without init is READY, and its handlers have run, when set_provider returns
-          if wait_for_init || !has_init
-            init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: wait_for_init)
+          if wait_for_init
+            init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: true)
             # Replaced or shut down while init ran: fail like the waiters on this attempt did
-            raise incomplete_init_error(provider, "initialization did not complete") if wait_for_init && attempt.state != :succeeded
+            raise incomplete_init_error(provider, "initialization did not complete") if attempt.state != :succeeded
           else
             init_thread = Thread.new do
               init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: false)
             end
           end
-        elsif !has_init
-          # Spec 2.8.5.1: each new binding of a provider without init runs its domain's READY handlers
-          dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY, token: attempt) unless old_provider.equal?(provider)
         elsif wait_for_init
           # Already registered: wait for an init still in flight, then report its outcome.
           # From inside that init (e.g. a handler of an event it emits) the wait could never end.
@@ -232,7 +244,7 @@ module OpenFeature
         # An abandoned attempt (provider replaced or shut down meanwhile) reports no READY.
         # Spec 2.8.2/2.8.3: a provider that emits its own lifecycle events gets no synthetic READY or ERROR
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY, token: attempt) if finish_init_attempt(attempt, :succeeded) && !emits_lifecycle_events
-      rescue => e
+      rescue *RECOVERABLE_ERRORS => e
         # Spec 1.7.5: PROVIDER_FATAL from init makes the provider FATAL
         error_code = EvaluationError.code_for(e)
         error = ProviderInitializationError.new(
@@ -250,7 +262,7 @@ module OpenFeature
 
         raise error if raise_on_error
       ensure
-        # Reached unsettled only when init raised something other than a StandardError
+        # Reached unsettled only when init raised something not in RECOVERABLE_ERRORS, such as an Interrupt
         finish_init_attempt(attempt, :failed)
       end
 
@@ -296,7 +308,7 @@ module OpenFeature
           until queue.empty?
             begin
               deliver_provider_event(provider, *queue.shift)
-            rescue => e
+            rescue *RECOVERABLE_ERRORS => e
               # Its own emitter already returned, so log rather than fail the event that was dispatching
               @logger&.error("Queued provider event failed: #{e.message}")
             end
@@ -405,7 +417,7 @@ module OpenFeature
 
         handlers.each do |handler|
           handler.call(event_details)
-        rescue => e
+        rescue *RECOVERABLE_ERRORS => e
           @logger&.error("Client event handler failed: #{e.message}")
         end
       end
@@ -430,7 +442,7 @@ module OpenFeature
 
               begin
                 handler.call(event_details)
-              rescue => e
+              rescue *RECOVERABLE_ERRORS => e
                 @logger&.error("Immediate API event handler failed: #{e.message}")
               end
             end
@@ -447,7 +459,7 @@ module OpenFeature
 
             begin
               handler.call(event_details)
-            rescue => e
+            rescue *RECOVERABLE_ERRORS => e
               @logger&.error("Immediate client event handler failed: #{e.message}")
             end
           end

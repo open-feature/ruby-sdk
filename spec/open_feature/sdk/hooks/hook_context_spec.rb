@@ -114,13 +114,14 @@ RSpec.describe OpenFeature::SDK::Hooks::HookContext do
 
   describe "values that can't be copied" do
     [Mutex.new, Thread::Queue.new, -> {}].each do |uncopyable|
-      it "freezes a shallow copy when it holds a #{uncopyable.class}" do
-        default = {held: uncopyable}
+      it "still freezes a copy when it holds a #{uncopyable.class}" do
+        default = {held: uncopyable, list: []}
         ctx = described_class.new(flag_key: "flag", flag_value_type: :object, default_value: default, evaluation_context: nil)
 
-        expect(ctx.default_value).to eq(default)
         expect(ctx.default_value).to be_frozen
+        expect(ctx.default_value[:list]).to be_frozen
         expect(default).not_to be_frozen
+        expect(default[:list]).not_to be_frozen
       end
     end
   end

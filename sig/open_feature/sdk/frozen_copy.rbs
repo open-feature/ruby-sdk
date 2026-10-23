@@ -1,0 +1,7 @@
+module OpenFeature
+  module SDK
+    module FrozenCopy
+      def self.of: (untyped value, ?Hash[untyped, untyped]? seen) -> untyped
+    end
+  end
+end

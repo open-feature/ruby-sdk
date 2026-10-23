@@ -1,5 +1,7 @@
 module OpenFeature
   module SDK
+    RECOVERABLE_ERRORS: Array[singleton(Exception)]
+
     class EvaluationError < StandardError
       attr_reader error_code: String
 

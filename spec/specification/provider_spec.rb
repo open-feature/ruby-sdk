@@ -235,6 +235,33 @@ RSpec.describe "Provider" do
       end
     end
 
+    context "an init that raises NotImplementedError" do
+      let(:provider) do
+        Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+          def init(_evaluation_context = nil) = raise(NotImplementedError, "init")
+        end.new
+      end
+
+      specify "fails initialization: set_provider_and_wait raises, the status is ERROR, and one PROVIDER_ERROR fires" do
+        errors = 0
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, ->(_) { errors += 1 })
+
+        expect { OpenFeature::SDK.set_provider_and_wait(provider) }.to raise_error(OpenFeature::SDK::ProviderInitializationError)
+        expect(OpenFeature::SDK.build_client.provider_status).to eq(OpenFeature::SDK::ProviderState::ERROR)
+        expect(errors).to eq(1)
+      end
+
+      specify "fails initialization through set_provider too" do
+        errored = Queue.new
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, ->(_) { errored << true })
+
+        OpenFeature::SDK.set_provider(provider)
+
+        expect(errored.pop(timeout: 2)).to be(true)
+        expect(OpenFeature::SDK.build_client.provider_status).to eq(OpenFeature::SDK::ProviderState::ERROR)
+      end
+    end
+
     context "Condition 2.8.5" do
       specify "2.8.5.1: a provider without init is READY when set_provider returns" do
         provider = OpenFeature::SDK::Provider::NoOpProvider.new
@@ -243,6 +270,47 @@ RSpec.describe "Provider" do
         OpenFeature::SDK.set_provider(provider)
 
         expect(state_of(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "2.8.5.1: a provider without init is READY while the provider it replaces shuts down" do
+        in_shutdown = Queue.new
+        release = Queue.new
+        old_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        old_provider.define_singleton_method(:shutdown) do
+          in_shutdown << true
+          release.pop
+        end
+        OpenFeature::SDK.set_provider_and_wait(old_provider)
+
+        replacing = Thread.new { OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new({"flag" => true})) }
+        in_shutdown.pop
+        status = OpenFeature::SDK.build_client.provider_status
+        release << true
+        replacing.join
+
+        expect(status).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "2.8.5.1: a READY handler added while the replaced provider shuts down runs once" do
+        in_shutdown = Queue.new
+        release = Queue.new
+        old_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        old_provider.define_singleton_method(:shutdown) do
+          in_shutdown << true
+          release.pop
+        end
+        OpenFeature::SDK.set_provider_and_wait(old_provider)
+        client = OpenFeature::SDK.build_client
+        runs = Hash.new(0)
+
+        replacing = Thread.new { OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new) }
+        in_shutdown.pop
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_) { runs[:api] += 1 })
+        client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_) { runs[:client] += 1 })
+        release << true
+        replacing.join
+
+        expect(runs).to eq(api: 1, client: 1)
       end
 
       specify "2.8.5.1: READY handlers run for a provider without init" do

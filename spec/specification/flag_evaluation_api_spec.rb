@@ -474,6 +474,100 @@ RSpec.describe "Flag Evaluation API" do
         OpenFeature::SDK.set_provider(new_provider, domain: "testing")
         expect(OpenFeature::SDK.provider(domain: "testing")).to be(new_provider)
       end
+
+      context "existing clients follow the binding" do
+        before { OpenFeature::SDK.configuration.send(:reset) }
+        after { OpenFeature::SDK.configuration.send(:reset) }
+
+        specify "1.1.3: an existing client evaluates against the provider bound to its domain later" do
+          OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => false))
+          client = OpenFeature::SDK.build_client(domain: "d")
+
+          OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => true), domain: "d")
+
+          expect(client.fetch_boolean_value(flag_key: "flag", default_value: false)).to be(true)
+        end
+
+        specify "1.1.3: an existing default client follows a replaced default provider" do
+          OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => false))
+          client = OpenFeature::SDK.build_client
+
+          OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => true))
+
+          expect(client.fetch_boolean_value(flag_key: "flag", default_value: false)).to be(true)
+        end
+
+        specify "1.1.3: an existing client never evaluates a newly bound provider before its init" do
+          init_tracking = Class.new do
+            attr_reader :fetched_before_init
+
+            def init(_evaluation_context = nil) = (@initialized = true)
+
+            def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
+              @fetched_before_init = true unless @initialized
+              OpenFeature::SDK::Provider::ResolutionDetails.new(value: true, reason: OpenFeature::SDK::Provider::Reason::STATIC)
+            end
+          end
+          OpenFeature::SDK.set_provider_and_wait(init_tracking.new, domain: "d")
+          client = OpenFeature::SDK.build_client(domain: "d")
+          registry = OpenFeature::SDK.configuration.instance_variable_get(:@provider_state_registry)
+          # Evaluate from inside the binding update, the moment a lock-free reader could see a half-made registration
+          allow(registry).to receive(:set_initial_state).and_wrap_original do |original, *args|
+            client.fetch_boolean_value(flag_key: "flag", default_value: false)
+            original.call(*args)
+          end
+          fresh = init_tracking.new
+
+          OpenFeature::SDK.set_provider_and_wait(fresh, domain: "d")
+
+          expect(fresh.fetched_before_init).to be_falsey
+        end
+
+        specify "1.1.3: an existing client tracks to the provider bound to its domain later" do
+          tracker = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+            attr_reader :tracked
+
+            def track(name, evaluation_context:, tracking_event_details:) = (@tracked ||= []) << name
+          end.new
+          client = OpenFeature::SDK.build_client(domain: "d")
+
+          OpenFeature::SDK.set_provider_and_wait(tracker, domain: "d")
+          client.track("checkout")
+
+          expect(tracker.tracked).to eq(["checkout"])
+        end
+
+        specify "an evaluation in flight completes against the provider it started with" do
+          OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => false), domain: "d")
+          client = OpenFeature::SDK.build_client(domain: "d")
+          rebind_hook = Class.new do
+            include OpenFeature::SDK::Hooks::Hook
+
+            def before(hook_context:, hints:)
+              OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => true), domain: "d")
+              nil
+            end
+          end.new
+
+          expect(client.fetch_boolean_value(flag_key: "flag", default_value: true, hooks: [rebind_hook])).to be(false)
+          expect(client.fetch_boolean_value(flag_key: "flag", default_value: false)).to be(true)
+        end
+
+        specify "a client created with an explicit provider stays pinned" do
+          client = OpenFeature::SDK::Client.new(provider: OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => true))
+
+          OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => false))
+
+          expect(client.fetch_boolean_value(flag_key: "flag", default_value: false)).to be(true)
+        end
+
+        specify "with no provider set, a client returns defaults through a NoOp and reports NOT_READY" do
+          client = OpenFeature::SDK.build_client(domain: "d")
+
+          expect(client.fetch_boolean_details(flag_key: "flag", default_value: true).reason).to eq(OpenFeature::SDK::Provider::NoOpProvider::REASON_NO_OP)
+          expect(client.provider_status).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+        end
+      end
     end
 
     context "Requirement 1.1.4" do
@@ -539,34 +633,36 @@ RSpec.describe "Flag Evaluation API" do
 
     context "Requirement 1.1.6" do
       before do
-        default_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
-        OpenFeature::SDK.set_provider(default_provider)
+        default_provider = OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => true)
+        OpenFeature::SDK.set_provider_and_wait(default_provider)
 
         domain_1_provider = OpenFeature::SDK::Provider::NoOpProvider.new
-        OpenFeature::SDK.set_provider(domain_1_provider, domain: "domain_1")
+        OpenFeature::SDK.set_provider_and_wait(domain_1_provider, domain: "domain_1")
       end
 
       specify "The API MUST provide a function for creating a client" do
         client = OpenFeature::SDK.build_client
 
-        expect(client.instance_variable_get(:@provider).metadata.name).to eq("In-memory Provider")
+        expect(OpenFeature::SDK.provider_metadata(domain: client.metadata.domain).name).to eq("In-memory Provider")
+        expect(client.fetch_boolean_value(flag_key: "flag", default_value: false)).to be(true)
       end
 
       specify "which accepts domain as an optional parameter." do
         client = OpenFeature::SDK.build_client(domain: "domain_1")
 
-        expect(client.instance_variable_get(:@provider).metadata.name).to eq("No-op Provider")
+        expect(OpenFeature::SDK.provider_metadata(domain: client.metadata.domain).name).to eq("No-op Provider")
+        expect(client.fetch_boolean_details(flag_key: "flag", default_value: false).reason).to eq(OpenFeature::SDK::Provider::NoOpProvider::REASON_NO_OP)
       end
     end
 
     context "Requirement 1.1.7" do
       specify "The client creation function MUST NOT throw, or otherwise abnormally terminate." do
-        expect_any_instance_of(OpenFeature::SDK::Configuration).to receive(:provider).and_raise(StandardError)
+        allow_any_instance_of(OpenFeature::SDK::Configuration).to receive(:provider).and_raise(StandardError)
 
         expect do
           client = OpenFeature::SDK.build_client
 
-          expect(client.instance_variable_get(:@provider).metadata.name).to eq("No-op Provider")
+          expect(client.fetch_boolean_value(flag_key: "flag", default_value: true)).to be(true)
         end.not_to raise_error
       end
     end
@@ -998,6 +1094,9 @@ RSpec.describe "Flag Evaluation API" do
 
   context "1.7 - Provider Status" do
     context "Requirement 1.7.1" do
+      before { OpenFeature::SDK.configuration.send(:reset) }
+      after { OpenFeature::SDK.configuration.send(:reset) }
+
       specify "The client MUST define a provider status accessor which indicates the readiness of the associated provider." do
         provider = OpenFeature::SDK::Provider::InMemoryProvider.new
         OpenFeature::SDK.set_provider_and_wait(provider)
@@ -1005,6 +1104,23 @@ RSpec.describe "Flag Evaluation API" do
 
         expect(client).to respond_to(:provider_status)
         expect(client.provider_status).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "1.7.1: provider_status reports the provider currently bound to the client's domain" do
+        ready = OpenFeature::SDK::Provider::InMemoryProvider.new
+        # Also bound as the default, so it stays tracked and READY after "d" is rebound
+        OpenFeature::SDK.set_provider_and_wait(ready)
+        OpenFeature::SDK.set_provider_and_wait(ready, domain: "d")
+        client = OpenFeature::SDK.build_client(domain: "d")
+        gate = Queue.new
+        threads = capture_threads
+
+        OpenFeature::SDK.set_provider(slow_init_provider(gate), domain: "d")
+        status = client.provider_status
+        gate << :go
+        threads.each(&:join)
+
+        expect(status).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
       end
     end
 

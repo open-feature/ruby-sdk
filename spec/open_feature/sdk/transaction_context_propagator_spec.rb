@@ -43,6 +43,18 @@ RSpec.describe OpenFeature::SDK::ThreadLocalTransactionContextPropagator do
       expect(other.get_transaction_context).to be_nil
     end
 
+    it "doesn't keep discarded propagators or their contexts alive" do
+      live = -> { ObjectSpace.each_object(described_class).count }
+      GC.start(full_mark: true, immediate_sweep: true)
+      before = live.call
+      200.times { described_class.new.set_transaction_context(OpenFeature::SDK::EvaluationContext.new(targeting_key: "user")) }
+
+      GC.start(full_mark: true, immediate_sweep: true)
+
+      # Well under the 200 created: conservative stack scanning may keep a few alive
+      expect(live.call - before).to be < 100
+    end
+
     it "works for a subclass whose initialize doesn't call super" do
       subclass = Class.new(described_class) { def initialize = (@configured = true) }
       context = OpenFeature::SDK::EvaluationContext.new(targeting_key: "user-123")

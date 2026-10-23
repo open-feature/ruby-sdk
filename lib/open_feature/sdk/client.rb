@@ -56,12 +56,15 @@ module OpenFeature
         built_context = build_evaluation_context(evaluation_context)
 
         @provider.track(tracking_event_name, evaluation_context: built_context, tracking_event_details: tracking_event_details)
+      rescue
+        nil
       end
 
       RESULT_TYPE.each do |result_type|
         SUFFIXES.each do |suffix|
           class_eval <<-RUBY, __FILE__, __LINE__ + 1
             def fetch_#{result_type}_#{suffix}(flag_key:, default_value:, evaluation_context: nil, hooks: [], hook_hints: nil)
+              validate_default_value_type(:#{result_type}, default_value)
               evaluation_details = fetch_details(type: :#{result_type}, flag_key:, default_value:, evaluation_context:, invocation_hooks: hooks, hook_hints: hook_hints)
               #{"evaluation_details.value" if suffix == :value}
             end
@@ -72,8 +75,6 @@ module OpenFeature
       private
 
       def fetch_details(type:, flag_key:, default_value:, evaluation_context: nil, invocation_hooks: [], hook_hints: nil)
-        validate_default_value_type(type, default_value)
-
         built_context = build_evaluation_context(evaluation_context)
 
         # Assemble ordered hooks: API → Client → Invocation → Provider (spec 4.4.2)
@@ -97,17 +98,7 @@ module OpenFeature
             return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
           end
 
-          begin
-            return evaluate_flag(type: type, flag_key: flag_key, default_value: default_value, evaluation_context: built_context)
-          rescue => e
-            resolution = Provider::ResolutionDetails.new(
-              value: default_value,
-              error_code: EvaluationError.code_for(e),
-              reason: Provider::Reason::ERROR,
-              error_message: e.message
-            )
-            return EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
-          end
+          return evaluate_flag(type: type, flag_key: flag_key, default_value: default_value, evaluation_context: built_context)
         end
 
         hook_context = Hooks::HookContext.new(
@@ -143,6 +134,15 @@ module OpenFeature
             evaluate_flag(type: type, flag_key: flag_key, default_value: default_value, evaluation_context: hctx.evaluation_context)
           end
         end
+      rescue StandardError, NotImplementedError => e
+        # Spec 1.4.10 and 1.4.11: report through the details, never raise or log. NotImplementedError is the abstract-method idiom.
+        resolution = Provider::ResolutionDetails.new(
+          value: default_value,
+          error_code: EvaluationError.code_for(e),
+          reason: Provider::Reason::ERROR,
+          error_message: e.message
+        )
+        EvaluationDetails.new(flag_key: flag_key, resolution_details: resolution)
       end
 
       def evaluate_flag(type:, flag_key:, default_value:, evaluation_context:)
@@ -153,9 +153,9 @@ module OpenFeature
           evaluation_context: evaluation_context
         )
 
-        if TYPE_CLASS_MAP[type].none? { |klass| resolution_details.value.is_a?(klass) }
+        if resolution_details.error_code || TYPE_CLASS_MAP[type].none? { |klass| resolution_details.value.is_a?(klass) }
           resolution_details.value = default_value
-          resolution_details.error_code = Provider::ErrorCode::TYPE_MISMATCH
+          resolution_details.error_code ||= Provider::ErrorCode::TYPE_MISMATCH
           resolution_details.reason = Provider::Reason::ERROR
           resolution_details.variant = nil
         end

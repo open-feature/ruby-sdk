@@ -94,6 +94,41 @@ RSpec.describe "Tracking Specification" do
         expect(track_called).to be true
       end
     end
+
+    context "Requirement 1.4.10" do
+      let(:logger) { spy("Logger") }
+
+      before do
+        OpenFeature::SDK.configuration.send(:reset)
+        OpenFeature::SDK.configuration.logger = logger
+      end
+
+      after do
+        OpenFeature::SDK.configuration.send(:reset)
+        OpenFeature::SDK.configuration.logger = nil
+      end
+
+      specify "track MUST NOT raise when the provider's track raises" do
+        OpenFeature::SDK.set_provider(Class.new { def track(*, **) = raise("tracking down") }.new)
+
+        expect(OpenFeature::SDK.build_client.track("checkout")).to be_nil
+        expect(logger).not_to have_received(:error)
+      end
+
+      specify "track MUST NOT raise when building the evaluation context fails" do
+        OpenFeature::SDK.set_provider(Class.new { def track(*, **) = nil }.new)
+        OpenFeature::SDK.set_transaction_context_propagator(
+          Class.new {
+            include OpenFeature::SDK::TransactionContextPropagator
+
+            def get_transaction_context = raise("propagator down")
+          }.new
+        )
+
+        expect(OpenFeature::SDK.build_client.track("checkout")).to be_nil
+        expect(logger).not_to have_received(:error)
+      end
+    end
   end
 
   context "6.2 - Tracking Event Details" do

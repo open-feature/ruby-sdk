@@ -606,6 +606,142 @@ RSpec.describe "Flag Evaluation API" do
         expect(result.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::GENERAL)
         expect(result.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
       end
+
+      context "abnormal execution returns the default value" do
+        let(:logger) { spy("Logger") }
+        let(:hook) { Class.new { include OpenFeature::SDK::Hooks::Hook }.new }
+        let(:in_memory) { OpenFeature::SDK::Provider::InMemoryProvider.new("flag" => true) }
+
+        def resolving_provider(resolution)
+          Class.new do
+            define_method(:fetch_boolean_value) { |**| resolution }
+          end.new
+        end
+
+        def raising_propagator
+          Class.new do
+            include OpenFeature::SDK::TransactionContextPropagator
+
+            def get_transaction_context = raise("propagator down")
+          end.new
+        end
+
+        # Spec 1.4.11: the client reports failures through the details, never the log
+        def expect_default(details, error_code, message = nil)
+          expect(details.value).to be(false)
+          expect(details.error_code).to eq(error_code)
+          expect(details.reason).to eq(OpenFeature::SDK::Provider::Reason::ERROR)
+          expect(details.error_message).to match(message) if message
+          expect(logger).not_to have_received(:error)
+        end
+
+        before do
+          OpenFeature::SDK.configuration.send(:reset)
+          OpenFeature::SDK.configuration.logger = logger
+        end
+
+        after do
+          OpenFeature::SDK.configuration.send(:reset)
+          OpenFeature::SDK.configuration.logger = nil
+        end
+
+        specify "a propagator that does not implement get_transaction_context returns the default instead of raising" do
+          OpenFeature::SDK.set_provider_and_wait(in_memory)
+          OpenFeature::SDK.set_transaction_context_propagator(Class.new { include OpenFeature::SDK::TransactionContextPropagator }.new)
+
+          details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false)
+
+          expect_default(details, OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+        end
+
+        specify "a propagator that raises returns the default" do
+          OpenFeature::SDK.set_provider_and_wait(in_memory)
+          OpenFeature::SDK.set_transaction_context_propagator(raising_propagator)
+
+          expect_default(OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false), OpenFeature::SDK::Provider::ErrorCode::GENERAL, /propagator down/)
+        end
+
+        specify "a Hash passed as evaluation context returns the default" do
+          OpenFeature::SDK.set_provider_and_wait(in_memory)
+
+          details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false, evaluation_context: {"targeting_key" => "user"})
+
+          expect_default(details, OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+        end
+
+        specify "a provider that raises NotImplementedError returns the default" do
+          OpenFeature::SDK.set_provider_and_wait(Class.new { def fetch_boolean_value(**) = raise(NotImplementedError, "no booleans") }.new)
+
+          expect_default(OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false), OpenFeature::SDK::Provider::ErrorCode::GENERAL, /no booleans/)
+        end
+
+        specify "a provider whose hooks raise returns the default" do
+          provider = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) { def hooks = raise("hooks down") }.new("flag" => true)
+          OpenFeature::SDK.set_provider_and_wait(provider)
+
+          expect_default(OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false), OpenFeature::SDK::Provider::ErrorCode::GENERAL, /hooks down/)
+        end
+
+        specify "a provider whose metadata raises returns the default" do
+          provider = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+            attr_accessor :broken
+
+            def metadata = broken ? raise("metadata down") : super
+          end.new("flag" => true)
+          OpenFeature::SDK.set_provider_and_wait(provider)
+          provider.broken = true
+
+          details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false, hooks: [hook])
+
+          expect_default(details, OpenFeature::SDK::Provider::ErrorCode::GENERAL, /metadata down/)
+        end
+
+        specify "invalid hook hints return the default when hooks would receive them" do
+          OpenFeature::SDK.set_provider_and_wait(in_memory)
+
+          details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false, hooks: [hook], hook_hints: {"key" => Object.new})
+
+          expect_default(details, OpenFeature::SDK::Provider::ErrorCode::GENERAL, /allowed/)
+        end
+
+        specify "invalid hook hints are ignored when no hooks are registered" do
+          OpenFeature::SDK.set_provider_and_wait(in_memory)
+
+          details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false, hook_hints: {"key" => Object.new})
+
+          expect(details.value).to be(true)
+          expect(details.error_code).to be_nil
+        end
+
+        specify "a provider error result returns the default and keeps the provider's error code" do
+          resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(
+            value: true, variant: "on", error_code: OpenFeature::SDK::Provider::ErrorCode::PARSE_ERROR, error_message: "bad json"
+          )
+          OpenFeature::SDK.set_provider_and_wait(resolving_provider(resolution))
+
+          details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false)
+
+          expect_default(details, OpenFeature::SDK::Provider::ErrorCode::PARSE_ERROR)
+          expect(details.error_message).to eq("bad json")
+          expect(details.variant).to be_nil
+        end
+
+        specify "a FLAG_NOT_FOUND result with a nil value keeps FLAG_NOT_FOUND through error hooks" do
+          resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(value: nil, error_code: OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
+          OpenFeature::SDK.set_provider_and_wait(resolving_provider(resolution))
+          hook_codes = []
+          error_hook = Class.new do
+            include OpenFeature::SDK::Hooks::Hook
+
+            define_method(:error) { |exception:, **| hook_codes << exception.error_code }
+          end.new
+
+          details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false, hooks: [error_hook])
+
+          expect_default(details, OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
+          expect(hook_codes).to eq([OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND])
+        end
+      end
     end
   end
 

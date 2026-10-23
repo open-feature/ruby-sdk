@@ -115,6 +115,12 @@ RSpec.describe "Tracking Specification" do
         expect(logger).not_to have_received(:error)
       end
 
+      specify "track MUST NOT raise when the provider's track raises NotImplementedError" do
+        OpenFeature::SDK.set_provider(Class.new { def track(*, **) = raise(NotImplementedError) }.new)
+
+        expect(OpenFeature::SDK.build_client.track("checkout")).to be_nil
+      end
+
       specify "track MUST NOT raise when building the evaluation context fails" do
         OpenFeature::SDK.set_provider(Class.new { def track(*, **) = nil }.new)
         OpenFeature::SDK.set_transaction_context_propagator(

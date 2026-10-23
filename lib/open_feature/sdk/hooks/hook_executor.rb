@@ -54,7 +54,7 @@ module OpenFeature
             else
               run_after_hooks(ordered_hooks, hook_context, evaluation_details, hints)
             end
-          rescue => e
+          rescue StandardError, NotImplementedError => e
             run_error_hooks(ordered_hooks, hook_context, e, hints)
 
             evaluation_details = EvaluationDetails.new(

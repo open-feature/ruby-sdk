@@ -864,6 +864,22 @@ RSpec.describe "Flag Evaluation API" do
           expect_default(OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false), OpenFeature::SDK::Provider::ErrorCode::GENERAL, /no booleans/)
         end
 
+        specify "a provider that raises NotImplementedError still runs error hooks and gives finally hooks the default details" do
+          seen = {}
+          recorder = Class.new do
+            include OpenFeature::SDK::Hooks::Hook
+
+            define_method(:error) { |exception:, **| seen[:error] = exception.class }
+            define_method(:finally) { |evaluation_details:, **| seen[:finally] = evaluation_details&.error_code }
+          end.new
+          OpenFeature::SDK.set_provider_and_wait(Class.new { def fetch_boolean_value(**) = raise(NotImplementedError, "no booleans") }.new)
+
+          details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag", default_value: false, hooks: [recorder])
+
+          expect_default(details, OpenFeature::SDK::Provider::ErrorCode::GENERAL, /no booleans/)
+          expect(seen).to eq(error: NotImplementedError, finally: OpenFeature::SDK::Provider::ErrorCode::GENERAL)
+        end
+
         specify "a provider whose hooks raise returns the default" do
           provider = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) { def hooks = raise("hooks down") }.new("flag" => true)
           OpenFeature::SDK.set_provider_and_wait(provider)

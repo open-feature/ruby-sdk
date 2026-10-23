@@ -56,7 +56,7 @@ module OpenFeature
         built_context = build_evaluation_context(evaluation_context)
 
         @provider.track(tracking_event_name, evaluation_context: built_context, tracking_event_details: tracking_event_details)
-      rescue
+      rescue StandardError, NotImplementedError
         nil
       end
 

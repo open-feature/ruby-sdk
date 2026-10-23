@@ -34,6 +34,7 @@ module OpenFeature
         @provider_state_registry = ProviderStateRegistry.new
         @client_handlers = {}
         @client_handlers_mutex = Mutex.new
+        @dispatch_key = :"openfeature_dispatch_#{object_id}"
       end
 
       def add_hooks(*new_hooks)
@@ -60,6 +61,8 @@ module OpenFeature
 
       # @api private
       def add_client_handler(client, event_type, handler)
+        @event_dispatcher.validate_handler!(event_type, handler)
+
         @client_handlers_mutex.synchronize do
           @client_handlers[client] ||= Hash.new { |h, k| h[k] = [] }
           @client_handlers[client][event_type] << handler
@@ -202,7 +205,7 @@ module OpenFeature
           attempt.done.pop
           raise attempt.error || incomplete_init_error(provider, "initialization did not complete") unless attempt.state == :succeeded
 
-          dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
+          dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY, token: attempt)
         end
       ensure
         # Fail an attempt no init took over (e.g. a Timeout hit first), or it would stay running forever
@@ -215,7 +218,7 @@ module OpenFeature
 
         # Settle the attempt before handlers run, so a handler can register this provider again.
         # An abandoned attempt (provider replaced or shut down meanwhile) reports no READY.
-        dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY) if finish_init_attempt(attempt, :succeeded)
+        dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY, token: attempt) if finish_init_attempt(attempt, :succeeded)
       rescue => e
         # Spec 1.7.5: PROVIDER_FATAL from init makes the provider FATAL
         error_code = EvaluationError.code_for(e)
@@ -228,8 +231,7 @@ module OpenFeature
         finish_init_attempt(attempt, :failed, error)
 
         dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
-          error_code: error_code,
-          message: e.message)
+          {error_code: error_code, message: e.message}, token: attempt)
 
         raise error if raise_on_error
       ensure
@@ -260,24 +262,55 @@ module OpenFeature
         true
       end
 
-      def dispatch_provider_event(provider, event_type, details = {})
-        # Under the replacement lock, so a late event can't re-track a replaced or shut-down provider
-        @provider_mutex.synchronize do
-          return unless provider_bound?(provider)
+      # An event for a provider already dispatching on this call stack is queued behind the current one
+      def dispatch_provider_event(provider, event_type, details = {}, token: nil)
+        # The SDK's lifecycle events (with a token) record status when sent, so set_provider_and_wait returns
+        # with it even from the provider's own handler (1.1.2.4); provider events record it when delivered (5.3.5)
+        return if token && !accept_provider_event(provider, event_type, details, token)
 
-          @provider_state_registry.update_state_from_event(provider, event_type, details)
+        queues = (Thread.current[@dispatch_key] ||= {}.compare_by_identity)
+        if (queue = queues[provider])
+          queue << [event_type, details.dup, token]
+          return
         end
 
-        provider_name = extract_provider_name(provider)
+        queue = queues[provider] = [[event_type, details, token]]
+        begin
+          deliver_provider_event(provider, *queue.shift)
+          until queue.empty?
+            begin
+              deliver_provider_event(provider, *queue.shift)
+            rescue => e
+              # Its own emitter already returned, so log rather than fail the event that was dispatching
+              @logger&.error("Queued provider event failed: #{e.message}")
+            end
+          end
+        ensure
+          queues.delete(provider)
+          Thread.current[@dispatch_key] = nil if queues.empty?
+        end
+      end
 
-        event_details = {
-          provider_name: provider_name
-        }.merge(details)
+      def deliver_provider_event(provider, event_type, details, token)
+        return unless accept_provider_event(provider, event_type, details, token, record_status: token.nil?)
 
+        event_details = {provider_name: extract_provider_name(provider)}.merge(details)
         run_handlers_for_provider(provider, event_type, event_details)
       end
 
       private
+
+      # Under the replacement lock, so a late event can't re-track a replaced or shut-down provider
+      def accept_provider_event(provider, event_type, details, token, record_status: true)
+        @provider_mutex.synchronize do
+          return false unless provider_bound?(provider)
+          # An SDK READY/ERROR from an earlier registration of this provider is stale
+          return false unless token.nil? || @init_attempts[provider].equal?(token)
+
+          @provider_state_registry.update_state_from_event(provider, event_type, details) if record_status
+          true
+        end
+      end
 
       def provider_bound?(provider)
         @providers.each_value.any? { |p| p.equal?(provider) }
@@ -325,21 +358,19 @@ module OpenFeature
         # Run global handlers (API-level, no domain filtering)
         @event_dispatcher.trigger_event(event_type, event_details)
 
-        # Run client handlers (domain-scoped)
-        @client_handlers_mutex.synchronize do
-          @client_handlers.each do |client, handlers_by_event|
+        # Run client handlers (domain-scoped) outside the lock, so they can add or remove handlers
+        handlers = @client_handlers_mutex.synchronize do
+          @client_handlers.flat_map do |client, handlers_by_event|
             # Check if this client should receive events from this provider
             client_provider = provider(domain: client.metadata.domain)
-            next unless client_provider&.equal?(provider)
-
-            # Trigger handlers for this client
-            handlers = handlers_by_event[event_type]
-            handlers.each do |handler|
-              handler.call(event_details)
-            rescue => e
-              @logger&.error("Client event handler failed: #{e.message}")
-            end
+            client_provider&.equal?(provider) ? handlers_by_event[event_type] : []
           end
+        end
+
+        handlers.each do |handler|
+          handler.call(event_details)
+        rescue => e
+          @logger&.error("Client event handler failed: #{e.message}")
         end
       end
 
@@ -352,8 +383,8 @@ module OpenFeature
         }
 
         if client.nil?
-          # API-level handler: check all providers
-          @providers.each do |domain, provider|
+          # API-level handler: check each bound provider once, however many domains it's bound to
+          @providers.values.uniq(&:object_id).each do |provider|
             next unless provider
 
             provider_state = @provider_state_registry.get_state(provider)

@@ -36,7 +36,9 @@ module OpenFeature
       def finish_init_attempt: (untyped attempt, Symbol state, ?ProviderInitializationError? error) -> bool
       def abandon_init_attempt: (untyped attempt) -> void
       def incomplete_init_error: (untyped provider, String reason) -> ProviderInitializationError
-      def dispatch_provider_event: (untyped provider, String event_type, ?Hash[Symbol, untyped] details) -> void
+      def dispatch_provider_event: (untyped provider, String event_type, ?Hash[Symbol, untyped] details, ?token: untyped) -> void
+      def deliver_provider_event: (untyped provider, String event_type, Hash[Symbol, untyped]? details, untyped token) -> void
+      def accept_provider_event: (untyped provider, String event_type, Hash[Symbol, untyped]? details, untyped token, ?record_status: bool) -> bool
       def provider_bound?: (untyped provider) -> bool
       def domain_scoped?: (untyped provider) -> bool
       def validate_domain_scoped_binding!: (untyped provider, String? domain, bool scoped) -> void

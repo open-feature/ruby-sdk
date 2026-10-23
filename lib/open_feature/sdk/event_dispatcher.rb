@@ -16,12 +16,16 @@ module OpenFeature
       end
 
       def add_handler(event_type, handler)
-        raise ArgumentError, "Invalid event type: #{event_type}" unless valid_event?(event_type)
-        raise ArgumentError, "Handler must respond to call" unless handler.respond_to?(:call)
+        validate_handler!(event_type, handler)
 
         @mutex.synchronize do
           @handlers[event_type] << handler
         end
+      end
+
+      def validate_handler!(event_type, handler)
+        raise ArgumentError, "Invalid event type: #{event_type}" unless valid_event?(event_type)
+        raise ArgumentError, "Handler must respond to call" unless handler.respond_to?(:call)
       end
 
       def remove_handler(event_type, handler)

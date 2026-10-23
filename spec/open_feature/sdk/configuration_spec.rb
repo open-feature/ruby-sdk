@@ -408,6 +408,14 @@ RSpec.describe OpenFeature::SDK::Configuration do
     end
   end
 
+  describe "nested event dispatch" do
+    it "leaves no per-thread state behind once dispatch finishes" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+      expect { configuration.set_provider_and_wait(provider) }.not_to change { Thread.current.keys.size }
+    end
+  end
+
   describe "event handler error logging" do
     it "logs error when event handler fails and logger is present" do
       provider = OpenFeature::SDK::Provider::NoOpProvider.new

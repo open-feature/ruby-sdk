@@ -283,10 +283,10 @@ RSpec.describe "Provider" do
         OpenFeature::SDK.set_provider_and_wait(old_provider)
 
         replacing = Thread.new { OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new({"flag" => true})) }
-        in_shutdown.pop
+        expect(in_shutdown.pop(timeout: 2)).to be(true)
         status = OpenFeature::SDK.build_client.provider_status
         release << true
-        replacing.join
+        replacing.join(2)
 
         expect(status).to eq(OpenFeature::SDK::ProviderState::READY)
       end
@@ -304,13 +304,32 @@ RSpec.describe "Provider" do
         runs = Hash.new(0)
 
         replacing = Thread.new { OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new) }
-        in_shutdown.pop
+        expect(in_shutdown.pop(timeout: 2)).to be(true)
         OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_) { runs[:api] += 1 })
         client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_) { runs[:client] += 1 })
         release << true
-        replacing.join
+        replacing.join(2)
 
         expect(runs).to eq(api: 1, client: 1)
+      end
+
+      specify "2.8.5.1: a READY handler that rolls back to the old provider doesn't get it shut down" do
+        shut_down = false
+        old_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        old_provider.define_singleton_method(:shutdown) { shut_down = true }
+        OpenFeature::SDK.set_provider_and_wait(old_provider)
+        rolled_back = false
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_) do
+          next if rolled_back || OpenFeature::SDK.provider.equal?(old_provider)
+
+          rolled_back = true
+          OpenFeature::SDK.set_provider(old_provider)
+        end)
+
+        OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new)
+
+        expect(OpenFeature::SDK.provider).to equal(old_provider)
+        expect(shut_down).to be(false)
       end
 
       specify "2.8.5.1: READY handlers run for a provider without init" do

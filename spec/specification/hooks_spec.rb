@@ -280,6 +280,36 @@ RSpec.describe "Hooks Specification" do
         expect(details.error_code).to be_nil
       end
 
+      specify "an after hook can convert a Time in the evaluation context, and the caller's Time is unchanged" do
+        signup = Time.new(2026, 1, 1, 12, 0, 0, "+05:00")
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:after) { |hook_context:, **| hook_context.evaluation_context.field("signup").utc }
+        end.new
+
+        details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag-1", default_value: false,
+          evaluation_context: OpenFeature::SDK::EvaluationContext.new(signup:), hooks: [hook])
+
+        expect(details.error_code).to be_nil
+        expect(signup.utc_offset).to eq(5 * 3600)
+      end
+
+      specify "an after hook can read a missing key of a Hash with a default proc in the evaluation context" do
+        lookup = Hash.new { |hash, key| hash[key] = [] }
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:after) { |hook_context:, **| hook_context.evaluation_context.field("lookup")["missing"] }
+        end.new
+
+        details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag-1", default_value: false,
+          evaluation_context: OpenFeature::SDK::EvaluationContext.new(lookup:), hooks: [hook])
+
+        expect(details.error_code).to be_nil
+        expect(lookup).to be_empty
+      end
+
       specify "the evaluation context is frozen in error and finally hooks when a before hook raises" do
         failing_before = Class.new do
           include OpenFeature::SDK::Hooks::Hook

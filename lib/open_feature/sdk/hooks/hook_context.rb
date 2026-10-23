@@ -39,7 +39,8 @@ module OpenFeature
 
           @copies.fetch(:evaluation_context) do
             @copies[:evaluation_context] = @evaluation_context&.dup&.tap do |copy|
-              copy.fields.transform_values! { |value| FrozenCopy.of(value) }
+              seen = {}.compare_by_identity # One map for every field, so a structure two fields share is copied once
+              copy.fields.transform_values! { |value| FrozenCopy.of(value, seen) }
             end&.freeze
           end
         end
@@ -55,7 +56,7 @@ module OpenFeature
 
         # FrozenCopy passes Structs through, so ProviderMetadata's members are copied here (spec 4.2.2.3)
         def frozen_metadata(metadata)
-          return metadata if !metadata.is_a?(Struct) || Ractor.shareable?(metadata)
+          return metadata if !metadata.is_a?(Struct) || (defined?(Ractor) && Ractor.shareable?(metadata))
 
           metadata.dup.tap { |copy| copy.each_pair { |member, value| copy[member] = FrozenCopy.of(value) } }.freeze
         end

@@ -198,8 +198,9 @@ module OpenFeature
             end
           end
         ensure
-          # Shutdown old provider outside mutex to avoid blocking other operations
-          if needs_shutdown
+          # Shutdown old provider outside mutex to avoid blocking other operations. Checked again, since a READY
+          # handler above may have bound it again (a rollback)
+          if needs_shutdown && !provider_bound?(old_provider)
             begin
               old_provider.shutdown if old_provider.respond_to?(:shutdown)
             rescue *RECOVERABLE_ERRORS => e

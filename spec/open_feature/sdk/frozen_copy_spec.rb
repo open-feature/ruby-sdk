@@ -50,11 +50,27 @@ RSpec.describe OpenFeature::SDK::FrozenCopy do
     expect(user).not_to be_frozen
   end
 
-  it "freezes a copy of a Time, since localtime and utc change the receiver" do
-    time = Time.now
+  it "gives a Time its own copy, left unfrozen so utc and localtime still work without touching the original" do
+    time = Time.new(2026, 1, 1, 12, 0, 0, "+05:00")
     copy = described_class.of(time)
+    copy.utc
 
-    expect(copy).to be_frozen
-    expect(time).not_to be_frozen
+    expect(copy).not_to equal(time)
+    expect(time.utc_offset).to eq(5 * 3600)
+  end
+
+  it "drops a Hash's default proc, which a frozen copy couldn't run" do
+    copy = described_class.of(Hash.new { |hash, key| hash[key] = [] }.merge("a" => 1))
+
+    expect(copy["missing"]).to be_nil
+    expect(copy["a"]).to eq(1)
+  end
+
+  it "works on a Ruby without Ractor" do
+    hide_const("Ractor")
+    source = {"list" => [+"a"]}
+
+    expect(described_class.of(source)["list"].first).to be_frozen
+    expect(source["list"]).not_to be_frozen
   end
 end

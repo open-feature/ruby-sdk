@@ -187,6 +187,8 @@ module OpenFeature
         if needs_init
           if wait_for_init
             init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: true)
+            # Replaced or shut down while init ran: fail like the waiters on this attempt did
+            raise incomplete_init_error(provider, "initialization did not complete") unless attempt.state == :succeeded
           else
             init_thread = Thread.new do
               init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: false)
@@ -211,9 +213,9 @@ module OpenFeature
         attempt.thread = Thread.current
         call_init(provider, context, domain)
 
-        # Settle the attempt before handlers run, so a handler can register this provider again
-        finish_init_attempt(attempt, :succeeded)
-        dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
+        # Settle the attempt before handlers run, so a handler can register this provider again.
+        # An abandoned attempt (provider replaced or shut down meanwhile) reports no READY.
+        dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY) if finish_init_attempt(attempt, :succeeded)
       rescue => e
         # Spec 1.7.5: PROVIDER_FATAL from init makes the provider FATAL
         error_code = EvaluationError.code_for(e)
@@ -249,12 +251,13 @@ module OpenFeature
 
       def finish_init_attempt(attempt, state, error = nil)
         @provider_mutex.synchronize do
-          return unless attempt.state == :running
+          return false unless attempt.state == :running
 
           attempt.state = state
           attempt.error = error
         end
         attempt.done.close
+        true
       end
 
       def dispatch_provider_event(provider, event_type, details = {})

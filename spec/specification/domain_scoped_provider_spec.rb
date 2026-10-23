@@ -14,53 +14,25 @@ RSpec.describe "Domain-scoped provider binding" do
   end
 
   let(:domain_scoped_test_provider_class) do
-    Class.new do
+    Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
       attr_reader :init_domain, :init_calls
 
       def initialize
-        @metadata = OpenFeature::SDK::Provider::ProviderMetadata.new(name: "domain-scoped-test")
+        super
         @init_calls = 0
         @init_domain = :unset
       end
 
-      attr_reader :metadata
-
-      def domain_scoped?
-        true
-      end
+      def domain_scoped? = true
 
       def init(_evaluation_context = nil, domain: nil)
         @init_calls += 1
         @init_domain = domain
       end
-
-      def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
-        OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-      end
-
-      def fetch_string_value(flag_key:, default_value:, evaluation_context: nil)
-        OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-      end
-
-      def fetch_number_value(flag_key:, default_value:, evaluation_context: nil)
-        OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-      end
-
-      def fetch_integer_value(flag_key:, default_value:, evaluation_context: nil)
-        OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-      end
-
-      def fetch_float_value(flag_key:, default_value:, evaluation_context: nil)
-        OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-      end
-
-      def fetch_object_value(flag_key:, default_value:, evaluation_context: nil)
-        OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-      end
     end
   end
 
-  context "Requirement 2.4.1" do
+  context "Requirements 1.1.2.2 and 2.4.1" do
     specify "the provider mutator passes the bound domain to init for a named provider" do
       provider = domain_scoped_test_provider_class.new
 
@@ -80,7 +52,7 @@ RSpec.describe "Domain-scoped provider binding" do
 
   let(:configuration) { OpenFeature::SDK::API.instance.configuration }
 
-  context "Condition 1.1.8" do
+  context "Requirement 1.1.8.1" do
     specify "the provider mutator MUST NOT bind a domain-scoped provider to a second named domain" do
       provider = domain_scoped_test_provider_class.new
 
@@ -151,11 +123,63 @@ RSpec.describe "Domain-scoped provider binding" do
       expect(OpenFeature::SDK.provider(domain: "domain-b")).to be(provider)
       expect(provider).to have_received(:init).once
     end
+
+    specify "rejects a domain-scoped provider whose domain_scoped? comes from an included module" do
+      scoped = Module.new { def domain_scoped? = true }
+      provider = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+        include scoped
+
+        def init(_evaluation_context = nil, domain: nil) = nil
+      end.new
+
+      OpenFeature::SDK.set_provider_and_wait(provider, domain: "domain-a")
+
+      expect do
+        OpenFeature::SDK.set_provider(provider, domain: "domain-b")
+      end.to raise_error(ArgumentError, /more than one domain/)
+    end
+
+    specify "evaluates domain_scoped? without holding the provider lock" do
+      provider_mutex = configuration.instance_variable_get(:@provider_mutex)
+      lock_held = nil
+      provider = domain_scoped_test_provider_class.new
+      provider.define_singleton_method(:domain_scoped?) do
+        lock_held = provider_mutex.owned?
+        true
+      end
+
+      OpenFeature::SDK.set_provider_and_wait(provider, domain: "domain-a")
+
+      expect(lock_held).to be(false)
+    end
+  end
+
+  context "Requirement 2.4.4" do
+    after { configuration.logger = nil }
+
+    specify "warns when a domain-scoped provider's init can't accept the domain" do
+      logger = spy("Logger")
+      configuration.logger = logger
+      provider = domain_scoped_test_provider_class.new
+      provider.define_singleton_method(:init) { |_evaluation_context = nil| @init_calls += 1 }
+
+      OpenFeature::SDK.set_provider_and_wait(provider, domain: "domain-a")
+
+      expect(logger).to have_received(:warn).with(/domain-scoped.*domain/)
+      expect(provider.init_calls).to eq(1)
+    end
   end
 
   context "legacy init compatibility" do
-    specify "initializes legacy single-argument init providers when bound to a domain" do
-      provider = OpenFeature::SDK::LegacyInitProvider.new
+    specify "initializes a legacy single-argument init provider bound to a domain without passing the domain" do
+      provider = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+        attr_reader :init_calls, :last_context
+
+        def init(evaluation_context = nil)
+          @init_calls = (@init_calls || 0) + 1
+          @last_context = evaluation_context
+        end
+      end.new
 
       OpenFeature::SDK.set_provider_and_wait(provider, domain: "test-domain")
 
@@ -164,57 +188,15 @@ RSpec.describe "Domain-scoped provider binding" do
       expect(configuration.provider_state(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
     end
 
-    specify "does not pass domain to legacy init providers" do
-      provider = OpenFeature::SDK::LegacyInitProvider.new
-
-      OpenFeature::SDK.set_provider_and_wait(provider, domain: "test-domain")
-
-      expect(provider.init_calls).to eq(1)
-      expect(provider.last_context).to eq(OpenFeature::SDK.evaluation_context)
-    end
-
     specify "does not retry init when a domain-aware provider raises" do
-      broken_provider_class = Class.new do
+      provider = Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
         attr_reader :call_count
 
-        def initialize
-          @metadata = OpenFeature::SDK::Provider::ProviderMetadata.new(name: "broken")
-          @call_count = 0
-        end
-
-        attr_reader :metadata
-
         def init(_evaluation_context = nil, domain: nil)
-          @call_count += 1
+          @call_count = (@call_count || 0) + 1
           raise TypeError, "configuration error"
         end
-
-        def fetch_boolean_value(flag_key:, default_value:, evaluation_context: nil)
-          OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-        end
-
-        def fetch_string_value(flag_key:, default_value:, evaluation_context: nil)
-          OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-        end
-
-        def fetch_number_value(flag_key:, default_value:, evaluation_context: nil)
-          OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-        end
-
-        def fetch_integer_value(flag_key:, default_value:, evaluation_context: nil)
-          OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-        end
-
-        def fetch_float_value(flag_key:, default_value:, evaluation_context: nil)
-          OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-        end
-
-        def fetch_object_value(flag_key:, default_value:, evaluation_context: nil)
-          OpenFeature::SDK::Provider::ResolutionDetails.new(value: default_value)
-        end
-      end
-
-      provider = broken_provider_class.new
+      end.new
 
       expect do
         OpenFeature::SDK.set_provider_and_wait(provider, domain: "domain")

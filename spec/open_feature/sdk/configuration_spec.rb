@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "delegate"
 
 RSpec.describe OpenFeature::SDK::Configuration do
   subject(:configuration) { described_class.new }
@@ -191,6 +192,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
       it "handles provider that responds_to init but init is nil" do
         allow(provider).to receive(:respond_to?).with(:init).and_return(true)
         allow(provider).to receive(:respond_to?).with(:metadata).and_call_original
+        allow(provider).to receive(:respond_to?).with(:domain_scoped?).and_call_original
         allow(provider).to receive(:init).and_return(nil)
 
         configuration.set_provider_and_wait(provider)
@@ -335,6 +337,74 @@ RSpec.describe OpenFeature::SDK::Configuration do
       configuration.set_provider_and_wait(provider, domain: "billing")
 
       expect(provider.init_kwargs[:domain]).to eq("billing")
+    end
+
+    context "when the init signature doesn't name the domain" do
+      let(:context) { OpenFeature::SDK::EvaluationContext.new(targeting_key: "user") }
+
+      before { configuration.evaluation_context = context }
+
+      def build_provider(&block)
+        Class.new do
+          attr_reader :received
+
+          def metadata = OpenFeature::SDK::Provider::ProviderMetadata.new(name: "SignatureProvider")
+
+          class_eval(&block)
+        end.new
+      end
+
+      it "passes only the context to init(...) that forwards to a legacy init" do
+        provider = build_provider do
+          def init(...) = legacy_init(...)
+
+          def legacy_init(evaluation_context) = @received = evaluation_context
+        end
+
+        expect { configuration.set_provider_and_wait(provider, domain: "billing") }.not_to raise_error
+        expect(provider.received).to eq(context)
+      end
+
+      it "passes only the context to init(*args)" do
+        provider = build_provider do
+          def init(*args) = @received = args
+        end
+
+        configuration.set_provider_and_wait(provider, domain: "billing")
+
+        expect(provider.received).to eq([context])
+      end
+
+      it "passes the context to init(evaluation_context) defined in an included module" do
+        legacy_init = Module.new do
+          def init(evaluation_context) = @received = evaluation_context
+        end
+        provider = build_provider { include legacy_init }
+
+        configuration.set_provider_and_wait(provider, domain: "billing")
+
+        expect(provider.received).to eq(context)
+      end
+
+      it "passes the context through a SimpleDelegator wrapper" do
+        inner = build_provider do
+          def init(evaluation_context) = @received = evaluation_context
+        end
+
+        configuration.set_provider_and_wait(SimpleDelegator.new(inner), domain: "billing")
+
+        expect(inner.received).to eq(context)
+      end
+
+      it "passes the domain to init(evaluation_context = nil, **opts)" do
+        provider = build_provider do
+          def init(evaluation_context = nil, **opts) = @received = [evaluation_context, opts]
+        end
+
+        configuration.set_provider_and_wait(provider, domain: "billing")
+
+        expect(provider.received).to eq([context, {domain: "billing"}])
+      end
     end
   end
 

@@ -18,7 +18,11 @@ module OpenFeature
           # Registered before its items, so a cycle or a shared structure maps to this one copy
           copy = seen[value] = value.dup
           if copy.is_a?(Hash)
-            copy.default_proc = nil # Behavior rather than data, and on a frozen copy one that stores would raise
+            if copy.default_proc
+              copy.default_proc = nil # Behavior rather than data, and on a frozen copy one that stores would raise
+            elsif !copy.default.nil?
+              copy.default = of(copy.default, seen)
+            end
             copy.transform_values! { |item| of(item, seen) }
           else
             copy.map! { |item| of(item, seen) }

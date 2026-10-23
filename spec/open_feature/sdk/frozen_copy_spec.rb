@@ -66,6 +66,14 @@ RSpec.describe OpenFeature::SDK::FrozenCopy do
     expect(copy["a"]).to eq(1)
   end
 
+  it "copies a Hash's default value too" do
+    regions = [+"us"]
+    copy = described_class.of(Hash.new(regions))
+
+    expect { copy["missing"] << "eu" }.to raise_error(FrozenError)
+    expect(regions).to eq(["us"])
+  end
+
   it "works on a Ruby without Ractor" do
     hide_const("Ractor")
     source = {"list" => [+"a"]}

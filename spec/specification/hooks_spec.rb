@@ -219,6 +219,28 @@ RSpec.describe "Hooks Specification" do
         expect(user.fields).not_to be_frozen
       end
 
+      specify "after hooks can't edit the caller's strings in the evaluation context in place" do
+        targeting_key = +"user-1"
+        edited = nil
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:after) do |hook_context:, **|
+            hook_context.evaluation_context.targeting_key.replace("other-user")
+            edited = true
+          rescue FrozenError
+            edited = false
+          end
+        end.new
+
+        OpenFeature::SDK.build_client.fetch_boolean_value(flag_key: "flag-1", default_value: false,
+          evaluation_context: OpenFeature::SDK::EvaluationContext.new(targeting_key:), hooks: [hook])
+
+        expect(edited).to be(false)
+        expect(targeting_key).to eq("user-1")
+        expect(targeting_key).not_to be_frozen
+      end
+
       specify "the evaluation context is frozen in error and finally hooks when a before hook raises" do
         failing_before = Class.new do
           include OpenFeature::SDK::Hooks::Hook

@@ -32,10 +32,13 @@ module OpenFeature
           @copies.fetch(:default_value) { @copies[:default_value] = Hooks.frozen_copy(@source_default_value) }
         end
 
-        # Swaps in a frozen copy of the evaluation context, so neither the caller's nor a before hook's object is frozen
+        # Swaps in a frozen copy of the evaluation context, so neither the caller's nor a before hook's object is frozen.
+        # Top-level strings are copied too, so a hook can't edit a targeting key in place.
         def freeze
           return self if frozen?
-          @evaluation_context &&= @evaluation_context.dup.freeze
+          @evaluation_context &&= @evaluation_context.dup.tap do |copy|
+            copy.fields.transform_values! { |value| (value.is_a?(String) && !value.frozen?) ? value.dup.freeze : value }
+          end.freeze
           super
         end
 

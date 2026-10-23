@@ -134,7 +134,7 @@ module OpenFeature
           executor.run_short_circuit(ordered_hooks: ordered_hooks, hook_context: hook_context, hints: hints, evaluation_details: evaluation_details)
           evaluation_details
         else
-          executor.execute(ordered_hooks: ordered_hooks, hook_context: hook_context, hints: hints) do |hctx|
+          executor.execute(ordered_hooks: ordered_hooks, hook_context: hook_context, hints: hints, default_value:) do |hctx|
             evaluate_flag(provider: provider, type: type, flag_key: flag_key, default_value: default_value, evaluation_context: hctx.evaluation_context)
           end
         end

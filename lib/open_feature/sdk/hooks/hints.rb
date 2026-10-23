@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "delegate"
+require_relative "frozen_copy"
 
 module OpenFeature
   module SDK
@@ -13,8 +14,7 @@ module OpenFeature
             assert_allowed_key(key)
             assert_allowed_value(value)
           end
-          @hash = hash.dup
-          super(@hash)
+          super(Hooks.frozen_copy(hash))
           freeze
         end
 

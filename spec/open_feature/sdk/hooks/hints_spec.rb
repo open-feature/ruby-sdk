@@ -16,9 +16,9 @@ RSpec.describe OpenFeature::SDK::Hooks::Hints do
       expect { hints[:new_key] = "new_value" }.to raise_error(FrozenError)
     end
 
-    it "does allow modification of existing values" do
-      expect(hints[:key]).to_not be_frozen
-      expect { hints[:key] << "abc" }.to_not raise_error
+    it "does not allow modification of nested values" do
+      expect(hints[:nested][:key]).to be_frozen
+      expect { hints[:key] << "abc" }.to raise_error(FrozenError)
     end
 
     it "does not allow deletion of keys" do
@@ -41,8 +41,18 @@ RSpec.describe OpenFeature::SDK::Hooks::Hints do
       end
     end
 
-    it "does not freeze the original hash" do
+    it "does not freeze the original hash or its values" do
       expect(hint_hash).not_to be_frozen
+      expect(hint_hash[:nested][:key]).not_to be_frozen
+    end
+
+    it "freezes only the top level when a nested value can't be copied" do
+      source = {key: {lock: Mutex.new}}
+      hints = described_class.new(source)
+
+      expect(hints[:key]).to eq(source[:key])
+      expect { hints[:other] = 1 }.to raise_error(FrozenError)
+      expect(source).not_to be_frozen
     end
   end
 end

@@ -34,7 +34,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
         call_log = []
         hook = recording_hook("h1", call_log)
 
-        executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints) do |_hctx|
+        executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           call_log << "evaluate"
           successful_details
         end
@@ -43,7 +43,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
       end
 
       it "returns the evaluation details from the block" do
-        result = executor.execute(ordered_hooks: [], hook_context: hook_context, hints: hints) do |_hctx|
+        result = executor.execute(ordered_hooks: [], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           successful_details
         end
 
@@ -62,7 +62,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
           recording_hook("provider", call_log)
         ]
 
-        executor.execute(ordered_hooks: hooks, hook_context: hook_context, hints: hints) do |_hctx|
+        executor.execute(ordered_hooks: hooks, hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           successful_details
         end
 
@@ -79,7 +79,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
           recording_hook("provider", call_log)
         ]
 
-        executor.execute(ordered_hooks: hooks, hook_context: hook_context, hints: hints) do |_hctx|
+        executor.execute(ordered_hooks: hooks, hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           successful_details
         end
 
@@ -95,7 +95,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
           recording_hook("provider", call_log)
         ]
 
-        executor.execute(ordered_hooks: hooks, hook_context: hook_context, hints: hints) do |_hctx|
+        executor.execute(ordered_hooks: hooks, hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           successful_details
         end
 
@@ -115,7 +115,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
         end.new
 
         captured_context = nil
-        executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints) do |hctx|
+        executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints, default_value: false) do |hctx|
           captured_context = hctx.evaluation_context
           successful_details
         end
@@ -134,7 +134,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
         end.new
 
         captured_context = nil
-        executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints) do |hctx|
+        executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints, default_value: false) do |hctx|
           captured_context = hctx.evaluation_context
           successful_details
         end
@@ -166,7 +166,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
 
         hook2 = hook2_class.new(contexts_seen)
 
-        executor.execute(ordered_hooks: [hook1, hook2], hook_context: hook_context, hints: hints) do |_hctx|
+        executor.execute(ordered_hooks: [hook1, hook2], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           successful_details
         end
 
@@ -195,7 +195,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
           end
         end.new
 
-        result = executor.execute(ordered_hooks: [failing_hook, error_hook], hook_context: hook_context, hints: hints) do |_hctx|
+        result = executor.execute(ordered_hooks: [failing_hook, error_hook], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           call_log << "evaluate"
           successful_details
         end
@@ -225,7 +225,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
           end
         end.new
 
-        result = executor.execute(ordered_hooks: [failing_after_hook], hook_context: hook_context, hints: hints) do |_hctx|
+        result = executor.execute(ordered_hooks: [failing_after_hook], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           successful_details
         end
 
@@ -248,7 +248,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
           )
         )
 
-        result = executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints) do |_hctx|
+        result = executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           call_log << "evaluate"
           error_details
         end
@@ -262,7 +262,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
         call_log = []
         hook = recording_hook("h1", call_log)
 
-        result = executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints) do |_hctx|
+        result = executor.execute(ordered_hooks: [hook], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           raise "evaluation failed"
         end
 
@@ -293,7 +293,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
 
         # Hooks are reversed for error stage, so good_error_hook (first in ordered)
         # runs last in error stage. failing_error_hook (second) runs first in error stage.
-        executor.execute(ordered_hooks: [good_error_hook, failing_error_hook], hook_context: hook_context, hints: hints) do |_hctx|
+        executor.execute(ordered_hooks: [good_error_hook, failing_error_hook], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           raise "eval failed"
         end
 
@@ -321,7 +321,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
         end.new
 
         # Hooks are reversed for finally stage
-        executor.execute(ordered_hooks: [good_finally_hook, failing_finally_hook], hook_context: hook_context, hints: hints) do |_hctx|
+        executor.execute(ordered_hooks: [good_finally_hook, failing_finally_hook], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           successful_details
         end
 
@@ -338,7 +338,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
           end
         end.new
 
-        result = executor.execute(ordered_hooks: [before_only_hook], hook_context: hook_context, hints: hints) do |_hctx|
+        result = executor.execute(ordered_hooks: [before_only_hook], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
           successful_details
         end
 
@@ -373,7 +373,7 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
     end
 
     it "carries the resolution's error code and message" do
-      executor.execute(ordered_hooks: [capturing_hook], hook_context: hook_context, hints: hints) do |_hctx|
+      executor.execute(ordered_hooks: [capturing_hook], hook_context: hook_context, hints: hints, default_value: false) do |_hctx|
         error_details(error_code: "FLAG_NOT_FOUND", error_message: "nope")
       end
 
@@ -391,6 +391,21 @@ RSpec.describe OpenFeature::SDK::Hooks::HookExecutor do
       )
 
       expect(capturing_hook.exception.error_code).to eq("PROVIDER_NOT_READY")
+    end
+
+    it "freezes the evaluation context before error and finally hooks run" do
+      frozen_in = []
+      hook = Class.new do
+        include OpenFeature::SDK::Hooks::Hook
+
+        define_method(:error) { |hook_context:, **| frozen_in << [:error, hook_context.evaluation_context.fields.frozen?] }
+        define_method(:finally) { |hook_context:, **| frozen_in << [:finally, hook_context.evaluation_context.fields.frozen?] }
+      end.new
+
+      executor.run_short_circuit(ordered_hooks: [hook], hook_context: hook_context, hints: hints,
+        evaluation_details: error_details(error_code: "PROVIDER_NOT_READY"))
+
+      expect(frozen_in).to eq([[:error, true], [:finally, true]])
     end
   end
 end

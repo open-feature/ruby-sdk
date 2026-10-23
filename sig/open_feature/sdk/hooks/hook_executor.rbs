@@ -6,7 +6,7 @@ module OpenFeature
 
         def run_short_circuit: (ordered_hooks: Array[untyped], hook_context: HookContext, hints: Hints, evaluation_details: EvaluationDetails) -> void
 
-        def execute: (ordered_hooks: Array[untyped], hook_context: HookContext, hints: Hints) { (HookContext) -> EvaluationDetails } -> EvaluationDetails?
+        def execute: (ordered_hooks: Array[untyped], hook_context: HookContext, hints: Hints, default_value: untyped) { (HookContext) -> EvaluationDetails } -> EvaluationDetails?
 
         private
 

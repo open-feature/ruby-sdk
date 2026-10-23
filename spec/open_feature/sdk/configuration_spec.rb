@@ -193,6 +193,7 @@ RSpec.describe OpenFeature::SDK::Configuration do
         allow(provider).to receive(:respond_to?).with(:init).and_return(true)
         allow(provider).to receive(:respond_to?).with(:metadata).and_call_original
         allow(provider).to receive(:respond_to?).with(:domain_scoped?).and_call_original
+        allow(provider).to receive(:respond_to?).with(:emits_lifecycle_events?).and_call_original
         allow(provider).to receive(:init).and_return(nil)
 
         configuration.set_provider_and_wait(provider)

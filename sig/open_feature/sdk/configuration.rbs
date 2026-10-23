@@ -41,6 +41,10 @@ module OpenFeature
       def accept_provider_event: (untyped provider, String event_type, Hash[Symbol, untyped]? details, untyped token, ?record_status: bool) -> bool
       def provider_bound?: (untyped provider) -> bool
       def domain_scoped?: (untyped provider) -> bool
+      def emits_lifecycle_events?: (untyped provider) -> bool
+      def warn_legacy_provider: (untyped provider) -> void
+      def running_init_attempt_on_this_thread: (untyped provider) -> untyped
+      def running_on_this_thread?: (untyped attempt) -> bool
       def validate_domain_scoped_binding!: (untyped provider, String? domain, bool scoped) -> void
       def call_init: (untyped provider, EvaluationContext? context, String? domain) -> void
       def init_accepts_domain?: (Array[[Symbol, Symbol?]] parameters) -> bool

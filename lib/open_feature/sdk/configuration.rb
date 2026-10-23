@@ -28,6 +28,7 @@ module OpenFeature
         @hooks = []
         @providers = {}
         @init_attempts = {}.compare_by_identity
+        @legacy_warned = Set.new.compare_by_identity
         @provider_mutex = Mutex.new
         @logger = nil
         @event_dispatcher = EventDispatcher.new(@logger)
@@ -128,6 +129,7 @@ module OpenFeature
           @providers.clear
           @init_attempts.each_value { |attempt| abandon_init_attempt(attempt) }
           @init_attempts.clear
+          @legacy_warned.clear
         end
         @hooks.clear
         @evaluation_context = nil
@@ -146,6 +148,9 @@ module OpenFeature
 
         # Provider code runs before taking the lock: it may call back into the SDK
         scoped = domain_scoped?(provider)
+        has_init = provider.respond_to?(:init)
+        legacy = has_init && !emits_lifecycle_events?(provider)
+        warn_legacy_provider(provider) if legacy
 
         @provider_mutex.synchronize do
           validate_domain_scoped_binding!(provider, domain, scoped)
@@ -188,24 +193,28 @@ module OpenFeature
 
         # Initialize provider outside the mutex to avoid blocking other operations
         if needs_init
-          if wait_for_init
-            init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: true)
+          # Spec 2.8.5.1: a provider without init is READY, and its handlers have run, when set_provider returns
+          if wait_for_init || !has_init
+            init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: wait_for_init)
             # Replaced or shut down while init ran: fail like the waiters on this attempt did
-            raise incomplete_init_error(provider, "initialization did not complete") unless attempt.state == :succeeded
+            raise incomplete_init_error(provider, "initialization did not complete") if wait_for_init && attempt.state != :succeeded
           else
             init_thread = Thread.new do
               init_provider(provider, context_for_init, domain:, attempt:, raise_on_error: false)
             end
           end
+        elsif !has_init
+          # Spec 2.8.5.1: each new binding of a provider without init runs its domain's READY handlers
+          dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY, token: attempt) unless old_provider.equal?(provider)
         elsif wait_for_init
           # Already registered: wait for an init still in flight, then report its outcome.
           # From inside that init (e.g. a handler of an event it emits) the wait could never end.
-          raise incomplete_init_error(provider, "is still initializing on this thread") if attempt.state == :running && attempt.thread.equal?(Thread.current)
+          raise incomplete_init_error(provider, "is still initializing on this thread") if running_on_this_thread?(attempt)
 
           attempt.done.pop
           raise attempt.error || incomplete_init_error(provider, "initialization did not complete") unless attempt.state == :succeeded
 
-          dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY, token: attempt)
+          dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY, token: attempt) if legacy
         end
       ensure
         # Fail an attempt no init took over (e.g. a Timeout hit first), or it would stay running forever
@@ -213,12 +222,14 @@ module OpenFeature
       end
 
       def init_provider(provider, context, domain:, attempt:, raise_on_error: false)
+        emits_lifecycle_events = emits_lifecycle_events?(provider)
         attempt.thread = Thread.current
         call_init(provider, context, domain)
 
         # Settle the attempt before handlers run, so a handler can register this provider again.
         # An abandoned attempt (provider replaced or shut down meanwhile) reports no READY.
-        dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY, token: attempt) if finish_init_attempt(attempt, :succeeded)
+        # Spec 2.8.2/2.8.3: a provider that emits its own lifecycle events gets no synthetic READY or ERROR
+        dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY, token: attempt) if finish_init_attempt(attempt, :succeeded) && !emits_lifecycle_events
       rescue => e
         # Spec 1.7.5: PROVIDER_FATAL from init makes the provider FATAL
         error_code = EvaluationError.code_for(e)
@@ -230,8 +241,10 @@ module OpenFeature
         )
         finish_init_attempt(attempt, :failed, error)
 
-        dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
-          {error_code: error_code, message: e.message}, token: attempt)
+        unless emits_lifecycle_events
+          dispatch_provider_event(provider, ProviderEvent::PROVIDER_ERROR,
+            {error_code: error_code, message: e.message}, token: attempt)
+        end
 
         raise error if raise_on_error
       ensure
@@ -264,8 +277,9 @@ module OpenFeature
 
       # An event for a provider already dispatching on this call stack is queued behind the current one
       def dispatch_provider_event(provider, event_type, details = {}, token: nil)
-        # The SDK's lifecycle events (with a token) record status when sent, so set_provider_and_wait returns
-        # with it even from the provider's own handler (1.1.2.4); provider events record it when delivered (5.3.5)
+        # Lifecycle events (the SDK's own, or the provider's from its init thread) record status when sent, so
+        # set_provider_and_wait returns with it even from the provider's own handler (1.1.2.4); others record it when delivered (5.3.5)
+        token ||= running_init_attempt_on_this_thread(provider)
         return if token && !accept_provider_event(provider, event_type, details, token)
 
         queues = (Thread.current[@dispatch_key] ||= {}.compare_by_identity)
@@ -322,6 +336,26 @@ module OpenFeature
 
       def domain_scoped?(provider)
         provider.respond_to?(:domain_scoped?) && provider.domain_scoped?
+      end
+
+      # Spec 2.8.5.1: without init there's nothing to report, so the marker only counts alongside init
+      def emits_lifecycle_events?(provider)
+        provider.respond_to?(:init) && provider.respond_to?(:emits_lifecycle_events?) && provider.emits_lifecycle_events?
+      end
+
+      def running_init_attempt_on_this_thread(provider)
+        attempt = @provider_mutex.synchronize { @init_attempts[provider] }
+        attempt if attempt && running_on_this_thread?(attempt)
+      end
+
+      def running_on_this_thread?(attempt)
+        attempt.state == :running && attempt.thread.equal?(Thread.current)
+      end
+
+      def warn_legacy_provider(provider)
+        return if @logger.nil? || !@provider_mutex.synchronize { @legacy_warned.add?(provider.class) }
+        @logger.warn("Provider #{extract_provider_name(provider)} relies on SDK-emitted lifecycle events, which are deprecated; " \
+          "emit PROVIDER_READY/PROVIDER_ERROR from init and define emits_lifecycle_events? returning true (spec Appendix E)")
       end
 
       def validate_domain_scoped_binding!(provider, domain, scoped)

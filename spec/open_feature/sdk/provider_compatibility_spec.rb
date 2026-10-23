@@ -27,8 +27,7 @@ RSpec.describe "Providers Without Event Capabilities" do
   describe "InMemoryProvider without event capabilities" do
     let(:provider) { OpenFeature::SDK::Provider::InMemoryProvider.new }
 
-    it "continues to work with existing init/shutdown methods" do
-      expect { provider.init }.not_to raise_error
+    it "continues to work with its existing shutdown method" do
       expect { provider.shutdown }.not_to raise_error
     end
 
@@ -68,8 +67,8 @@ RSpec.describe "Provider Interface Detection" do
     inmemory_provider = OpenFeature::SDK::Provider::InMemoryProvider.new
 
     # Check using respond_to? (Ruby way)
-    expect(noop_provider.respond_to?(:init)).to be false
-    expect(inmemory_provider.respond_to?(:init)).to be true
+    expect(noop_provider.respond_to?(:shutdown)).to be false
+    expect(inmemory_provider.respond_to?(:shutdown)).to be true
   end
 
   it "can check if provider implements EventEmitter" do

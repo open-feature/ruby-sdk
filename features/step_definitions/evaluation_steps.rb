@@ -3,28 +3,8 @@
 # -- Provider setup steps --
 
 Given(/^a (stable|not ready|error|fatal|stale) provider$/) do |status|
-  if status == "stable"
-    @provider = CachingInMemoryProvider.new(build_test_flags(TEST_FLAGS))
-    OpenFeature::SDK.set_provider_and_wait(@provider)
-  else
-    provider = StatusProvider.new
-    OpenFeature::SDK.set_provider_and_wait(provider)
-
-    state = case status
-    when "not ready" then OpenFeature::SDK::ProviderState::NOT_READY
-    when "error" then OpenFeature::SDK::ProviderState::ERROR
-    when "fatal" then OpenFeature::SDK::ProviderState::FATAL
-    when "stale" then OpenFeature::SDK::ProviderState::STALE
-    end
-
-    registry = OpenFeature::SDK.configuration.send(:instance_variable_get, :@provider_state_registry)
-    registry.send(:instance_variable_get, :@mutex).synchronize do
-      states = registry.send(:instance_variable_get, :@states)
-      states[provider.object_id] = {state: state, details: {}}
-    end
-
-    @provider = provider
-  end
+  @provider = (status == "stable") ? CachingInMemoryProvider.new(build_test_flags(TEST_FLAGS)) : StatusProvider.new(status)
+  OpenFeature::SDK.set_provider_and_wait(@provider)
 
   @client = OpenFeature::SDK.build_client
 end

@@ -74,10 +74,6 @@ class ContextCapturingProvider
     @last_context = nil
   end
 
-  def init(evaluation_context = nil)
-    # no-op
-  end
-
   def shutdown
     # no-op
   end
@@ -93,14 +89,30 @@ class ContextCapturingProvider
   end
 end
 
-# A provider that stays in a specified state for provider status tests.
+# A provider that reaches a specified state for provider status tests, through the event its init emits.
 class StatusProvider
+  include OpenFeature::SDK::Provider::EventEmitter
+
   NAME = "Status Provider"
+  # Shortcut for the fixture: error/fatal emit ERROR and return normally instead of raising (2.8.3)
+  STATUS_EVENTS = {
+    "error" => [OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, {}],
+    "fatal" => [OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, {error_code: OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL}],
+    "stale" => [OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, {}]
+  }.freeze
 
   attr_reader :metadata
 
-  def initialize(name: NAME)
+  def initialize(status, name: NAME)
+    @status = status
     @metadata = OpenFeature::SDK::Provider::ProviderMetadata.new(name: name).freeze
+  end
+
+  def emits_lifecycle_events? = true
+
+  def init(_evaluation_context = nil)
+    event_type, details = STATUS_EVENTS[@status]
+    emit_event(event_type, details) if event_type
   end
 
   %w[boolean string number integer float object].each do |type|

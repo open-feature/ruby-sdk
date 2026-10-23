@@ -183,4 +183,181 @@ RSpec.describe "Provider" do
       end
     end
   end
+
+  context "2.8 - Provider status" do
+    before { OpenFeature::SDK.configuration.send(:reset) }
+    after { OpenFeature::SDK.configuration.send(:reset) }
+
+    def marker_provider(&body)
+      Class.new(OpenFeature::SDK::Provider::InMemoryProvider) do
+        define_method(:emits_lifecycle_events?) { true }
+        define_method(:init) { |_evaluation_context = nil| instance_exec(&body) }
+      end.new
+    end
+
+    def calls_for(event_type)
+      calls = []
+      OpenFeature::SDK.add_handler(event_type, ->(details) { calls << details })
+      calls
+    end
+
+    def state_of(provider) = OpenFeature::SDK.configuration.provider_state(provider)
+
+    context "Requirement 2.8.2 / 2.8.3" do
+      specify "2.8.2: the SDK doesn't synthesize READY for a provider that emits its own" do
+        ready_calls = calls_for(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        provider = marker_provider { emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) }
+
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        expect(ready_calls.size).to eq(1)
+        expect(state_of(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "2.8.3: the SDK doesn't synthesize ERROR for a provider that emits its own" do
+        error_calls = calls_for(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR)
+        provider = marker_provider do
+          emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, error_code: OpenFeature::SDK::Provider::ErrorCode::PROVIDER_FATAL)
+          raise "init failed"
+        end
+
+        expect { OpenFeature::SDK.set_provider_and_wait(provider) }.to raise_error(OpenFeature::SDK::ProviderInitializationError)
+        expect(error_calls.size).to eq(1)
+        expect(state_of(provider)).to eq(OpenFeature::SDK::ProviderState::FATAL)
+      end
+
+      specify "Appendix E: a marker provider's status comes only from its events" do
+        provider = marker_provider {}
+
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        expect(state_of(provider)).to eq(OpenFeature::SDK::ProviderState::NOT_READY)
+      end
+    end
+
+    context "Condition 2.8.5" do
+      specify "2.8.5.1: a provider without init is READY when set_provider returns" do
+        provider = OpenFeature::SDK::Provider::NoOpProvider.new
+        expect(Thread).not_to receive(:new)
+
+        OpenFeature::SDK.set_provider(provider)
+
+        expect(state_of(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "2.8.5.1: READY handlers run for a provider without init" do
+        ready_calls = calls_for(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        expect(Thread).not_to receive(:new)
+
+        OpenFeature::SDK.set_provider(OpenFeature::SDK::Provider::InMemoryProvider.new)
+
+        expect(ready_calls.size).to eq(1)
+      end
+
+      specify "InMemoryProvider has no init" do
+        expect(OpenFeature::SDK::Provider::InMemoryProvider.new).not_to respond_to(:init)
+      end
+    end
+
+    context "Appendix E: legacy, marker and init-less providers" do
+      let(:legacy_class) { Class.new(OpenFeature::SDK::Provider::InMemoryProvider) { def init(_evaluation_context = nil) = nil } }
+
+      after { OpenFeature::SDK.configuration.logger = nil }
+
+      specify "Appendix E: a legacy provider logs a deprecation warning once per class" do
+        logger = spy("Logger")
+        OpenFeature::SDK.configuration.logger = logger
+
+        OpenFeature::SDK.set_provider_and_wait(legacy_class.new, domain: "a")
+        OpenFeature::SDK.set_provider_and_wait(legacy_class.new, domain: "b")
+        OpenFeature::SDK.set_provider_and_wait(marker_provider { emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) }, domain: "c")
+        OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new, domain: "d")
+
+        expect(logger).to have_received(:warn).with(/deprecated/).once
+      end
+
+      specify "Appendix E: a legacy provider still gets synthetic READY" do
+        ready_calls = calls_for(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+
+        OpenFeature::SDK.set_provider_and_wait(legacy_class.new)
+
+        expect(ready_calls.size).to eq(1)
+      end
+
+      specify "re-binding a marker provider to another domain sends no READY" do
+        ready_calls = calls_for(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        provider = marker_provider { emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY) }
+
+        OpenFeature::SDK.set_provider_and_wait(provider, domain: "a")
+        expect(ready_calls.size).to eq(1)
+        OpenFeature::SDK.set_provider_and_wait(provider, domain: "b")
+
+        expect(ready_calls.size).to eq(1)
+      end
+
+      specify "2.8.5.1: binding a provider without init to another domain runs that domain's READY handlers" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        domain_b_ready = 0
+        OpenFeature::SDK.build_client(domain: "b").add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ->(_details) { domain_b_ready += 1 })
+
+        OpenFeature::SDK.set_provider(provider, domain: "a")
+        OpenFeature::SDK.set_provider(provider, domain: "b")
+
+        expect(domain_b_ready).to eq(1)
+      end
+
+      specify "re-binding a provider without init to the same domain sends no duplicate READY" do
+        ready_calls = calls_for(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+
+        OpenFeature::SDK.set_provider_and_wait(provider)
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        expect(ready_calls.size).to eq(1)
+      end
+
+      specify "2.8.5.1: a provider without init is READY even if it declares the marker" do
+        ready_calls = calls_for(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        provider = Class.new(OpenFeature::SDK::Provider::NoOpProvider) { def emits_lifecycle_events? = true }.new
+
+        OpenFeature::SDK.set_provider(provider)
+
+        expect(state_of(provider)).to eq(OpenFeature::SDK::ProviderState::READY)
+        expect(ready_calls.size).to eq(1)
+      end
+
+      specify "1.1.2.4: re-initializing a marker provider from one of its own handlers returns with it READY" do
+        outcomes = Queue.new
+        provider = marker_provider do
+          if outcomes.pop == :fail
+            emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, message: "init failed")
+            raise "init failed"
+          end
+          emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        end
+        outcomes << :fail
+        expect { OpenFeature::SDK.set_provider_and_wait(provider) }.to raise_error(OpenFeature::SDK::ProviderInitializationError)
+        state_after_retry = nil
+        OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, lambda do |_details|
+          OpenFeature::SDK.set_provider_and_wait(provider)
+          state_after_retry = state_of(provider)
+        end)
+        outcomes << :ok
+
+        provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+
+        expect(state_after_retry).to eq(OpenFeature::SDK::ProviderState::READY)
+      end
+
+      specify "re-binding a legacy provider to another domain still sends READY" do
+        ready_calls = calls_for(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+        provider = legacy_class.new
+
+        OpenFeature::SDK.set_provider_and_wait(provider, domain: "a")
+        OpenFeature::SDK.set_provider_and_wait(provider, domain: "b")
+
+        expect(ready_calls.size).to eq(2)
+      end
+    end
+  end
 end

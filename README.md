@@ -300,7 +300,11 @@ legacy_flag_client = OpenFeature::SDK.build_client(domain: "legacy_flags")
 ### Eventing
 
 Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
-Initialization events (`PROVIDER_READY` on success, `PROVIDER_ERROR` on failure) are dispatched for every provider.
+Providers emit initialization events (`PROVIDER_READY` on success, `PROVIDER_ERROR` on failure) from `init`.
+A provider without `init` is `READY` as soon as it's registered, and its `PROVIDER_READY` handlers run before `set_provider` returns.
+For providers that define `init` but not `emits_lifecycle_events?` returning `true`, the SDK emits `PROVIDER_READY` after `init` returns and `PROVIDER_ERROR` if it raises.
+That path is deprecated (spec Appendix E), and the SDK logs a deprecation warning once per provider class to its configured logger.
+Handlers for events a provider emits from `init` run while `init` is still in progress, so they can't call `set_provider_and_wait` for that same provider.
 Some providers emit additional events: `PROVIDER_CONFIGURATION_CHANGED`, `PROVIDER_STALE`, `PROVIDER_RECONCILING` and `PROVIDER_CONTEXT_CHANGED`.
 Handlers receive a hash with the `provider_name` and any details the provider sent, such as `message` or `error_code`.
 
@@ -314,15 +318,17 @@ end
 
 OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ready_handler)
 
-# The SDK automatically emits lifecycle events. Providers can emit additional spontaneous events
-# using the EventEmitter mixin to signal internal state changes like configuration updates.
+# Providers emit events using the EventEmitter mixin: lifecycle events from init, and spontaneous
+# events to signal internal state changes like configuration updates.
 class MyEventAwareProvider
   include OpenFeature::SDK::Provider::EventEmitter
 
+  def emits_lifecycle_events? = true
+
   def init(evaluation_context)
     # Start background process to monitor for configuration changes
-    # Note: SDK automatically emits PROVIDER_READY when init completes successfully
     start_background_process
+    emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
   end
 
   def start_background_process
@@ -446,13 +452,23 @@ You’ll then need to write the provider by implementing the `Provider` duck.
 
 ```ruby
 class MyProvider
+  include OpenFeature::SDK::Provider::EventEmitter
+
+  # Tells the SDK that init emits PROVIDER_READY/PROVIDER_ERROR itself.
+  def emits_lifecycle_events? = true
+
+  # Optional: a provider without init is READY as soon as it's registered.
   # Both arguments are optional; declare only the ones you need.
   # `domain` is the domain the provider was bound to, or nil for the default provider.
   def init(evaluation_context = nil, domain: nil)
-    # Perform any initialization steps with flag management system here
+    # Perform any initialization steps with flag management system here, then emit PROVIDER_READY.
     # Return value is ignored
     # **Note** The OpenFeature spec defines a lifecycle method called `initialize` to be called when a new provider is set.
     # To avoid conflicting with the Ruby `initialize` method, this method should be named `init` when creating a provider.
+    emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_READY)
+  rescue => e
+    emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_ERROR, error_code: OpenFeature::SDK::Provider::ErrorCode::GENERAL, message: e.message)
+    raise
   end
 
   # Optional: return true if this provider keeps state for a single domain.

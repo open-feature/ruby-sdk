@@ -114,7 +114,7 @@ RSpec.describe "Domain-scoped provider binding" do
 
     specify "allows a non-domain-scoped provider to back multiple domains" do
       provider = OpenFeature::SDK::Provider::InMemoryProvider.new
-      allow(provider).to receive(:init).and_call_original
+      allow(provider).to receive(:init)
 
       OpenFeature::SDK.set_provider_and_wait(provider, domain: "domain-a")
       OpenFeature::SDK.set_provider_and_wait(provider, domain: "domain-b")

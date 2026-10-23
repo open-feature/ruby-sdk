@@ -19,10 +19,6 @@ module OpenFeature
           @flags = flags
         end
 
-        def init(evaluation_context = nil)
-          # Intentional no-op, used for testing
-        end
-
         def shutdown
           # Intentional no-op, used for testing
         end

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/open-feature/ruby-sdk/compare/v0.8.0...v0.8.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* close the spec v0.9.0 gaps the compliance audit found ([#361](https://github.com/open-feature/ruby-sdk/issues/361)) ([1ecbb58](https://github.com/open-feature/ruby-sdk/commit/1ecbb58d52a26cdc6c2e187bdf61d037d7309b20))
+
 ## [0.8.0](https://github.com/open-feature/ruby-sdk/compare/v0.7.1...v0.8.0) (2026-10-23)
 
 

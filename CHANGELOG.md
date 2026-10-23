@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/open-feature/ruby-sdk/compare/v0.7.1...v0.8.0) (2026-10-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* make hook inputs immutable ([#357](https://github.com/open-feature/ruby-sdk/issues/357))
+
+### Bug Fixes
+
+* do not mutate the provider's ResolutionDetails ([#358](https://github.com/open-feature/ruby-sdk/issues/358)) ([ec657a5](https://github.com/open-feature/ruby-sdk/commit/ec657a5fc7b1514828ea2fa1cb6bfe017029f5af))
+* make hook inputs immutable ([#357](https://github.com/open-feature/ruby-sdk/issues/357)) ([9e166fe](https://github.com/open-feature/ruby-sdk/commit/9e166fe09ec2a10d220295b600141cb351516b24))
+
 ## [0.7.1](https://github.com/open-feature/ruby-sdk/compare/v0.7.0...v0.7.1) (2026-10-23)
 
 

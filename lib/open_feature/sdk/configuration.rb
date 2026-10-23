@@ -21,7 +21,7 @@ module OpenFeature
       attr_reader :logger
 
       # One per registration; +done+ is closed once init finishes, so waiters can pop on it
-      InitAttempt = Struct.new(:state, :error, :done)
+      InitAttempt = Struct.new(:state, :error, :done, :thread)
       private_constant :InitAttempt
 
       def initialize
@@ -123,8 +123,7 @@ module OpenFeature
         @provider_state_registry.clear
         @provider_mutex.synchronize do
           @providers.clear
-          # Release anyone waiting on an init that shutdown cut short
-          @init_attempts.each_value { |attempt| attempt.done.close }
+          @init_attempts.each_value { |attempt| abandon_init_attempt(attempt) }
           @init_attempts.clear
         end
         @hooks.clear
@@ -168,7 +167,7 @@ module OpenFeature
           if old_provider && !old_provider.equal?(provider)
             needs_shutdown = !provider_bound?(old_provider)
             if needs_shutdown
-              @init_attempts.delete(old_provider)
+              abandon_init_attempt(@init_attempts.delete(old_provider))
               @provider_state_registry.remove_provider(old_provider)
               old_provider.send(:detach) if old_provider.is_a?(Provider::EventEmitter)
             end
@@ -194,15 +193,12 @@ module OpenFeature
             end
           end
         elsif wait_for_init
-          # Already registered: wait for an init still in flight, then report its outcome
+          # Already registered: wait for an init still in flight, then report its outcome.
+          # From inside that init (e.g. a handler of an event it emits) the wait could never end.
+          raise incomplete_init_error(provider, "is still initializing on this thread") if attempt.state == :running && attempt.thread.equal?(Thread.current)
+
           attempt.done.pop
-          unless attempt.state == :succeeded
-            raise attempt.error || ProviderInitializationError.new(
-              "Provider #{provider.class.name} initialization did not complete",
-              provider:,
-              error_code: Provider::ErrorCode::GENERAL
-            )
-          end
+          raise attempt.error || incomplete_init_error(provider, "initialization did not complete") unless attempt.state == :succeeded
 
           dispatch_provider_event(provider, ProviderEvent::PROVIDER_READY)
         end
@@ -212,6 +208,7 @@ module OpenFeature
       end
 
       def init_provider(provider, context, domain:, attempt:, raise_on_error: false)
+        attempt.thread = Thread.current
         call_init(provider, context, domain)
 
         # Settle the attempt before handlers run, so a handler can register this provider again
@@ -236,6 +233,18 @@ module OpenFeature
       ensure
         # Reached unsettled only when init raised something other than a StandardError
         finish_init_attempt(attempt, :failed)
+      end
+
+      # Caller holds @provider_mutex: the provider was unbound or the API reset before its init settled
+      def abandon_init_attempt(attempt)
+        return unless attempt
+
+        attempt.state = :failed if attempt.state == :running
+        attempt.done.close
+      end
+
+      def incomplete_init_error(provider, reason)
+        ProviderInitializationError.new("Provider #{provider.class.name} #{reason}", provider:, error_code: Provider::ErrorCode::GENERAL)
       end
 
       def finish_init_attempt(attempt, state, error = nil)

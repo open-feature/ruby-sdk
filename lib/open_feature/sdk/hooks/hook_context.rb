@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "frozen_copy"
+
 module OpenFeature
   module SDK
     module Hooks
@@ -15,25 +17,25 @@ module OpenFeature
 
         def initialize(flag_key:, flag_value_type:, default_value:, evaluation_context:,
           client_metadata: nil, provider_metadata: nil)
-          @flag_key = frozen_copy(flag_key)
+          @flag_key = Hooks.frozen_copy(flag_key)
           @flag_value_type = flag_value_type.freeze
           @source_default_value = default_value
           @evaluation_context = evaluation_context
           @client_metadata = client_metadata
-          @provider_metadata = frozen_copy(provider_metadata)
+          @provider_metadata = Hooks.frozen_copy(provider_metadata)
           @hook_data = {}
           @copies = {}
         end
 
         # Copied on first read: most hooks never read it, and the copy grows with the value
         def default_value
-          @copies.fetch(:default_value) { @copies[:default_value] = frozen_copy(@source_default_value) }
+          @copies.fetch(:default_value) { @copies[:default_value] = Hooks.frozen_copy(@source_default_value) }
         end
 
         # Swaps in a frozen copy of the evaluation context, so neither the caller's nor a before hook's object is frozen
         def freeze
           return self if frozen?
-          @evaluation_context &&= EvaluationContext.new(**@evaluation_context.fields).freeze
+          @evaluation_context &&= @evaluation_context.dup.freeze
           super
         end
 
@@ -42,15 +44,6 @@ module OpenFeature
         # allowing hooks to share state across their lifecycle (spec 4.1.5, 4.6.1).
         def hook_data_for(hook)
           @hook_data[hook.object_id] ||= {}
-        end
-
-        private
-
-        # A deep-frozen copy, so hooks can't change it and the caller's object isn't frozen
-        def frozen_copy(value)
-          Ractor.make_shareable(value, copy: true)
-        rescue
-          value # shortcut: a value that can't be deep-copied (a Mutex, Queue or Proc inside) stays mutable rather than failing the evaluation
         end
       end
     end

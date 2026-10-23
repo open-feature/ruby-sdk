@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "delegate"
+require_relative "frozen_copy"
 
 module OpenFeature
   module SDK
@@ -13,7 +14,7 @@ module OpenFeature
             assert_allowed_key(key)
             assert_allowed_value(value)
           end
-          super(Ractor.make_shareable(hash, copy: true)) # Spec 4.2.2.1: deep-frozen, without freezing the caller's hash
+          super(Hooks.frozen_copy(hash))
           freeze
         end
 

@@ -94,6 +94,14 @@ RSpec.describe OpenFeature::SDK::Hooks::HookContext do
       expect(hook_context.evaluation_context.targeting_key).to eq("user-456")
     end
 
+    it "keeps the evaluation context's class once frozen" do
+      subclass = Class.new(OpenFeature::SDK::EvaluationContext) { def tenant = field("tenant") }
+      ctx = described_class.new(flag_key: "flag", flag_value_type: :boolean, default_value: false,
+        evaluation_context: subclass.new(tenant: "acme")).freeze
+
+      expect(ctx.evaluation_context.tenant).to eq("acme")
+    end
+
     it "is a frozen copy once the hook context is frozen" do
       hook_context.freeze
 
@@ -106,10 +114,13 @@ RSpec.describe OpenFeature::SDK::Hooks::HookContext do
 
   describe "values that can't be copied" do
     [Mutex.new, Thread::Queue.new, -> {}].each do |uncopyable|
-      it "keeps the original value when it holds a #{uncopyable.class}" do
+      it "freezes a shallow copy when it holds a #{uncopyable.class}" do
         default = {held: uncopyable}
         ctx = described_class.new(flag_key: "flag", flag_value_type: :object, default_value: default, evaluation_context: nil)
-        expect(ctx.default_value).to equal(default)
+
+        expect(ctx.default_value).to eq(default)
+        expect(ctx.default_value).to be_frozen
+        expect(default).not_to be_frozen
       end
     end
   end

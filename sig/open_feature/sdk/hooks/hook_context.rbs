@@ -15,10 +15,6 @@ module OpenFeature
         def freeze: () -> self
 
         def hook_data_for: (untyped hook) -> Hash[untyped, untyped]
-
-        private
-
-        def frozen_copy: [T] (T value) -> T
       end
     end
   end

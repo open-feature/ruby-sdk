@@ -26,6 +26,11 @@ module OpenFeature
         )
       end
 
+      def initialize_copy(source)
+        super
+        @fields = @fields.dup
+      end
+
       def freeze
         fields.freeze
         super

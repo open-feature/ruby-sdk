@@ -46,8 +46,13 @@ RSpec.describe OpenFeature::SDK::Hooks::Hints do
       expect(hint_hash[:nested][:key]).not_to be_frozen
     end
 
-    it "rejects nested values that can't be frozen" do
-      expect { described_class.new(key: {lock: Mutex.new}) }.to raise_error(Ractor::Error)
+    it "freezes only the top level when a nested value can't be copied" do
+      source = {key: {lock: Mutex.new}}
+      hints = described_class.new(source)
+
+      expect(hints[:key]).to eq(source[:key])
+      expect { hints[:other] = 1 }.to raise_error(FrozenError)
+      expect(source).not_to be_frozen
     end
   end
 end

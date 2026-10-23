@@ -13,6 +13,8 @@ module OpenFeature
 
       def merge: (EvaluationContext overriding_context) -> EvaluationContext
 
+      def initialize_copy: (EvaluationContext source) -> void
+
       def freeze: () -> self
 
       def ==: (untyped other) -> bool

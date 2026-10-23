@@ -280,6 +280,14 @@ RSpec.describe "Hooks Specification" do
         expect(captured[:hints]["nested"]["list"]).to be_frozen
         expect(hint_hash["nested"]["list"]).not_to be_frozen
       end
+
+      specify "hints that can't be deep-copied still evaluate the flag" do
+        details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag-1", default_value: false,
+          hooks: [capture_hook], hook_hints: {"lookup" => Hash.new { |h, k| h[k] = k }})
+
+        expect(details.value).to be(true)
+        expect(captured[:hints]).to be_frozen
+      end
     end
 
     context "Conditional Requirement 4.2.2.2" do

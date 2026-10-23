@@ -1,7 +1,0 @@
-module OpenFeature
-  module SDK
-    module Hooks
-      def self.frozen_copy: [T] (T value) -> T
-    end
-  end
-end

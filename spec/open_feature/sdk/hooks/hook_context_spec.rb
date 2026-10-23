@@ -102,6 +102,15 @@ RSpec.describe OpenFeature::SDK::Hooks::HookContext do
       expect(ctx.evaluation_context.tenant).to eq("acme")
     end
 
+    it "copies a structure shared by two fields once" do
+      shared = [+"x"]
+      ctx = described_class.new(flag_key: "flag", flag_value_type: :boolean, default_value: false,
+        evaluation_context: OpenFeature::SDK::EvaluationContext.new(a: shared, b: shared)).freeze
+
+      expect(ctx.evaluation_context.field("a")).to equal(ctx.evaluation_context.field("b"))
+      expect(ctx.evaluation_context.field("a")).not_to equal(shared)
+    end
+
     it "is a frozen copy once the hook context is frozen" do
       hook_context.freeze
 
@@ -114,13 +123,14 @@ RSpec.describe OpenFeature::SDK::Hooks::HookContext do
 
   describe "values that can't be copied" do
     [Mutex.new, Thread::Queue.new, -> {}].each do |uncopyable|
-      it "freezes a shallow copy when it holds a #{uncopyable.class}" do
-        default = {held: uncopyable}
+      it "still freezes a copy when it holds a #{uncopyable.class}" do
+        default = {held: uncopyable, list: []}
         ctx = described_class.new(flag_key: "flag", flag_value_type: :object, default_value: default, evaluation_context: nil)
 
-        expect(ctx.default_value).to eq(default)
         expect(ctx.default_value).to be_frozen
+        expect(ctx.default_value[:list]).to be_frozen
         expect(default).not_to be_frozen
+        expect(default[:list]).not_to be_frozen
       end
     end
   end

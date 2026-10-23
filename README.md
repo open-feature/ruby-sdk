@@ -572,10 +572,11 @@ class MyLoggingHook
 end
 ```
 
-Hooks can read their inputs but not change them:
+Hooks can read the hook context and hints but not change them:
 
-- Only `before` hooks can change the evaluation context: return an `EvaluationContext` for the SDK to merge in, or assign `hook_context.evaluation_context`. By the time `after`, `error` and `finally` run, it's a frozen copy, so assigning it or writing to its `fields` raises `FrozenError`. Nested field values aren't frozen, because they belong to the caller.
+- Only `before` hooks can change the evaluation context: return an `EvaluationContext` for the SDK to merge in, or assign `hook_context.evaluation_context`. By the time `after`, `error` and `finally` run, it's a deep-frozen copy, so assigning it or changing its values raises `FrozenError`. Your own context isn't frozen.
 - The flag key, the default value, the hints, and the client and provider metadata are frozen copies. Your own objects aren't frozen.
+- Only the spec's value types are copied: strings, numbers, booleans, times, hashes and arrays. Other objects, such as a user or a record you put in the context, are passed to hooks as they are. A time is copied but left unfrozen, so `utc` and `localtime` still work, and a hash's default proc isn't copied.
 
 > Built a new hook? [Let us know](https://github.com/open-feature/openfeature.dev/issues/new?assignees=&labels=hook&projects=&template=document-hook.yaml&title=%5BHook%5D%3A+) so we can add it to the docs!
 

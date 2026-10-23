@@ -55,7 +55,7 @@ module OpenFeature
         # Call handlers outside of mutex to avoid deadlocks
         handlers_to_call.each do |handler|
           handler.call(event_details)
-        rescue => e
+        rescue *RECOVERABLE_ERRORS => e
           @logger&.warn "Event handler failed for #{event_type}: #{e.message}\n#{e.backtrace.join("\n")}"
         end
       end

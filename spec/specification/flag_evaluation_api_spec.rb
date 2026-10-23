@@ -835,6 +835,15 @@ RSpec.describe "Flag Evaluation API" do
     end
 
     context "Requirement 1.4.15.1" do
+      specify "flag_metadata values are frozen too, and the provider's hash is left alone" do
+        metadata = {"owner" => +"team-a"}
+        resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(value: true, flag_metadata: metadata)
+
+        expect { resolution.flag_metadata["owner"] << "!" }.to raise_error(FrozenError)
+        expect(metadata["owner"]).to eq("team-a")
+        expect(metadata["owner"]).not_to be_frozen
+      end
+
       specify "flag_metadata is frozen when not provided" do
         resolution = OpenFeature::SDK::Provider::ResolutionDetails.new(value: true)
         expect(resolution.flag_metadata).to be_frozen
@@ -860,6 +869,20 @@ RSpec.describe "Flag Evaluation API" do
 
       specify "The API MUST define a mechanism to propagate a shutdown request to registered providers." do
         expect(OpenFeature::SDK).to respond_to(:shutdown)
+      end
+
+      specify "a provider whose shutdown raises NotImplementedError doesn't stop the other shutdowns, or the reset (1.6.2)" do
+        failing = OpenFeature::SDK::Provider::InMemoryProvider.new
+        failing.define_singleton_method(:shutdown) { raise NotImplementedError, "shutdown" }
+        other = OpenFeature::SDK::Provider::InMemoryProvider.new
+        allow(other).to receive(:shutdown)
+        OpenFeature::SDK.set_provider_and_wait(failing, domain: "a")
+        OpenFeature::SDK.set_provider_and_wait(other, domain: "b")
+        OpenFeature::SDK.configure { |config| config.hooks << Class.new { include OpenFeature::SDK::Hooks::Hook }.new }
+
+        expect { OpenFeature::SDK.shutdown }.not_to raise_error
+        expect(other).to have_received(:shutdown)
+        expect(OpenFeature::SDK.hooks).to be_empty
       end
 
       specify "When a shutdown function is called, the API invokes the shutdown function on the registered provider." do

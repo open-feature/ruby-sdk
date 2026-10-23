@@ -241,6 +241,75 @@ RSpec.describe "Hooks Specification" do
         expect(targeting_key).not_to be_frozen
       end
 
+      specify "after hooks can't change nested values in the caller's evaluation context" do
+        regions = ["us"]
+        outcome = nil
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:after) do |hook_context:, **|
+            hook_context.evaluation_context.field("regions") << "eu"
+            outcome = :changed
+          rescue FrozenError
+            outcome = :frozen
+          end
+        end.new
+        OpenFeature::SDK.configure { |config| config.evaluation_context = OpenFeature::SDK::EvaluationContext.new(regions:) }
+
+        OpenFeature::SDK.build_client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [hook])
+
+        expect(outcome).to eq(:frozen)
+        expect(regions).to eq(["us"])
+        expect(regions).not_to be_frozen
+      end
+
+      specify "objects in the evaluation context reach after hooks as they are, so reading them can't fail" do
+        user_class = Class.new do
+          def name = @name ||= +"Ada"
+        end
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:after) { |hook_context:, **| hook_context.evaluation_context.field("user").name }
+        end.new
+
+        details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag-1", default_value: false,
+          evaluation_context: OpenFeature::SDK::EvaluationContext.new(user: user_class.new), hooks: [hook])
+
+        expect(details.value).to be(true)
+        expect(details.error_code).to be_nil
+      end
+
+      specify "an after hook can convert a Time in the evaluation context, and the caller's Time is unchanged" do
+        signup = Time.new(2026, 1, 1, 12, 0, 0, "+05:00")
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:after) { |hook_context:, **| hook_context.evaluation_context.field("signup").utc }
+        end.new
+
+        details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag-1", default_value: false,
+          evaluation_context: OpenFeature::SDK::EvaluationContext.new(signup:), hooks: [hook])
+
+        expect(details.error_code).to be_nil
+        expect(signup.utc_offset).to eq(5 * 3600)
+      end
+
+      specify "an after hook can read a missing key of a Hash with a default proc in the evaluation context" do
+        lookup = Hash.new { |hash, key| hash[key] = [] }
+        hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:after) { |hook_context:, **| hook_context.evaluation_context.field("lookup")["missing"] }
+        end.new
+
+        details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag-1", default_value: false,
+          evaluation_context: OpenFeature::SDK::EvaluationContext.new(lookup:), hooks: [hook])
+
+        expect(details.error_code).to be_nil
+        expect(lookup).to be_empty
+      end
+
       specify "the evaluation context is frozen in error and finally hooks when a before hook raises" do
         failing_before = Class.new do
           include OpenFeature::SDK::Hooks::Hook
@@ -677,6 +746,26 @@ RSpec.describe "Hooks Specification" do
 
         expect(call_log).to include("surviving_finally")
       end
+
+      specify "a finally hook raising NotImplementedError doesn't stop the others or change the result" do
+        call_log = []
+        failing_hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:finally) { |**| raise NotImplementedError, "finally" }
+        end.new
+        surviving_hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:finally) { |**| call_log << "surviving_finally" }
+        end.new
+
+        details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "flag-1", default_value: false, hooks: [surviving_hook, failing_hook])
+
+        expect(call_log).to eq(["surviving_finally"])
+        expect(details.value).to be(true)
+        expect(details.error_code).to be_nil
+      end
     end
 
     context "Requirement 4.4.4" do
@@ -705,6 +794,28 @@ RSpec.describe "Hooks Specification" do
         client.fetch_boolean_value(flag_key: "flag-1", default_value: false, hooks: [surviving_hook, failing_hook])
 
         expect(call_log).to include("surviving_error")
+      end
+
+      specify "an error hook raising NotImplementedError doesn't stop the others, and runs once" do
+        call_log = []
+        failing_hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:error) do |**|
+            call_log << "failing_error"
+            raise NotImplementedError, "error hook"
+          end
+        end.new
+        surviving_hook = Class.new do
+          include OpenFeature::SDK::Hooks::Hook
+
+          define_method(:error) { |**| call_log << "surviving_error" }
+        end.new
+
+        details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "missing-flag", default_value: false, hooks: [surviving_hook, failing_hook])
+
+        expect(call_log).to eq(["failing_error", "surviving_error"])
+        expect(details.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::FLAG_NOT_FOUND)
       end
     end
 

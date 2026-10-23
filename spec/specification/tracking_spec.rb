@@ -7,6 +7,16 @@ RSpec.describe "Tracking Specification" do
     OpenFeature::SDK::API.instance.send(:configuration).send(:reset)
   end
 
+  context "Conditional Requirement 6.1.1.1: returns nothing" do
+    specify "track returns nil even when the provider's track returns a value" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      provider.define_singleton_method(:track) { |*, **| :provider_return_value }
+      OpenFeature::SDK.set_provider_and_wait(provider)
+
+      expect(OpenFeature::SDK.build_client.track("event")).to be_nil
+    end
+  end
+
   context "6.1 - Tracking API" do
     context "Condition 6.1.1.1" do
       specify "The client MUST define a function for tracking with parameters: tracking event name (required), evaluation context (optional), and tracking event details (optional)" do

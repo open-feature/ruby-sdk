@@ -58,7 +58,8 @@ module OpenFeature
         built_context = build_evaluation_context(evaluation_context)
 
         provider.track(tracking_event_name, evaluation_context: built_context, tracking_event_details: tracking_event_details)
-      rescue StandardError, NotImplementedError
+        nil # Spec 6.1.1.1: returns nothing
+      rescue *RECOVERABLE_ERRORS
         nil
       end
 
@@ -138,8 +139,8 @@ module OpenFeature
             evaluate_flag(provider: provider, type: type, flag_key: flag_key, default_value: default_value, evaluation_context: hctx.evaluation_context)
           end
         end
-      rescue StandardError, NotImplementedError => e
-        # Spec 1.4.10 and 1.4.11: report through the details, never raise or log. NotImplementedError is the abstract-method idiom.
+      rescue *RECOVERABLE_ERRORS => e
+        # Spec 1.4.10 and 1.4.11: report through the details, never raise or log
         resolution = Provider::ResolutionDetails.new(
           value: default_value,
           error_code: EvaluationError.code_for(e),

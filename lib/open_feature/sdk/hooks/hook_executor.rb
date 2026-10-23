@@ -58,7 +58,7 @@ module OpenFeature
             else
               run_after_hooks(ordered_hooks, hook_context, evaluation_details, hints)
             end
-          rescue StandardError, NotImplementedError => e
+          rescue *RECOVERABLE_ERRORS => e
             run_error_hooks(ordered_hooks, hook_context, e, hints)
 
             evaluation_details = EvaluationDetails.new(
@@ -109,7 +109,7 @@ module OpenFeature
           hooks.reverse_each do |hook|
             next unless hook.respond_to?(:error)
             hook.error(hook_context: hook_context, exception: exception, hints: hints)
-          rescue => e
+          rescue *RECOVERABLE_ERRORS => e
             @logger&.error("Error hook #{hook.class.name} failed: #{e.message}")
           end
         end
@@ -121,7 +121,7 @@ module OpenFeature
           hooks.reverse_each do |hook|
             next unless hook.respond_to?(:finally)
             hook.finally(hook_context: hook_context, evaluation_details: evaluation_details, hints: hints)
-          rescue => e
+          rescue *RECOVERABLE_ERRORS => e
             @logger&.error("Finally hook #{hook.class.name} failed: #{e.message}")
           end
         end

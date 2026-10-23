@@ -405,6 +405,28 @@ RSpec.describe "OpenFeature Specification: Events" do
   end
 
   context "Requirement 5.2.5" do
+    specify "a handler raising NotImplementedError doesn't stop the other API or client handlers" do
+      called = []
+      client = OpenFeature::SDK.build_client
+      ready = OpenFeature::SDK::ProviderEvent::PROVIDER_READY
+      OpenFeature::SDK.add_handler(ready, ->(_) { raise NotImplementedError, "api" })
+      OpenFeature::SDK.add_handler(ready, ->(_) { called << :api })
+      client.add_handler(ready, ->(_) { raise NotImplementedError, "client" })
+      client.add_handler(ready, ->(_) { called << :client })
+      called.clear # the NoOp provider from the before block is already READY, so each handler ran once on registration
+
+      expect { OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new) }.not_to raise_error
+      expect(called).to eq([:api, :client])
+    end
+
+    specify "a handler that runs immediately and raises NotImplementedError doesn't escape add_handler" do
+      ready = OpenFeature::SDK::ProviderEvent::PROVIDER_READY
+      OpenFeature::SDK.set_provider_and_wait(OpenFeature::SDK::Provider::InMemoryProvider.new)
+
+      expect { OpenFeature::SDK.add_handler(ready, ->(_) { raise NotImplementedError, "api" }) }.not_to raise_error
+      expect { OpenFeature::SDK.build_client.add_handler(ready, ->(_) { raise NotImplementedError, "client" }) }.not_to raise_error
+    end
+
     specify "If an event handler function terminates abnormally, other handler functions MUST still be invoked" do
       handler1_called = false
       handler2_called = false

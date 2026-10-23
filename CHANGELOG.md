@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.7](https://github.com/open-feature/ruby-sdk/compare/v0.6.6...v0.6.7) (2026-10-23)
+
+
+### Features
+
+* pass the bound domain to provider init and support domain-scoped providers ([#345](https://github.com/open-feature/ruby-sdk/issues/345)) ([f3cf6b7](https://github.com/open-feature/ruby-sdk/commit/f3cf6b76c06297aa4c0a2a95ea1055f816269e3b))
+
+
+### Bug Fixes
+
+* return defaults instead of raising from client calls ([#346](https://github.com/open-feature/ruby-sdk/issues/346)) ([481f21c](https://github.com/open-feature/ruby-sdk/commit/481f21cfe70365de92c6ece3eb92c40117a7e1c5))
+
 ## [0.6.6](https://github.com/open-feature/ruby-sdk/compare/v0.6.5...v0.6.6) (2026-10-22)
 
 

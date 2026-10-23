@@ -158,6 +158,24 @@ RSpec.describe "OpenFeature Specification: Events" do
       expect(states).to eq([OpenFeature::SDK::ProviderState::READY])
     end
 
+    specify "5.1.2: a client handler that raises is logged and doesn't stop the other client handlers" do
+      provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+      OpenFeature::SDK.set_provider_and_wait(provider)
+      client = OpenFeature::SDK.build_client
+      logger = spy("Logger")
+      OpenFeature::SDK.configuration.logger = logger
+      received = []
+      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, ->(_details) { raise "handler failed" })
+      client.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE, ->(_details) { received << :stale })
+
+      provider.emit_event(OpenFeature::SDK::ProviderEvent::PROVIDER_STALE)
+
+      expect(received).to eq([:stale])
+      expect(logger).to have_received(:error).with(/Client event handler failed: handler failed/)
+    ensure
+      OpenFeature::SDK.configuration.logger = nil
+    end
+
     specify "5.1.2: a client handler can add another handler while handling an event" do
       provider = OpenFeature::SDK::Provider::InMemoryProvider.new
       OpenFeature::SDK.set_provider_and_wait(provider)

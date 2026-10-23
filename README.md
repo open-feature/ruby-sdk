@@ -301,14 +301,15 @@ legacy_flag_client = OpenFeature::SDK.build_client(domain: "legacy_flags")
 
 Events allow you to react to state changes in the provider or underlying flag management system, such as flag definition changes, provider readiness, or error conditions.
 Initialization events (`PROVIDER_READY` on success, `PROVIDER_ERROR` on failure) are dispatched for every provider.
-Some providers support additional events, such as `PROVIDER_CONFIGURATION_CHANGED`.
+Some providers emit additional events: `PROVIDER_CONFIGURATION_CHANGED`, `PROVIDER_STALE`, `PROVIDER_RECONCILING` and `PROVIDER_CONTEXT_CHANGED`.
+Handlers receive a hash with the `provider_name` and any details the provider sent, such as `message` or `error_code`.
 
 Please refer to the documentation of the provider you're using to see what events are supported.
 
 ```ruby
 # Register event handlers at the API (global) level
 ready_handler = ->(event_details) do
-  puts "Provider #{event_details[:provider].metadata.name} is ready!"
+  puts "Provider #{event_details[:provider_name]} is ready!"
 end
 
 OpenFeature::SDK.add_handler(OpenFeature::SDK::ProviderEvent::PROVIDER_READY, ready_handler)
@@ -350,6 +351,9 @@ This should only be called when your application is in the process of shutting d
 # Shut down all registered providers and clear state
 OpenFeature::SDK.shutdown
 ```
+
+The SDK also shuts down a replaced provider once no domain uses it.
+Events from shut-down providers are ignored.
 
 Individual providers can implement a `shutdown` method to perform cleanup:
 

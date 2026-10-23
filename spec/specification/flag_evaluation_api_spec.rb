@@ -777,6 +777,20 @@ RSpec.describe "Flag Evaluation API" do
         details = client.fetch_boolean_details(flag_key: "test", default_value: false)
         expect(details.flag_metadata).to eq({})
       end
+
+      specify "a type mismatch keeps the provider's flag_metadata and, per 1.4.13, explains the mismatch" do
+        provider = OpenFeature::SDK::Provider::InMemoryProvider.new
+        allow(provider).to receive(:fetch_boolean_value).and_return(
+          OpenFeature::SDK::Provider::ResolutionDetails.new(value: "not a boolean", flag_metadata: {"scope" => "user"})
+        )
+        OpenFeature::SDK.set_provider_and_wait(provider)
+
+        details = OpenFeature::SDK.build_client.fetch_boolean_details(flag_key: "test", default_value: false)
+
+        expect(details.error_code).to eq(OpenFeature::SDK::Provider::ErrorCode::TYPE_MISMATCH)
+        expect(details.error_message).to eq("Expected boolean, got String")
+        expect(details.flag_metadata).to eq({"scope" => "user"})
+      end
     end
 
     context "Requirement 1.4.15.1" do

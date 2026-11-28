@@ -1,7 +1,7 @@
 name: Auto-merge Renovate PRs
 
 on:
-  pull_request_target:
+  pull_request:
 
 permissions:
   contents: write
@@ -10,7 +10,7 @@ permissions:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    if: github.actor == 'renovate[bot]'
+    if: github.event.pull_request.user.login == 'renovate[bot]'
     steps:
       - name: Approve PR
         run: gh pr review --approve "$PR_URL"
